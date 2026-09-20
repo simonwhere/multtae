@@ -1,7 +1,9 @@
 /**
  * 물주기 엔진 (SPEC.md 5장). UI·DB 에 의존하지 않는 순수 함수이고 계수는 모두 인자로 받는다.
  */
+import { addDays } from './calendar';
 import type {
+  CalendarDate,
   Coefficients,
   EnginePlant,
   EngineSpace,
@@ -11,7 +13,9 @@ import type {
   Season,
 } from './types';
 
+export * from './calendar';
 export { DEFAULT_COEFFICIENTS } from './defaults';
+export * from './season';
 export * from './types';
 
 /** 다음 물주기는 아무리 짧아도 하루 뒤다 */
@@ -84,6 +88,23 @@ export function computeInterval(
     days: toDays(interval),
     belowMin: raw < min,
   };
+}
+
+/**
+ * 다음 물주기 = 마지막 물 준 날 + round(I) (5장).
+ * "내일로" 미룬 횟수는 여기서 더해야 계절 전환 같은 재계산 뒤에도 미룬 날이 남는다 (5.5).
+ */
+export function nextWaterDate(
+  lastWatered: CalendarDate,
+  days: number,
+  postponeCount = 0,
+): CalendarDate {
+  return addDays(lastWatered, days + postponeCount);
+}
+
+/** 마지막 물 준 날을 모를 때 첫 알림까지의 일수: I/2 (5.5) */
+export function halfIntervalDays(result: IntervalResult): number {
+  return toDays(result.interval / 2);
 }
 
 /**

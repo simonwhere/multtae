@@ -51,12 +51,26 @@ export type LoggedSoilState = (typeof LOGGED_SOIL_STATES)[number];
 /** 이 앱 버전이 이해하는 계수 스키마 버전 (SPEC 15장 버전 항목) */
 export const COEFFICIENTS_SCHEMA_VERSION = 1;
 
-/** 연도 없는 날짜. Asia/Seoul 달력 기준 */
+/** 연도 없는 날짜 */
 export interface MonthDay {
   /** 1~12 */
   month: number;
   /** 1~31 */
   day: number;
+}
+
+/** 시각 정보가 없는 달력 날짜. 어느 시간대의 달력인지는 만든 쪽이 정한다 (calendar.ts) */
+export interface CalendarDate extends MonthDay {
+  year: number;
+}
+
+/** 계절 시작일 표. 각 계절은 다음 계절 시작 전날에 끝난다 (SPEC 5.2). Asia/Seoul 달력 기준 */
+export type SeasonBounds = Record<Season, MonthDay>;
+
+/** 계절 전환. date 의 0시(Asia/Seoul)부터 season 이다 */
+export interface SeasonChange {
+  season: Season;
+  date: CalendarDate;
 }
 
 /** 학습 보정 U 규칙 (SPEC 5.4) */
@@ -100,8 +114,8 @@ export interface Coefficients {
   intervalClamp: { min: number; max: number };
   /** U: 학습 보정 규칙 (5.4) */
   learning: LearningRules;
-  /** 계절 시작일. 각 계절은 다음 계절 시작 전날에 끝난다 (5.2 계절 경계) */
-  seasonBounds: Record<Season, MonthDay>;
+  /** 계절 시작일 (5.2 계절 경계) */
+  seasonBounds: SeasonBounds;
 }
 
 /** 엔진이 식물에서 읽는 값 (plants 테이블의 부분집합) */

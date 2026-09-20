@@ -1,7 +1,16 @@
 import { assert, describe, expect, it } from 'vitest';
 
-import { applyFeedback, applyRepot, computeInterval, DEFAULT_COEFFICIENTS } from './index';
+import {
+  applyFeedback,
+  applyRepot,
+  computeInterval,
+  DEFAULT_COEFFICIENTS,
+  getSeason,
+  halfIntervalDays,
+  nextWaterDate,
+} from './index';
 import type {
+  CalendarDate,
   Coefficients,
   ComputedInterval,
   EnginePlant,
@@ -471,5 +480,63 @@ describe('applyRepot: SPEC.md 5.5 분갈이', () => {
     // 8 × 1.0 × 1.3 × 1.0 × 1.0 × 1.0 × 1.0 = 10.4 → 10일
     const repotted = applyRepot(learned, { potSize: 'l' }, C);
     expect(computeInterval(repotted, brightWindow, 'spring', C).days).toBe(10);
+  });
+});
+
+describe('nextWaterDate: 다음 물주기 = 마지막 물 준 날 + round(I)', () => {
+  const date = (year: number, month: number, day: number): CalendarDate => ({ year, month, day });
+
+  it('시나리오 A: 9월 20일에 물을 준 몬스테라(7일)는 9월 27일', () => {
+    const { days } = computeInterval(monstera, brightWindow, 'autumn', C);
+
+    expect(nextWaterDate(date(2026, 9, 20), days)).toEqual(date(2026, 9, 27));
+  });
+
+  it('달과 해를 넘긴다', () => {
+    expect(nextWaterDate(date(2026, 12, 28), 15)).toEqual(date(2027, 1, 12));
+  });
+
+  it('"내일로" 미룬 횟수만큼 뒤로 간다 (SPEC 5.5). 재계산해도 미룬 날이 사라지지 않는다', () => {
+    expect(nextWaterDate(date(2026, 9, 20), 7, 0)).toEqual(date(2026, 9, 27));
+    expect(nextWaterDate(date(2026, 9, 20), 7, 1)).toEqual(date(2026, 9, 28));
+    expect(nextWaterDate(date(2026, 9, 20), 7, 3)).toEqual(date(2026, 9, 30));
+  });
+
+  it('계절이 바뀌면 마지막 물 준 날 기준으로 다시 계산돼 남은 일수가 달라진다 (SPEC 5.2)', () => {
+    const lastWatered = date(2026, 11, 10);
+    const planOn = (today: CalendarDate) => {
+      const season = getSeason(today, C.seasonBounds);
+      const { days } = computeInterval(monstera, northWindow, season, C);
+      return { season, next: nextWaterDate(lastWatered, days) };
+    };
+
+    // 가을 9일 → 11월 19일, 11월 16일 0시에 겨울 15일 → 11월 25일
+    expect(planOn(date(2026, 11, 15))).toEqual({ season: 'autumn', next: date(2026, 11, 19) });
+    expect(planOn(date(2026, 11, 16))).toEqual({ season: 'winter', next: date(2026, 11, 25) });
+  });
+});
+
+describe('halfIntervalDays: 마지막 물 준 날을 모르면 첫 알림은 I/2일 뒤 (SPEC 5.5)', () => {
+  it('9.1일 주기 → 4.55 → 5일', () => {
+    expect(halfIntervalDays(computeInterval(monstera, northWindow, 'autumn', C))).toBe(5);
+  });
+
+  it('자른 뒤의 주기를 반으로 나눈다: 89.6일 → 60일 → 30일', () => {
+    const bigSucculent: EnginePlant = { ...SPEC_CASES[2].plant, potSize: 'xl' };
+    const dim: EngineSpace = { lightGrade: 'very_low', spaceType: 'indoor_far' };
+
+    expect(halfIntervalDays(computeInterval(bigSucculent, dim, 'winter', C))).toBe(30);
+  });
+
+  it('1일 주기여도 최소 1일 뒤다', () => {
+    expect(halfIntervalDays(computeInterval(SPEC_CASES[3].plant, terrace, 'heat', C))).toBe(1);
+  });
+
+  it('수경 7일 → 3.5 → 4일, 수동 고정 10일 → 5일', () => {
+    const hydro = computeInterval({ ...monstera, soilType: 'hydro' }, northWindow, 'autumn', C);
+    const manual = computeInterval({ ...monstera, manualInterval: 10 }, northWindow, 'autumn', C);
+
+    expect(halfIntervalDays(hydro)).toBe(4);
+    expect(halfIntervalDays(manual)).toBe(5);
   });
 });
