@@ -16,6 +16,7 @@ import type {
 export * from './calendar';
 export { DEFAULT_COEFFICIENTS } from './defaults';
 export * from './season';
+export * from './soil';
 export * from './types';
 
 /** 다음 물주기는 아무리 짧아도 하루 뒤다 */
