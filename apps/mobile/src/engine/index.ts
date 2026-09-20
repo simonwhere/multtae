@@ -104,6 +104,11 @@ export function nextWaterDate(
   return addDays(lastWatered, days + postponeCount);
 }
 
+/** "내일로" 로 한 번 더 미룰 수 있는가. 최대 횟수를 채우면 그대로 두어 밀림이 되게 한다 (5.5) */
+export function canPostpone(postponeCount: number, coefficients: Coefficients): boolean {
+  return postponeCount < coefficients.maxPostpones;
+}
+
 /** 마지막 물 준 날을 모를 때 첫 알림까지의 일수: I/2 (5.5) */
 export function halfIntervalDays(result: IntervalResult): number {
   return toDays(result.interval / 2);

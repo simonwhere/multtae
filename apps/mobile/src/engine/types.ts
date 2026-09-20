@@ -118,6 +118,8 @@ export interface Coefficients {
   intervalClamp: { min: number; max: number };
   /** U: 학습 보정 규칙 (5.4) */
   learning: LearningRules;
+  /** "내일로" 미루기를 연속으로 할 수 있는 횟수. 넘으면 밀림으로 둔다 (5.5) */
+  maxPostpones: number;
   /** 계절 시작일 (5.2 계절 경계) */
   seasonBounds: SeasonBounds;
 }

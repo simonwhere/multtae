@@ -48,6 +48,9 @@ export const DEFAULT_COEFFICIENTS: Coefficients = {
     streakNotice: 3,
   },
 
+  // 5.5 "내일로" 미루기: 최대 3회 연속
+  maxPostpones: 3,
+
   // 5.2 계절 경계 (시작일). 겨울은 봄 시작 전날(2월 28일, 윤년 29일)에 끝난다
   seasonBounds: {
     spring: { month: 3, day: 1 },

@@ -28,6 +28,8 @@ export interface SoilGaugeProps {
   moisture: number;
   /** band: 가로로 긴 흙 단면 띠, pot: 분재용 얕은 화분 단면 */
   variant?: 'band' | 'pot';
+  /** 처음 나타날 때 이 값에서 moisture 까지 번지며 찬다. 방금 물을 준 카드에 0 을 준다 */
+  fillFrom?: number;
   /** 스크린리더 문구. 없으면 상태별 기본 문구 */
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
@@ -42,6 +44,7 @@ export function SoilGauge({
   status,
   moisture,
   variant = 'band',
+  fillFrom,
   accessibilityLabel,
   style,
 }: SoilGaugeProps) {
@@ -50,7 +53,7 @@ export function SoilGauge({
   const height = HEIGHT[variant];
   const wet = status === 'moist' ? Math.min(Math.max(moisture, 0), 1) : 0;
 
-  const level = useSharedValue(wet);
+  const level = useSharedValue(fillFrom ?? wet);
   useEffect(() => {
     level.set(withTiming(wet, { duration: motion.soilGauge, easing: Easing.out(Easing.cubic) }));
   }, [level, wet]);

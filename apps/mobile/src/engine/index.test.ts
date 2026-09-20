@@ -3,6 +3,7 @@ import { assert, describe, expect, it } from 'vitest';
 import {
   applyFeedback,
   applyRepot,
+  canPostpone,
   computeInterval,
   DEFAULT_COEFFICIENTS,
   getSeason,
@@ -538,5 +539,23 @@ describe('halfIntervalDays: 마지막 물 준 날을 모르면 첫 알림은 I/2
 
     expect(halfIntervalDays(hydro)).toBe(4);
     expect(halfIntervalDays(manual)).toBe(5);
+  });
+});
+
+describe('canPostpone: "내일로" 미루기는 최대 3회 연속 (SPEC.md 5.5)', () => {
+  it('기본 계수는 3회다', () => {
+    expect(C.maxPostpones).toBe(3);
+  });
+
+  it('3회 미만이면 미룰 수 있고, 3회를 채우면 더 미룰 수 없다', () => {
+    expect(canPostpone(0, C)).toBe(true);
+    expect(canPostpone(2, C)).toBe(true);
+    expect(canPostpone(3, C)).toBe(false);
+    expect(canPostpone(4, C)).toBe(false);
+  });
+
+  it('횟수는 인자로 받은 계수에서 읽는다', () => {
+    expect(canPostpone(1, { ...C, maxPostpones: 1 })).toBe(false);
+    expect(canPostpone(3, { ...C, maxPostpones: 5 })).toBe(true);
   });
 });

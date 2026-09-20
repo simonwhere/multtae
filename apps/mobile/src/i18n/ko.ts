@@ -13,8 +13,43 @@ export const ko = {
     save: '저장',
     edit: '수정',
   },
+  tabs: {
+    today: '오늘',
+    spaces: '공간',
+    plants: '식물',
+    records: '기록',
+    add: '등록',
+  },
+  /** 오늘 탭 상단 배지. 키는 Season (SPEC 3.2) */
+  seasonMode: {
+    spring: '봄',
+    monsoon: '장마',
+    heat: '폭염',
+    autumn: '가을',
+    winter: '겨울·난방',
+  },
+  seasonInfo: {
+    title: (mode: string) => `지금은 ${mode} 모드예요`,
+    spring: '기본 주기 그대로 물을 줘요.',
+    monsoon: '습해서 흙이 천천히 말라요. 주기를 늘렸으니 흙이 마른 걸 확인하고 주세요. 받침 물은 바로 버려 주세요.',
+    heat: '흙이 빨리 말라 주기를 줄였어요. 다육과 선인장은 쉬는 때라 오히려 늘렸어요.',
+    autumn: '기본 주기 그대로 물을 줘요.',
+    winter: '자라는 속도가 느려져 주기를 늘렸어요. 난방으로 공기가 건조하니 잎 끝이 마르면 분무해 주세요.',
+    next: (mode: string, date: string) => `${date}부터 ${mode} 모드로 바뀌어요.`,
+    open: '계절 모드 설명 보기',
+  },
   today: {
     title: '오늘',
+    monthUnit: '월',
+    dayUnit: '일',
+    overdue: '밀림',
+    due: '오늘 물 줄 식물',
+    upcoming: '다가옴',
+    done: '오늘 물 줬어요',
+    doneBadge: '완료',
+    allClear: '오늘은 물 줄 식물이 없어요',
+    nextWater: (date: string) => `다음 물주기 ${date}`,
+    postponeLimit: '세 번 미뤘어요. 오늘은 흙을 확인해 주세요.',
     empty: '첫 공간을 등록해보세요',
     registerSpace: '공간 등록',
     addSpace: '공간 추가',
@@ -28,6 +63,52 @@ export const ko = {
   action: {
     watered: '물 줬어요',
     postpone: '내일로',
+    done: '완료',
+  },
+  wateredSheet: {
+    title: (nickname: string) => `${nickname}에 물을 줬어요`,
+    soilQuestion: '주기 전 흙은 어땠나요',
+    soilGuide: '고르지 않아도 돼요. 고르면 이 식물의 주기를 맞춰 가요.',
+    /** 키는 SoilState */
+    soilState: {
+      dry: '바싹 말랐어요',
+      ok: '적당했어요',
+      wet: '아직 축축했어요',
+    },
+    soilStateHint: {
+      dry: '다음부터 조금 더 자주 알려 드려요',
+      ok: '지금 주기를 그대로 둬요',
+      wet: '다음부터 조금 더 천천히 알려 드려요',
+    },
+    leafDroop: '잎이 처졌어요',
+    hydroTitle: (nickname: string) => `${nickname}의 물을 갈았어요`,
+    waterCloudy: '물이 탁했어요',
+    failed: '기록하지 못했어요. 다시 시도해 주세요.',
+  },
+  registerSheet: {
+    title: '무엇을 등록할까요',
+    needSpace: '식물을 두려면 먼저 공간을 등록해 주세요',
+  },
+  records: {
+    title: '기록',
+    empty: '아직 기록이 없어요. 물을 주면 여기에 남아요.',
+    watered: '물 줌',
+    /** 키는 LoggedSoilState */
+    soilState: {
+      dry: '바싹 말랐어요',
+      ok: '적당했어요',
+      wet: '아직 축축했어요',
+      skipped: '',
+    },
+  },
+  spacesTab: {
+    title: '공간',
+    empty: '아직 등록한 공간이 없어요',
+    plantCount: (count: number) => `식물 ${count}개`,
+  },
+  plantsTab: {
+    title: '식물',
+    empty: '아직 등록한 식물이 없어요',
   },
   /** 흙 게이지의 스크린리더 문구. 키는 SoilStatus */
   soilGauge: {

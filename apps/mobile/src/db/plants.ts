@@ -18,6 +18,25 @@ export async function listPlantsWithSpace(db: Database): Promise<PlantWithSpace[
     .orderBy(asc(plants.nextWaterAt), asc(plants.createdAt), asc(plants.id));
 }
 
+export async function getPlantWithSpace(
+  db: Database,
+  plantId: string,
+): Promise<PlantWithSpace | null> {
+  const rows = await db
+    .select({ plant: plants, space: spaces })
+    .from(plants)
+    .innerJoin(spaces, eq(plants.spaceId, spaces.id))
+    .where(eq(plants.id, plantId));
+  return rows[0] ?? null;
+}
+
+/** 식물에서 고칠 수 있는 값. id 와 등록 시각은 바꾸지 않는다 */
+export type PlantPatch = Partial<Omit<Plant, 'id' | 'createdAt'>>;
+
+export async function updatePlant(db: Database, plantId: string, patch: PlantPatch): Promise<void> {
+  await db.update(plants).set(patch).where(eq(plants.id, plantId));
+}
+
 export async function countPlants(db: Database): Promise<number> {
   const rows = await db.select({ total: count() }).from(plants);
   return rows[0].total;

@@ -28,7 +28,7 @@ import type {
 import { ko } from '../i18n/ko';
 import { uniqueName } from '../lib/unique-name';
 import { isBoolean, isNullOr, isOneOf, isString, parseJsonObject } from '../lib/validate';
-import { findSeedSpecies } from '../species/seed';
+import { findSeedSpecies, speciesBaseInterval } from '../species/seed';
 
 export const PLANT_STEPS = ['photo', 'species', 'pot', 'soil', 'space', 'bonsai', 'finish'] as const;
 export type PlantStep = (typeof PLANT_STEPS)[number];
@@ -136,9 +136,10 @@ export function resolveGroupCode(draft: PlantDraft): GroupCode | null {
  * 일반 종을 분재로(또는 분재 수종을 일반 화분으로) 키우면 종별 값의 전제가 달라지므로 쓰지 않는다.
  */
 export function resolveBaseInterval(draft: PlantDraft): number | null {
-  const seed = seedOf(draft);
-  if (!seed || draft.isBonsai !== (seed.bonsaiGroup !== null)) return null;
-  return seed.baseInterval;
+  return speciesBaseInterval(
+    draft.species?.kind === 'seed' ? draft.species.scientificName : null,
+    draft.isBonsai,
+  );
 }
 
 /** 저장될 별명: 고쳤으면 그 별명, 아니면 국명(종을 모르면 식물군 이름). 같은 별명이 있으면 번호를 붙인다 */
