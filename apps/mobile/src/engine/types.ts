@@ -44,6 +44,10 @@ export type MultiplierSoilType = Exclude<SoilType, 'hydro'>;
 export const SOIL_STATES = ['dry', 'ok', 'wet'] as const;
 export type SoilState = (typeof SOIL_STATES)[number];
 
+/** 기록되는 흙 상태. 입력을 건너뛰면 skipped 이고 학습에서는 ok 와 같이 U 를 유지한다 (SPEC 3.2) */
+export const LOGGED_SOIL_STATES = [...SOIL_STATES, 'skipped'] as const;
+export type LoggedSoilState = (typeof LOGGED_SOIL_STATES)[number];
+
 /** 이 앱 버전이 이해하는 계수 스키마 버전 (SPEC 15장 버전 항목) */
 export const COEFFICIENTS_SCHEMA_VERSION = 1;
 
@@ -137,7 +141,9 @@ export interface IntervalFactors {
   learn: number;
 }
 
-export interface IntervalResult {
+/** 계수 곱으로 계산한 주기 */
+export interface ComputedInterval {
+  mode: 'computed';
   factors: IntervalFactors;
   /** 자르기 전 곱셈 결과 (일) */
   raw: number;
@@ -145,4 +151,22 @@ export interface IntervalResult {
   interval: number;
   /** round(interval), 0.5 이상 올림. 다음 물주기 = 마지막 물 준 날 + days */
   days: number;
+  /** raw 가 하한보다 작아 잘렸다. 분재가 아니면 "매일 흙 확인" 문구를 띄운다 (SPEC 5.5) */
+  belowMin: boolean;
 }
+
+/**
+ * 계수를 무시하는 고정 주기 (SPEC 5.5).
+ * manual: 사용자가 고정한 일수, hydro: 수경 물 교체 주기. 둘 다 해당하면 manual 이 우선한다.
+ * 사용자의 명시적 선택이므로 상한으로 자르지 않는다.
+ */
+export interface FixedInterval {
+  mode: 'manual' | 'hydro';
+  /** 고정 일수 그대로 */
+  interval: number;
+  /** round(interval), 0.5 이상 올림, 최소 1일 */
+  days: number;
+}
+
+export type IntervalResult = ComputedInterval | FixedInterval;
+export type IntervalMode = IntervalResult['mode'];

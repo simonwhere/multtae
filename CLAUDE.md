@@ -38,7 +38,7 @@ I = clamp(B × S[g][season] × P × L × T × M × U, 1, 60)
 | 태스크 | 상태 | 메모 |
 | --- | --- | --- |
 | 1-1 | 완료 | 2026-09-20. Expo SDK 57(RN 0.86)·pnpm 12·drizzle·vitest. 화면은 apps/mobile/app, 별칭 @/ 는 src/. 시뮬레이터는 Expo Go로 확인. 5.6 테스트 6개는 1-2 구현 전까지 실패가 정상 |
-| 1-2 | 대기 | |
+| 1-2 | 완료 | 2026-09-20. computeInterval(mode: computed·hydro·manual, belowMin)·applyFeedback·applyRepot, 테스트 50개·커버리지 100%. 우선순위는 수동 고정 > 수경 > 계산, 고정 주기는 60일 상한 미적용. 반올림은 float 오차 보정(1e-9) 포함. 미루기·마지막 물 준 날 모름·다음 날짜 계산은 날짜 로직이라 1-3 이후로 남김 |
 | 1-3 | 대기 | |
 | 1-4 | 대기 | |
 | 1-5 | 대기 | |

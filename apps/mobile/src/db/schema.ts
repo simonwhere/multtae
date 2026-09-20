@@ -9,8 +9,8 @@ import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core
 import {
   GROUP_CODES,
   LIGHT_GRADES,
+  LOGGED_SOIL_STATES,
   POT_SIZES,
-  SOIL_STATES,
   SOIL_TYPES,
   SPACE_TYPES,
 } from '../engine/types';
@@ -24,10 +24,6 @@ export type LightSource = (typeof LIGHT_SOURCES)[number];
 
 export const BONSAI_GROUPS = ['conifer', 'deciduous', 'flowering'] as const;
 export type BonsaiGroup = (typeof BONSAI_GROUPS)[number];
-
-/** 기록용 흙 상태. 건너뛴 입력(skipped)까지 포함한다 */
-export const LOGGED_SOIL_STATES = [...SOIL_STATES, 'skipped'] as const;
-export type LoggedSoilState = (typeof LOGGED_SOIL_STATES)[number];
 
 export const WATERING_SOURCES = ['user', 'rain', 'skipped'] as const;
 export type WateringSource = (typeof WATERING_SOURCES)[number];
