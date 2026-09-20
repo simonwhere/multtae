@@ -30,6 +30,10 @@ export type PotSize = (typeof POT_SIZES)[number];
 export const LIGHT_GRADES = ['high', 'medium', 'low', 'very_low'] as const;
 export type LightGrade = (typeof LIGHT_GRADES)[number];
 
+/** 창이 향한 방향 (SPEC 4.1). unknown 은 "모름" */
+export const DIRECTIONS = ['S', 'E', 'W', 'N', 'unknown'] as const;
+export type Direction = (typeof DIRECTIONS)[number];
+
 /** 공간 유형 (SPEC 5.3 T) */
 export const SPACE_TYPES = ['indoor_window', 'indoor_far', 'balcony_ext', 'terrace'] as const;
 export type SpaceType = (typeof SPACE_TYPES)[number];

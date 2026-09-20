@@ -15,5 +15,12 @@ export interface AppTextProps extends TextProps {
 export function AppText({ variant = 'body', color, style, ...rest }: AppTextProps) {
   const colors = useColors();
 
-  return <Text {...rest} style={[typography[variant], { color: color ?? colors.ink }, style]} />;
+  return (
+    <Text
+      // 한글이 단어 중간에서 줄바꿈되지 않게 한다 (iOS 기본은 글자 단위)
+      lineBreakStrategyIOS="hangul-word"
+      {...rest}
+      style={[typography[variant], { color: color ?? colors.ink }, style]}
+    />
+  );
 }

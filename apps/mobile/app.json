@@ -7,7 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "multtae",
     "userInterfaceStyle": "automatic",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "kr.multtae.app"
@@ -35,7 +38,15 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "식물과 공간 사진을 찍어 종류와 빛을 판단합니다",
+          "photosPermission": "앨범에서 고른 식물과 공간 사진으로 종류와 빛을 판단합니다",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

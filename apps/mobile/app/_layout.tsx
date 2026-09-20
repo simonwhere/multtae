@@ -43,8 +43,10 @@ export default function RootLayout() {
     <>
       <StatusBar style="auto" />
       <Stack
-        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper } }}
-      />
+        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper } }}>
+        {/* 등록 플로우는 어디서든 모달로 뜬다 (SPEC 3) */}
+        <Stack.Screen name="register/space" options={{ presentation: 'modal' }} />
+      </Stack>
     </>
   );
 }

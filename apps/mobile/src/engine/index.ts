@@ -15,6 +15,7 @@ import type {
 
 export * from './calendar';
 export { DEFAULT_COEFFICIENTS } from './defaults';
+export * from './light';
 export * from './season';
 export * from './soil';
 export * from './types';

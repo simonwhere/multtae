@@ -7,6 +7,7 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import {
+  DIRECTIONS,
   GROUP_CODES,
   LIGHT_GRADES,
   LOGGED_SOIL_STATES,
@@ -15,9 +16,6 @@ import {
   SPACE_TYPES,
 } from '../engine/types';
 import type { IntervalFactors } from '../engine/types';
-
-export const DIRECTIONS = ['S', 'E', 'W', 'N', 'unknown'] as const;
-export type Direction = (typeof DIRECTIONS)[number];
 
 export const LIGHT_SOURCES = ['ai', 'default', 'manual'] as const;
 export type LightSource = (typeof LIGHT_SOURCES)[number];
@@ -47,6 +45,8 @@ export const SETTING_KEYS = [
   'season_overrides',
   'onboarding_done',
   'device_id',
+  // 등록 플로우를 중간에 나갔을 때 이어서 하기 위한 초안 JSON (SPEC 4)
+  'draft_space',
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 

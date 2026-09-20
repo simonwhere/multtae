@@ -694,7 +694,7 @@ flowchart LR
 
 **photos**: id, plant_id, path, taken_at, width, height.
 
-**settings** (key-value): notify_time, bonsai_evening_time, bonsai_winter_time, dnd_start, dnd_end, region_code, heating_start, heating_end, season_overrides(JSON), onboarding_done, device_id(진단 한도용 랜덤 uuid).
+**settings** (key-value): notify_time, bonsai_evening_time, bonsai_winter_time, dnd_start, dnd_end, region_code, heating_start, heating_end, season_overrides(JSON), onboarding_done, device_id(진단 한도용 랜덤 uuid), draft_space(JSON, 공간 등록을 중간에 나갔을 때 이어서 하기 위한 초안).
 
 **species_cache**: 서버 `species` 행을 그대로 복사, `fetched_at` 추가. 30일 지나면 백그라운드 갱신.
 
