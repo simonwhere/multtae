@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+
+# vitest(vite)와 drizzle-kit이 쓰는 esbuild의 postinstall(플랫폼 바이너리 확인)만 허용한다.
+allowBuilds:
+  esbuild: true
