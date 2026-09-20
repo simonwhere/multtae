@@ -668,6 +668,7 @@ flowchart LR
 | learn_factor | real | U, 기본 1.0 |
 | manual_interval | real | 수동 고정 일수, null이면 자동 |
 | last_watered_at | integer | |
+| last_watered_unknown | integer | 0/1, 등록 시 마지막 물 준 날 "모름"이면 1. 1인 동안 다음 물주기는 I/2일 뒤, 처음 물을 주면 0 (5.5) |
 | next_water_at | integer | 계산 결과 캐시 |
 | last_repot_at | integer | |
 | postpone_count | integer | 연속 미룸 횟수 |

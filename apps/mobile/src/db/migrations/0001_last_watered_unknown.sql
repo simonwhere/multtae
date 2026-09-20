@@ -1,0 +1,1 @@
+ALTER TABLE `plants` ADD `last_watered_unknown` integer DEFAULT false NOT NULL;

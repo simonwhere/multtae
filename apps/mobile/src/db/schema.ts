@@ -85,6 +85,13 @@ export const plants = sqliteTable(
     /** 수동 고정 일수. null 이면 자동 */
     manualInterval: real('manual_interval'),
     lastWateredAt: integer('last_watered_at').notNull(),
+    /**
+     * 등록할 때 마지막 물 준 날을 몰라 last_watered_at 에 등록일을 넣어 둔 상태 (SPEC 5.5).
+     * 켜져 있는 동안 다음 물주기는 I/2일 뒤(halfIntervalDays)이고, 처음 물을 주면 끈다.
+     */
+    lastWateredUnknown: integer('last_watered_unknown', { mode: 'boolean' })
+      .notNull()
+      .default(false),
     /** 계산 결과 캐시 */
     nextWaterAt: integer('next_water_at'),
     lastRepotAt: integer('last_repot_at'),

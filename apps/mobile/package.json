@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@react-native/metro-config": "0.86.3",
+    "@types/node": "^26.6.2",
     "@types/react": "~19.2.2",
     "@vitest/coverage-v8": "^5.0.1",
     "babel-plugin-inline-import": "^3.0.0",
