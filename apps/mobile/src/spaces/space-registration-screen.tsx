@@ -1,13 +1,13 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { LIGHT_GRADES } from '@/engine/types';
 import type { Direction, SpaceType } from '@/engine/types';
 import { ko } from '@/i18n/ko';
-import { photoUri } from '@/photos/space-photo';
+import { photoUri } from '@/photos/photo-store';
+import type { PhotoProblem } from '@/photos/photo-store';
 import {
   AppText,
   Button,
@@ -15,7 +15,7 @@ import {
   ChoiceCard,
   LightGauge,
   Notice,
-  SoilGauge,
+  RegistrationShell,
   spacing,
   TextButton,
   TextField,
@@ -32,7 +32,6 @@ import {
 } from './registration';
 import type { SpaceDraft, SpaceDraftAction } from './registration';
 import { useSpaceRegistration } from './use-space-registration';
-import type { PhotoProblem } from './use-space-registration';
 
 type Dispatch = (action: SpaceDraftAction) => void;
 
@@ -207,8 +206,6 @@ function NameStep({
 export function SpaceRegistrationScreen() {
   const router = useRouter();
   const colors = useColors();
-  // 모달이 올라오는 동안 SafeAreaView 는 하단 여백을 0 으로 재는 때가 있어 루트의 값을 직접 쓴다.
-  const insets = useSafeAreaInsets();
   const registration = useSpaceRegistration();
   const { draft, dispatch } = registration;
 
@@ -231,89 +228,38 @@ export function SpaceRegistrationScreen() {
   }
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.paper }]}>
-      {/* iOS 모달 시트는 화면 위에서 상단 여백만큼 내려와 있다. 그만큼 더 밀어 올려야 버튼이 키보드에 안 가린다 */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-        style={styles.screen}>
-        {/* iOS 시트 안에서는 상단 여백이 0 이고, 전체 화면으로 뜨는 Android 에서는 상태 표시줄만큼 내려온다 */}
-        <SafeAreaView edges={['top']} style={styles.header}>
-          <TextButton label={ko.common.close} onPress={close} />
-          <SoilGauge
-            status="moist"
-            moisture={registration.atLimit ? 0 : progressOf(draft)}
-            accessibilityLabel={ko.spaceRegister.progress}
-          />
-        </SafeAreaView>
-
-        {registration.atLimit ? (
-          <View style={styles.content}>
-            <Notice message={ko.today.spaceLimit} />
-          </View>
-        ) : (
-          <>
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-              <AppText variant="titleLg" accessibilityRole="header">
-                {ko.spaceRegister[draft.step].title}
-              </AppText>
-              {draft.step === 'photo' ? (
-                <PhotoStep
-                  draft={draft}
-                  busy={registration.busy}
-                  problem={registration.photoProblem}
-                  onPick={(source) => void registration.pickPhoto(source)}
-                />
-              ) : null}
-              {draft.step === 'direction' ? <DirectionStep draft={draft} dispatch={dispatch} /> : null}
-              {draft.step === 'type' ? <TypeStep draft={draft} dispatch={dispatch} /> : null}
-              {draft.step === 'light' ? <LightStep draft={draft} dispatch={dispatch} /> : null}
-              {draft.step === 'name' ? (
-                <NameStep
-                  draft={draft}
-                  existingNames={registration.existingNames}
-                  dispatch={dispatch}
-                />
-              ) : null}
-              {registration.saveFailed ? <Notice message={ko.spaceRegister.saveFailed} /> : null}
-            </ScrollView>
-
-            <View
-              style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
-              {isFirst ? null : (
-                <Button
-                  label={ko.common.back}
-                  variant="secondary"
-                  onPress={() => dispatch({ type: 'back' })}
-                  style={styles.fill}
-                />
-              )}
-              <Button
-                label={isLast ? ko.common.save : ko.common.next}
-                disabled={!canAdvance(draft) || registration.busy}
-                onPress={() => void advance()}
-                style={styles.fill}
-              />
-            </View>
-          </>
-        )}
-      </KeyboardAvoidingView>
-    </View>
+    <RegistrationShell
+      progress={progressOf(draft)}
+      progressLabel={ko.spaceRegister.progress}
+      title={ko.spaceRegister[draft.step].title}
+      onClose={close}
+      onBack={isFirst ? undefined : () => dispatch({ type: 'back' })}
+      nextLabel={isLast ? ko.common.save : ko.common.next}
+      nextDisabled={!canAdvance(draft) || registration.busy}
+      onNext={() => void advance()}
+      blockedMessage={registration.atLimit ? ko.today.spaceLimit : undefined}
+      errorMessage={registration.saveFailed ? ko.spaceRegister.saveFailed : null}>
+      {draft.step === 'photo' ? (
+        <PhotoStep
+          draft={draft}
+          busy={registration.busy}
+          problem={registration.photoProblem}
+          onPick={(source) => void registration.pickPhoto(source)}
+        />
+      ) : null}
+      {draft.step === 'direction' ? <DirectionStep draft={draft} dispatch={dispatch} /> : null}
+      {draft.step === 'type' ? <TypeStep draft={draft} dispatch={dispatch} /> : null}
+      {draft.step === 'light' ? <LightStep draft={draft} dispatch={dispatch} /> : null}
+      {draft.step === 'name' ? (
+        <NameStep draft={draft} existingNames={registration.existingNames} dispatch={dispatch} />
+      ) : null}
+    </RegistrationShell>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-  },
-  header: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  content: {
-    gap: spacing.lg,
-    padding: spacing.lg,
   },
   stack: {
     gap: spacing.md,
@@ -334,11 +280,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
   },
 });

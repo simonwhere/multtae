@@ -20,6 +20,10 @@ export const ko = {
     addSpace: '공간 추가',
     spaces: '등록한 공간',
     spaceLimit: '공간은 20개까지 등록할 수 있어요',
+    registerPlant: '식물 등록',
+    plants: '등록한 식물',
+    noPlants: '이제 이 공간에 식물을 놓아 보세요',
+    plantLimit: '식물은 200개까지 등록할 수 있어요',
   },
   action: {
     watered: '물 줬어요',
@@ -79,6 +83,151 @@ export const ko = {
     medium: '밝지만 직사광은 2시간 안쪽인 자리예요',
     low: '창에서 조금 떨어졌거나 빛이 가려지는 자리예요',
     very_low: '창이 멀어 빛이 거의 닿지 않는 자리예요',
+  },
+  /** 키는 GroupCode. SPEC 5.1 의 식물군 이름 */
+  groupName: {
+    succulent: '다육·선인장',
+    tropical: '열대 관엽',
+    temperate: '온대 관엽·실내수목',
+    herb: '허브·초화·채소',
+    bonsai_conifer: '침엽 분재',
+    bonsai_deciduous: '잡목·화목 분재',
+  },
+  /** 종을 모를 때 식물군을 고르는 데 쓰는 예시 */
+  groupHint: {
+    tropical: '몬스테라, 고무나무, 스킨답서스',
+    temperate: '벤자민, 올리브, 아이비',
+    succulent: '에케베리아, 산세베리아, 선인장',
+    herb: '바질, 로즈마리, 제라늄, 상추',
+  },
+  /** 키는 PotSize */
+  potSize: {
+    s: '소',
+    m: '중',
+    l: '대',
+    xl: '특대',
+  },
+  potSizeHint: {
+    s: '지름 12cm 이하. 한 손에 쏙 들어와요',
+    m: '지름 13~20cm. 한 뼘 안쪽이에요',
+    l: '지름 21~30cm. 한 뼘을 넘어요',
+    xl: '지름 30cm 초과. 두 손으로 들어야 해요',
+  },
+  /** 계산식에 쓰는 이름 */
+  potSizeName: {
+    s: '소형',
+    m: '중형',
+    l: '대형',
+    xl: '특대형',
+  },
+  /** 키는 SoilType */
+  soilType: {
+    potting: '일반 배양토',
+    gritty: '마사 섞음',
+    akadama: '적옥토·분재용',
+    hydro: '수경',
+  },
+  soilTypeHint: {
+    potting: '화원에서 심어 준 그대로라면 대부분 이 흙이에요',
+    gritty: '굵은 모래가 섞여 물이 빨리 빠져요',
+    akadama: '알갱이 흙이라 아주 빨리 말라요',
+    hydro: '흙 없이 물에 담가 키워요',
+  },
+  soilTypeName: {
+    potting: '배양토',
+    gritty: '마사',
+    akadama: '적옥토',
+    hydro: '수경',
+  },
+  /** 계산식에 쓰는 계절 이름. 키는 Season */
+  seasonName: {
+    spring: '봄',
+    monsoon: '장마',
+    heat: '폭염',
+    autumn: '가을',
+    winter: '겨울',
+  },
+  /** 키는 BonsaiGroup */
+  bonsaiGroup: {
+    conifer: '침엽',
+    deciduous: '잡목',
+    flowering: '화목·실물',
+  },
+  bonsaiGroupHint: {
+    conifer: '소나무, 곰솔, 향나무, 주목',
+    deciduous: '단풍, 느티, 소사',
+    flowering: '명자, 철쭉, 모과',
+  },
+  formula: {
+    days: (days: string) => `${days}일`,
+    learn: '보정',
+    hydro: (days: number) => `수경이라 ${days}일마다 물을 갈아요`,
+    manual: (days: number) => `직접 정한 주기 ${days}일`,
+    monthDay: (month: number, day: number) => `${month}월 ${day}일`,
+    dDay: (days: number) => `D-${days}`,
+    overdue: (days: number) => `${days}일 밀림`,
+  },
+  plantRegister: {
+    progress: '식물 등록 진행',
+    photo: {
+      title: '식물 사진을 찍어 주세요',
+      guide: '잎이 잘 보이게 찍어주세요',
+      count: (count: number, max: number) => `${count}/${max}장. 첫 사진이 대표 사진이에요`,
+      camera: '사진 찍기',
+      library: '앨범에서 고르기',
+      remove: '사진 빼기',
+      preview: '고른 식물 사진',
+    },
+    species: {
+      title: '어떤 식물인가요',
+      search: '이름으로 찾기',
+      placeholder: '몬스테라, 고무나무',
+      noResult: '찾는 식물이 없어요. 모르겠어요를 눌러 종류만 골라도 돼요.',
+      unknown: '모르겠어요',
+      unknownHint: '종류만 골라도 물주기를 계산할 수 있어요',
+      chooseGroup: '가장 가까운 종류를 골라 주세요',
+    },
+    pot: {
+      title: '화분은 얼마나 큰가요',
+      guide: '화분 윗부분의 지름으로 골라 주세요',
+    },
+    soil: {
+      title: '어떤 흙에 심었나요',
+      hydroNote: (days: number) => `수경은 물주기 대신 ${days}일마다 물을 갈아 줘요`,
+    },
+    space: {
+      title: '어디에 두나요',
+      empty: '먼저 식물을 둘 공간을 등록해 주세요',
+    },
+    bonsai: {
+      title: '분재로 키우나요',
+      toggle: '분재예요',
+      guide: '분재는 물주기 대신 흙을 확인하라고 알려 드려요',
+      chooseGroup: '수종군을 골라 주세요',
+    },
+    finish: {
+      title: '첫 물주기를 확인해 주세요',
+      nickname: '별명',
+      lastWatered: '마지막으로 물 준 날',
+      today: '오늘',
+      yesterday: '어제',
+      daysAgo: (days: number) => `${days}일 전`,
+      earlier: '전날',
+      later: '다음 날',
+      unknown: '언제 줬는지 모르겠어요',
+      unknownShort: '모름',
+      nextWater: '다음 물주기',
+      unknownNote: (days: number) =>
+        `마지막 물 준 날을 몰라 첫 알림은 주기의 절반인 ${days}일 뒤에 드려요`,
+      belowMin: '매일 흙을 확인해 주세요',
+      overdueNote: '이미 물 줄 때가 지났어요. 등록하면 오늘 할 일에 나와요.',
+    },
+    photoProblem: {
+      denied: '카메라 권한이 꺼져 있어요. 설정에서 켜거나 앨범에서 골라 주세요.',
+      unavailable: '이 기기에서는 카메라를 쓸 수 없어요. 앨범에서 골라 주세요.',
+      failed: '사진을 저장하지 못했어요. 다시 시도해 주세요.',
+    },
+    saveFailed: '식물을 저장하지 못했어요. 다시 시도해 주세요.',
   },
   spaceRegister: {
     progress: '공간 등록 진행',

@@ -3,11 +3,18 @@ import { StyleSheet, View } from 'react-native';
 
 import type { Space } from '@/db/schema';
 import { ko } from '@/i18n/ko';
-import { photoUri } from '@/photos/space-photo';
+import { photoUri } from '@/photos/photo-store';
 import { AppText, Card, LightGauge, spacing, useColors } from '@/ui';
 
 /** 공간 카드 (SPEC 3.3): 사진, 이름, 방향, 유형, 빛 등급 */
-export function SpaceCard({ space }: { space: Space }) {
+export interface SpaceCardProps {
+  space: Space;
+  /** 식물을 둘 공간을 고를 때 쓴다 */
+  selected?: boolean;
+  onPress?: () => void;
+}
+
+export function SpaceCard({ space, selected, onPress }: SpaceCardProps) {
   const colors = useColors();
   const place =
     space.direction === 'unknown'
@@ -15,7 +22,7 @@ export function SpaceCard({ space }: { space: Space }) {
       : `${ko.directionName[space.direction]} ${ko.spaceType[space.spaceType]}`;
 
   return (
-    <Card style={styles.card}>
+    <Card accessibilityLabel={space.name} selected={selected} onPress={onPress} style={styles.card}>
       {space.photoPath ? (
         <Image
           accessibilityIgnoresInvertColors

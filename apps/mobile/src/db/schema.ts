@@ -47,6 +47,7 @@ export const SETTING_KEYS = [
   'device_id',
   // 등록 플로우를 중간에 나갔을 때 이어서 하기 위한 초안 JSON (SPEC 4)
   'draft_space',
+  'draft_plant',
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 

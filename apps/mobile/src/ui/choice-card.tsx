@@ -4,11 +4,16 @@ import Svg, { Path } from 'react-native-svg';
 
 import { AppText } from './app-text';
 import { radius, spacing } from './tokens';
+import type { TypographyToken } from './tokens';
 import { useColors } from './use-colors';
 
 export interface ChoiceCardProps {
   label: string;
   hint?: string;
+  /** 설명 글의 서체. 학명은 scientific */
+  hintVariant?: TypographyToken;
+  /** 글자 앞에 두는 작은 그림 */
+  leading?: React.ReactNode;
   selected: boolean;
   onPress: () => void;
   /** 글자를 가운데에 둔다 (방향처럼 짧은 선택지) */
@@ -17,7 +22,16 @@ export interface ChoiceCardProps {
 }
 
 /** 여럿 중 하나를 고르는 카드. 고른 것은 테두리 굵기와 체크 표시로도 구분한다 (SPEC 15) */
-export function ChoiceCard({ label, hint, selected, onPress, centered = false, style }: ChoiceCardProps) {
+export function ChoiceCard({
+  label,
+  hint,
+  hintVariant = 'formula',
+  leading,
+  selected,
+  onPress,
+  centered = false,
+  style,
+}: ChoiceCardProps) {
   const colors = useColors();
 
   return (
@@ -39,9 +53,10 @@ export function ChoiceCard({ label, hint, selected, onPress, centered = false, s
         pressed && styles.pressed,
         style,
       ]}>
+      {leading}
       <View style={centered ? undefined : styles.text}>
         <AppText variant={centered ? 'titleSm' : 'body'}>{label}</AppText>
-        {hint ? <AppText variant="formula">{hint}</AppText> : null}
+        {hint ? <AppText variant={hintVariant}>{hint}</AppText> : null}
       </View>
       {selected && !centered ? (
         <Svg width={20} height={20} viewBox="0 0 20 20">

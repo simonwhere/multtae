@@ -3,14 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 
 import { db } from '@/db/client';
 import { insertSpace, listSpaces } from '@/db/spaces';
-import { deletePhoto, photoExists, pickSpacePhoto } from '@/photos/space-photo';
-import type { PhotoSource } from '@/photos/space-photo';
+import { deletePhoto, photoExists, pickPhoto as pickAndStorePhoto } from '@/photos/photo-store';
+import type { PhotoProblem, PhotoSource } from '@/photos/photo-store';
 
 import { clearSpaceDraft, loadSpaceDraft, saveSpaceDraft } from './draft-store';
 import { createSpaceDraft, MAX_SPACES, reduceSpaceDraft, toNewSpace } from './registration';
 import type { SpaceDraft, SpaceDraftAction } from './registration';
-
-export type PhotoProblem = 'denied' | 'unavailable' | 'failed';
 
 /**
  * 공간 등록 화면의 상태. 바뀔 때마다 초안을 저장해 두므로 중간에 나가도 이어서 할 수 있다 (SPEC 4).
@@ -65,12 +63,12 @@ export function useSpaceRegistration() {
 
     setBusy(true);
     setPhotoProblem(null);
-    const result = await pickSpacePhoto(source, latest.current.id);
+    const result = await pickAndStorePhoto(source, 'spaces', latest.current.id);
     setBusy(false);
 
     if (result.status === 'picked') {
       const previous = latest.current.photoPath;
-      dispatch({ type: 'photoPicked', photoPath: result.photoPath });
+      dispatch({ type: 'photoPicked', photoPath: result.photo.path });
       if (previous) deletePhoto(previous);
     } else if (result.status !== 'canceled') {
       setPhotoProblem(result.status);

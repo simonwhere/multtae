@@ -7,6 +7,8 @@ import { defaultLightGrade } from '../engine/light';
 import { DIRECTIONS, LIGHT_GRADES, SPACE_TYPES } from '../engine/types';
 import type { Direction, LightGrade, SpaceType } from '../engine/types';
 import { ko } from '../i18n/ko';
+import { uniqueName } from '../lib/unique-name';
+import { isNullOr, isOneOf, isString, parseJsonObject } from '../lib/validate';
 
 export const SPACE_STEPS = ['photo', 'direction', 'type', 'light', 'name'] as const;
 export type SpaceStep = (typeof SPACE_STEPS)[number];
@@ -135,11 +137,7 @@ export function suggestSpaceName(
   const typeName = ko.spaceTypeName[spaceType];
   const base = direction === 'unknown' ? typeName : `${ko.directionName[direction]} ${typeName}`;
 
-  let name = base;
-  for (let number = 2; existingNames.includes(name); number += 1) {
-    name = `${base} ${number}`;
-  }
-  return name;
+  return uniqueName(base, existingNames);
 }
 
 /** 저장될 이름: 사용자가 고쳤으면 그 이름, 아니면 자동 제안. 아직 정할 수 없으면 빈 문자열 */
@@ -171,30 +169,11 @@ export function toNewSpace(
   };
 }
 
-function isOneOf<T extends string>(values: readonly T[], value: unknown): value is T {
-  return typeof value === 'string' && (values as readonly string[]).includes(value);
-}
-
-function isNullOr<T>(value: unknown, check: (value: unknown) => value is T): value is T | null {
-  return value === null || check(value);
-}
-
-const isString = (value: unknown): value is string => typeof value === 'string';
-
 /** 저장해 둔 초안(JSON)을 되살린다. 없거나 깨졌으면 null 이고, 그러면 처음부터 시작한다 */
 export function parseSpaceDraft(json: string | null): SpaceDraft | null {
-  if (!json) return null;
-
-  let value: unknown;
-  try {
-    value = JSON.parse(json);
-  } catch {
-    return null;
-  }
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
-
-  const raw = value as Record<string, unknown>;
+  const raw = parseJsonObject(json);
   if (
+    !raw ||
     !isString(raw.id) ||
     raw.id === '' ||
     !isOneOf(SPACE_STEPS, raw.step) ||

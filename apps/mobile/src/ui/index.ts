@@ -4,6 +4,8 @@ export * from './card';
 export * from './choice-card';
 export * from './light-gauge';
 export * from './notice';
+export * from './pot-icon';
+export * from './registration-shell';
 export * from './soil-gauge';
 export * from './text-button';
 export * from './text-field';

@@ -46,6 +46,7 @@ export default function RootLayout() {
         screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper } }}>
         {/* 등록 플로우는 어디서든 모달로 뜬다 (SPEC 3) */}
         <Stack.Screen name="register/space" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="register/plant" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );
