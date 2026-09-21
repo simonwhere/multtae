@@ -24,7 +24,7 @@ const MS_PER_MINUTE = 60_000;
 const MORNING_SLOT = 0;
 const EVENING_SLOT = 1;
 
-export type NotificationType = 'water' | 'overdue' | 'season' | 'bonsai';
+export type NotificationType = 'water' | 'overdue' | 'season' | 'bonsai' | 'task';
 /** 알림을 누르면 갈 곳 (12.1) */
 export type NotificationTarget = 'today';
 
@@ -58,8 +58,18 @@ export interface SeasonNotice {
   trend: 'longer' | 'shorter' | 'same';
 }
 
+/** 분재 작업 하나 (SPEC 6.2). 시작 월 1일 아침에 알린다 */
+export interface PlanTask {
+  nickname: string;
+  labelKo: string;
+  /** 1~12 */
+  monthStart: number;
+}
+
 export interface PlanInput {
   plants: readonly PlanPlant[];
+  /** 분재 작업. 없으면 빈 배열 */
+  tasks?: readonly PlanTask[];
   seasonChanges: readonly SeasonNotice[];
   /** 오늘의 계절. 전환일 뒤의 날짜는 seasonChanges 로 본다 */
   season: Season;
@@ -182,7 +192,7 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
     });
   }
 
-  return [...planned, ...planBonsai(input)].sort(byWhen);
+  return [...planned, ...planBonsai(input), ...planTasks(input)].sort(byWhen);
 }
 
 /** 이른 것부터. diffDays(from, to) 는 to 가 나중이면 양수라 순서를 뒤집어 쓴다 */
@@ -218,6 +228,44 @@ function planBonsai(input: PlanInput): PlannedNotification[] {
         target: 'today',
       });
     }
+  }
+
+  return planned;
+}
+
+/** 분재 작업 알림 (SPEC 6.2). 시작 월 1일 아침에 그달 작업을 한 번에 알린다 */
+function planTasks(input: PlanInput): PlannedNotification[] {
+  const tasks = input.tasks ?? [];
+  if (tasks.length === 0) return [];
+
+  const today = toCalendarDate(input.now, input.utcOffsetMinutes);
+  const planned: PlannedNotification[] = [];
+
+  for (let offset = 0; offset < SCHEDULE_DAYS; offset += 1) {
+    const day = addDays(today, offset);
+    if (day.day !== 1) continue;
+
+    const starting = tasks.filter((task) => task.monthStart === day.month);
+    if (starting.length === 0) continue;
+
+    const fire = shiftOutOfQuietHours(day, input.settings.notifyMinute, input.settings.quietHours);
+    const fireAt = startOfDay(fire.date, input.utcOffsetMinutes) + fire.minuteOfDay * MS_PER_MINUTE;
+    if (fireAt <= input.now) continue;
+
+    planned.push({
+      id: notificationId('task', day, MORNING_SLOT),
+      type: 'task',
+      date: fire.date,
+      minuteOfDay: fire.minuteOfDay,
+      title: ko.notifications.taskTitle,
+      body: ko.notifications.taskBody(
+        starting
+          .slice(0, MAX_NAMES)
+          .map((task) => `${task.nickname} ${task.labelKo}`)
+          .join(', '),
+      ),
+      target: 'today',
+    });
   }
 
   return planned;

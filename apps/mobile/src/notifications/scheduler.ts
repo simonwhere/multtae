@@ -6,6 +6,7 @@
  * 그러면 가장 가까운 알림이 빠진다. 대신 계획에 없는 id 만 지우고 나머지는 같은 id 로 덮어쓴다. 결과는 같다.
  */
 import { listPlantsWithSpace, updatePlant } from '../db/plants';
+import { listPlantTasks } from '../db/tasks';
 import { getSetting } from '../db/settings';
 import type { Database } from '../db/types';
 import { getSeasonAt, toCalendarDate } from '../engine';
@@ -71,9 +72,20 @@ export async function rescheduleAll(
     notifyTime: await getSetting(db, 'notify_time'),
     dndStart: await getSetting(db, 'dnd_start'),
     dndEnd: await getSetting(db, 'dnd_end'),
+    bonsaiEveningTime: await getSetting(db, 'bonsai_evening_time'),
+    bonsaiWinterTime: await getSetting(db, 'bonsai_winter_time'),
   });
+  // 분재 작업은 시작 월 1일에 알린다 (6.2). 분재가 없으면 읽지 않는다
+  const tasks: { nickname: string; labelKo: string; monthStart: number }[] = [];
+  for (const { plant } of items.filter((item) => item.plant.isBonsai)) {
+    for (const task of await listPlantTasks(db, plant.id)) {
+      tasks.push({ nickname: plant.nickname, labelKo: task.labelKo, monthStart: task.monthStart });
+    }
+  }
+
   const scheduled = planNotifications({
     ...forecast(items, clock),
+    tasks,
     now,
     utcOffsetMinutes,
     settings,

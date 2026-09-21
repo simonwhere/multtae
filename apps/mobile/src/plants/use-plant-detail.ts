@@ -5,7 +5,8 @@ import { getCareInfo } from '@/api/species';
 import { db } from '@/db/client';
 import { getPlantWithSpace } from '@/db/plants';
 import type { PlantWithSpace } from '@/db/plants';
-import type { SpeciesCacheRow, WateringLog } from '@/db/schema';
+import type { PlantTask, SpeciesCacheRow, WateringLog } from '@/db/schema';
+import { listPlantTasks } from '@/db/tasks';
 import { listPlantWaterings } from '@/db/watering';
 
 import { usePlantUi } from './ui-store';
@@ -18,6 +19,8 @@ export interface PlantDetail extends PlantWithSpace {
   waterings: WateringLog[];
   /** 종 DB 에서 받아 둔 정보. 관리 카드에 쓴다. 받은 적 없으면 null */
   care: SpeciesCacheRow | null;
+  /** 분재 작업 캘린더 (6.2). 분재가 아니면 빈 배열 */
+  tasks: PlantTask[];
   /** 읽은 시각. 화면의 모든 값이 같은 "오늘"을 보게 한다 */
   loadedAt: number;
 }
@@ -32,11 +35,12 @@ export function usePlantDetail(plantId: string): PlantDetail | 'missing' | null 
         setDetail('missing');
         return;
       }
-      const [waterings, care] = await Promise.all([
+      const [waterings, care, tasks] = await Promise.all([
         listPlantWaterings(db, plantId, WATERINGS_TO_LOAD),
         getCareInfo(db, item.plant.scientificName),
+        listPlantTasks(db, plantId),
       ]);
-      setDetail({ ...item, waterings, care, loadedAt: Date.now() });
+      setDetail({ ...item, waterings, care, tasks, loadedAt: Date.now() });
     });
   }, [plantId]);
 

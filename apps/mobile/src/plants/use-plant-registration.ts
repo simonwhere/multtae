@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { currentCoefficients } from '@/coefficients';
 import { db } from '@/db/client';
 import { insertPlant, listPlantsWithSpace } from '@/db/plants';
+import { getCachedSpecies } from '@/db/species-cache';
+import { insertPlantTasks } from '@/db/tasks';
 import type { Space } from '@/db/schema';
 import { listSpaces } from '@/db/spaces';
 import { getSeasonAt, toCalendarDate } from '@/engine';
@@ -13,6 +15,7 @@ import { deletePhoto, photoExists, pickPhoto as pickAndStorePhoto } from '@/phot
 import type { PhotoProblem, PhotoSource } from '@/photos/photo-store';
 
 import { clearPlantDraft, loadPlantDraft, savePlantDraft } from './draft-store';
+import { taskRowsFor } from './tasks';
 import {
   createPlantDraft,
   MAX_PLANT_PHOTOS,
@@ -140,6 +143,14 @@ export function usePlantRegistration() {
     setSaveFailed(false);
     try {
       await insertPlant(db, created.plant, created.photos);
+      // 분재면 종 DB 의 작업 캘린더를 이 식물의 것으로 복사한다 (SPEC 6.2)
+      const species = created.plant.scientificName
+        ? await getCachedSpecies(db, created.plant.scientificName)
+        : null;
+      await insertPlantTasks(
+        db,
+        taskRowsFor(created.plant.id, species?.bonsaiTasks, created.plant.isBonsai ?? false, randomUUID),
+      );
       await clearPlantDraft(db);
       rescheduleSoon();
       return true;

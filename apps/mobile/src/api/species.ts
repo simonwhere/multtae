@@ -68,13 +68,16 @@ export async function lookupSpecies(
   const known = toKnownSpecies(body?.species);
   if (!known) return null;
 
+  const row = body?.species as { care?: unknown; bonsai_tasks?: unknown } | null;
   await cacheSpecies(db, {
     scientificName: known.scientificName,
     nameKo: known.nameKo,
     groupCode: known.groupCode,
     baseInterval: known.baseInterval,
     bonsaiGroup: known.bonsaiGroup,
-    care: (body?.species as { care?: unknown } | null)?.care ?? null,
+    care: row?.care ?? null,
+    // 분재 작업 캘린더. 등록할 때 식물별로 복사한다 (SPEC 6.2)
+    bonsaiTasks: row?.bonsai_tasks ?? null,
     source: 'generated',
     reviewed: false,
     fetchedAt: Date.now(),

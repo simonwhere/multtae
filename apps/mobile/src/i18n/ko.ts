@@ -142,6 +142,13 @@ export const ko = {
     deleteBody: '물주기 기록과 사진도 함께 지워져요. 되돌릴 수 없어요.',
     deleteConfirm: '삭제',
     notFound: '식물을 찾을 수 없어요',
+    /** 분재 작업 캘린더 (6.2) */
+    tasks: '이번 달 할 일',
+    taskDone: '했어요',
+    taskUndo: '안 했어요로',
+    taskNext: (month: number, label: string) => `다음 작업은 ${month}월 ${label}이에요`,
+    taskMonths: (start: number, end: number) =>
+      start === end ? `${start}월` : `${start}~${end}월`,
     /** 관리 카드 (3.4). 종 DB 에서 받아 둔 것이 있을 때만 보여 준다 */
     care: '키우는 법',
     careLight: '빛',
@@ -210,6 +217,9 @@ export const ko = {
     /** 분재는 물을 주는 대신 흙을 확인한다 (SPEC 6.1) */
     bonsaiTitle: '흙 확인할 때',
     bonsaiBody: (names: string) => `${names} 흙이 말랐는지 봐 주세요`,
+    /** 분재 작업 알림 (SPEC 12.1). 시작 월 1일 아침 */
+    taskTitle: '이번 달 할 일',
+    taskBody: (names: string) => `${names} 할 때예요`,
     overdueTitle: '물주기가 밀렸어요',
     overdueOne: (name: string, days: number) => `${name} ${days}일 지났어요`,
     overdueMany: (names: string) => `${names} 물 줄 날이 지났어요`,

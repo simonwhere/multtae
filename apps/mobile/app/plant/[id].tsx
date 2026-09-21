@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { db } from '@/db/client';
+import { markTaskDone } from '@/db/tasks';
 import { deletePlant, updatePlant } from '@/db/plants';
 import { computeInterval, toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
@@ -16,6 +17,7 @@ import {
   planManualInterval,
 } from '@/plants/care';
 import { CareCard } from '@/plants/care-card';
+import { TaskCard } from '@/plants/task-card';
 import { DueTag } from '@/plants/due-tag';
 import { formatDottedDate, formatInterval, formatMonthDay } from '@/plants/format';
 import { classifyPlant, toEnginePlant } from '@/plants/today';
@@ -105,7 +107,7 @@ export default function PlantDetailScreen() {
     );
   }
 
-  const { plant, space, waterings, care } = detail;
+  const { plant, space, waterings, care, tasks } = detail;
   const t = ko.plantDetail;
   const context = nowContext(detail.loadedAt);
   const soil = classifyPlant(plant, context.now, context.utcOffsetMinutes);
@@ -115,6 +117,7 @@ export default function PlantDetailScreen() {
   const history = waterings.slice(0, HISTORY_COUNT);
   const dateOf = (epochMs: number) =>
     formatMonthDay(toCalendarDate(epochMs, context.utcOffsetMinutes));
+  const today = toCalendarDate(context.now, context.utcOffsetMinutes);
 
   const edit = (field: EditField) =>
     router.push({ pathname: '/sheet/plant-edit', params: { plantId: plant.id, field } });
@@ -237,6 +240,16 @@ export default function PlantDetailScreen() {
             <Button label={t.streak.action} variant="secondary" onPress={() => edit('interval')} />
           </Card>
         ) : null}
+
+        <TaskCard
+          tasks={tasks}
+          today={today}
+          onToggle={(task, done) => {
+            void markTaskDone(db, task.id, done ? today.year : null).then(() =>
+              usePlantUi.getState().bumpGarden(),
+            );
+          }}
+        />
 
         <CareCard species={care} />
 

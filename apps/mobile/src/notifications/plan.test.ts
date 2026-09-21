@@ -390,3 +390,47 @@ describe('분재 흙 확인 알림 (SPEC.md 6.1, 12.1)', () => {
     expect(planned[0]).toMatchObject({ type: 'overdue', body: '곰솔 4일 지났어요' });
   });
 });
+
+describe('분재 작업 알림 (SPEC.md 6.2, 12.1)', () => {
+  it('시작 월 1일 아침에 한 번 알린다', () => {
+    const planned = plan({
+      plants: [bonsai('곰솔', date(10, 20))],
+      tasks: [{ nickname: '곰솔', labelKo: '묵은 잎 뽑기', monthStart: 10 }],
+      now: at(9, 30, 7),
+    });
+    const task = planned.find((n) => n.type === 'task');
+
+    expect(task).toMatchObject({
+      id: 'task-20261001-0',
+      date: date(10, 1),
+      minuteOfDay: 480,
+      title: '이번 달 할 일',
+      body: '곰솔 묵은 잎 뽑기 할 때예요',
+    });
+  });
+
+  it('같은 날 작업이 여럿이면 묶는다', () => {
+    const planned = plan({
+      plants: [bonsai('곰솔', date(10, 20))],
+      tasks: [
+        { nickname: '곰솔', labelKo: '묵은 잎 뽑기', monthStart: 10 },
+        { nickname: '단풍', labelKo: '가지치기', monthStart: 10 },
+      ],
+      now: at(9, 30, 7),
+    });
+
+    expect(planned.find((n) => n.type === 'task')?.body).toBe(
+      '곰솔 묵은 잎 뽑기, 단풍 가지치기 할 때예요',
+    );
+  });
+
+  it('14일 안에 1일이 없으면 알리지 않는다', () => {
+    const planned = plan({
+      plants: [bonsai('곰솔', date(10, 20))],
+      tasks: [{ nickname: '곰솔', labelKo: '순따기', monthStart: 5 }],
+      now: at(9, 30, 7),
+    });
+
+    expect(planned.some((n) => n.type === 'task')).toBe(false);
+  });
+});
