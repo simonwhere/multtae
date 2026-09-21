@@ -710,7 +710,7 @@ flowchart LR
 | weather_cache | region_code, fetched_at, payload(jsonb) | Edge Function만 |
 | usage_counters | date, function_name, subject(진단 한도용 기기 식별값의 해시, 함수 전체 한도는 빈 문자열), count. 일일 한도 관리 | Edge Function만 |
 
-앱은 시작 시 `coefficients` 전체(20행 미만)를 받아 로컬에 저장하고, 서버 접속이 안 되면 마지막 값으로 동작한다. 앱 번들에도 기본값을 하드코딩해 첫 실행 오프라인을 지원한다. 행의 키와 jsonb 안쪽 이름은 snake_case(`base_interval`, `space_type`, `learning.soil_state` 등)이고, 앱은 받은 값을 전부 검사해서 빠지거나 이상한 값이 하나라도 있으면 통째로 버린다. 앱이 아는 것보다 높은 `version` 도 받지 않는다. 테이블 SQL 은 `supabase/migrations`, 첫 값은 번들 기본값에서 만든 `supabase/seed/coefficients.sql` 이다(`pnpm seed:coefficients`). 서버 주소와 anon 키는 `EXPO_PUBLIC_SUPABASE_URL`·`EXPO_PUBLIC_SUPABASE_ANON_KEY` 로 넣고, 비어 있으면 서버를 부르지 않는다.
+앱은 시작 시 `coefficients` 전체(20행 미만)를 받아 로컬에 저장하고, 서버 접속이 안 되면 마지막 값으로 동작한다. 앱 번들에도 기본값을 하드코딩해 첫 실행 오프라인을 지원한다. 행의 키와 jsonb 안쪽 이름은 snake_case(`base_interval`, `space_type`, `learning.soil_state` 등)이고, 앱은 받은 값을 전부 검사해서 빠지거나 이상한 값이 하나라도 있으면 통째로 버린다. 앱이 아는 것보다 높은 `version` 도 받지 않는다. 테이블 SQL 은 `supabase/migrations`, 첫 값은 번들 기본값에서 만든 `supabase/seed/coefficients.sql` 이다(`pnpm seed:coefficients`). 서버 주소와 공개 키는 `EXPO_PUBLIC_SUPABASE_URL`·`EXPO_PUBLIC_SUPABASE_KEY` 로 넣고, 비어 있으면 서버를 부르지 않는다. 키는 `apikey` 헤더로만 보낸다: Supabase 가 `anon` 키를 2026년 말까지 걷어내고 publishable 키(`sb_publishable_…`)로 바꾸는 중인데, 이 키는 JWT 가 아니라서 `Authorization: Bearer` 로는 인증되지 않는다. 예전 anon 키도 `apikey` 헤더로 똑같이 동작한다.
 
 ### 11.3 진단 한도용 기기 식별
 
@@ -793,7 +793,7 @@ flowchart LR
 | diagnose | POST json | anon key + device_id | 기기당 일 3회 |
 | weather | GET ?region= | anon key | 3시간 캐시 |
 
-앱 서명 헤더는 빌드 시 넣는 정적 시크릿 + 타임스탬프 HMAC이다. 완벽한 방어는 아니지만 무작위 호출을 막고, 남용이 보이면 서버에서 키를 교체한다.
+위 표의 "anon key"는 앱에 넣는 공개 키를 말한다(지금은 publishable 키, 11.2 참고). 앱 서명 헤더는 빌드 시 넣는 정적 시크릿 + 타임스탬프 HMAC이다. 완벽한 방어는 아니지만 무작위 호출을 막고, 남용이 보이면 서버에서 키를 교체한다.
 
 ### 13.3 무료 한도 방어
 
@@ -973,7 +973,7 @@ Figtree 에는 한글이 없어서 숫자와 라틴 글자에만 쓴다. 한글�
 - [ ] 이용약관 URL, AI 결과 면책 조항 포함
 - [ ] 지원 이메일·피드백 경로
 - [ ] 연령 등급 전체이용가
-- [ ] Sentry DSN, Supabase URL·anon key, 서명 시크릿을 EAS Secrets에 등록
+- [ ] Sentry DSN, Supabase URL·공개 키(publishable), 서명 시크릿을 EAS Secrets에 등록
 - [ ] 프로덕션 빌드에서 개발 로그·테스트 계수 제거 확인
 
 ### 17.2 앱스토어 (iOS)
