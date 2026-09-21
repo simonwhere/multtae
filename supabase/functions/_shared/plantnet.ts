@@ -17,10 +17,34 @@ export const MAX_CANDIDATES = 3;
 export interface Candidate {
   /** 명명자를 뗀 학명. 종 DB 의 키다 */
   scientificName: string;
-  /** PlantNet 이 준 국명·통용명 후보 */
+  /** PlantNet 이 준 통용명. PlantNet 은 한국어를 주지 못해 영어다 */
   commonNames: string[];
   /** 0~1 */
   score: number;
+  /** 종 DB 에서 찾은 국명. 없으면 없다 (SPEC 9.1 "국명이 없으면 종 DB 조회로 보충") */
+  nameKo?: string;
+}
+
+/** 종 DB 에서 찾은 국명을 후보에 붙인다 */
+export function withKoreanNames(
+  candidates: readonly Candidate[],
+  rows: unknown,
+): Candidate[] {
+  const byName = new Map<string, string>();
+  if (Array.isArray(rows)) {
+    for (const row of rows) {
+      if (typeof row !== 'object' || row === null) continue;
+      const entry = row as { scientific_name?: unknown; name_ko?: unknown };
+      if (typeof entry.scientific_name === 'string' && typeof entry.name_ko === 'string') {
+        byName.set(entry.scientific_name, entry.name_ko);
+      }
+    }
+  }
+
+  return candidates.map((candidate) => {
+    const nameKo = byName.get(candidate.scientificName);
+    return nameKo ? { ...candidate, nameKo } : candidate;
+  });
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>

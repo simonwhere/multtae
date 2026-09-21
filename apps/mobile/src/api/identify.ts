@@ -2,7 +2,7 @@
  * 사진으로 식물 종을 알아본다 (SPEC.md 9.1, 4.2).
  * 사진은 Edge Function 으로만 보내고 서버에 저장하지 않는다 (CLAUDE.md 절대 규칙).
  */
-import { photoUri } from '@/photos/photo-store';
+import { photoFile } from '@/photos/photo-store';
 
 import { callFunction, FunctionError } from './client';
 
@@ -14,6 +14,8 @@ export interface IdentifyCandidate {
   commonNames: string[];
   /** 0~1 */
   score: number;
+  /** 종 DB 에서 찾은 국명. 없으면 학명을 보여 준다 */
+  nameKo?: string;
 }
 
 export type IdentifyOutcome =
@@ -39,18 +41,14 @@ function isCandidate(value: unknown): value is IdentifyCandidate {
 export async function identifyPlant(photoPaths: readonly string[]): Promise<IdentifyOutcome> {
   if (photoPaths.length === 0) return { kind: 'candidates', candidates: [] };
 
-  const form = new FormData();
-  for (const [index, path] of photoPaths.entries()) {
-    // React Native 의 FormData 는 파일을 이 모양으로 받는다
-    form.append('images', {
-      uri: photoUri(path),
-      name: `plant-${index + 1}.jpg`,
-      type: 'image/jpeg',
-    } as unknown as Blob);
-    form.append('organs', DEFAULT_ORGAN);
-  }
-
   try {
+    // 사진을 읽는 것도 실패할 수 있다. 그래도 등록은 검색으로 이어진다
+    const form = new FormData();
+    for (const [index, path] of photoPaths.entries()) {
+      form.append('images', photoFile(path), `plant-${index + 1}.jpg`);
+      form.append('organs', DEFAULT_ORGAN);
+    }
+
     const body = await callFunction<{ candidates: unknown }>('identify', {
       method: 'POST',
       body: form,

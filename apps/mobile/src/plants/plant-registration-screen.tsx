@@ -159,7 +159,7 @@ function SpeciesStep({
             {state.candidates.map((candidate) => (
               <ChoiceCard
                 key={candidate.scientificName}
-                label={candidate.commonNames[0] ?? candidate.scientificName}
+                label={candidate.nameKo ?? candidate.commonNames[0] ?? candidate.scientificName}
                 hint={
                   choosing === candidate.scientificName
                     ? t.loadingSpecies
@@ -473,8 +473,12 @@ export function PlantRegistrationScreen() {
       return;
     }
 
-    // 사진을 다 고르고 넘어가는 참에 인식을 시작한다. 종 단계에 닿으면 결과가 나와 있다 (SPEC 4.2)
-    if (current.step === 'photo' && identify.state.status === 'idle') {
+    // 사진을 다 고르고 넘어가는 참에 인식을 시작한다. 종 단계에 닿으면 결과가 나와 있다 (SPEC 4.2).
+    // 실패했으면 사진을 바꿔 다시 올 수 있으니 또 해 본다. 이미 후보를 받았으면 그대로 쓴다
+    if (
+      current.step === 'photo' &&
+      (identify.state.status === 'idle' || identify.state.status === 'failed')
+    ) {
       void identify.identify(current.photos.map((photo) => photo.path));
     }
     dispatch({ type: 'next' });

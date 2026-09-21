@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAX_IMAGES, ORGANS, parseIdentifyResponse, pickCandidates } from './plantnet';
+import {
+  MAX_IMAGES,
+  ORGANS,
+  parseIdentifyResponse,
+  pickCandidates,
+  withKoreanNames,
+} from './plantnet';
 
 /** PlantNet v2 응답의 결과 한 건 */
 const result = (name: string, score: number, commonNames: string[] = []) => ({
@@ -92,5 +98,26 @@ describe('요청 규칙 (SPEC.md 9.1)', () => {
   it(`사진은 ${MAX_IMAGES}장까지, 부위는 네 가지다`, () => {
     expect(MAX_IMAGES).toBe(3);
     expect([...ORGANS]).toEqual(['leaf', 'flower', 'fruit', 'bark']);
+  });
+});
+
+describe('withKoreanNames: 국명은 종 DB 에서 채운다 (SPEC.md 9.1)', () => {
+  const candidates = [
+    { scientificName: 'Monstera deliciosa', commonNames: ['Swiss cheese plant'], score: 0.9 },
+    { scientificName: 'Aloe vera', commonNames: [], score: 0.1 },
+  ];
+
+  it('찾은 것만 국명을 붙인다. PlantNet 은 한국어를 주지 못한다', () => {
+    const named = withKoreanNames(candidates, [
+      { scientific_name: 'Monstera deliciosa', name_ko: '몬스테라' },
+    ]);
+
+    expect(named[0]).toMatchObject({ nameKo: '몬스테라' });
+    expect(named[1].nameKo).toBeUndefined();
+  });
+
+  it('종 DB 조회가 실패하거나 모양이 다르면 그대로 둔다', () => {
+    expect(withKoreanNames(candidates, null)).toEqual(candidates);
+    expect(withKoreanNames(candidates, [{ scientific_name: 1 }])).toEqual(candidates);
   });
 });

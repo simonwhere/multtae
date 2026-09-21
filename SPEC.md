@@ -459,9 +459,9 @@ AI 호출은 모두 Supabase Edge Function을 거치고, 앱은 API 키를 갖�
 
 | 항목 | 값 |
 | --- | --- |
-| 엔드포인트 | POST https://my-api.plantnet.org/v2/identify/all?api-key=… , project all, lang ko |
+| 엔드포인트 | POST https://my-api.plantnet.org/v2/identify/all?api-key=… , project all, lang en (PlantNet 은 한국어를 지원하지 않아 lang=ko 는 404 다) |
 | 요청 | multipart, images[] 최대 3장, organs[] (leaf/flower/fruit/bark), 클라이언트에서 1280px 리사이즈·JPEG 80% |
-| 응답 처리 | results 상위 3개 → `{scientificName, commonNames[], score}` 반환. 국명이 없으면 종 DB 조회로 보충 |
+| 응답 처리 | results 상위 3개 → `{scientificName, commonNames[], score, nameKo?}` 반환. 국명은 종 DB 를 한 번 조회해 붙인다. 점수 0.01 미만은 버린다 |
 | 한도 방어 | 서버에서 일일 카운터. 450회 도달 시 앱에 `limit` 반환 → 앱은 텍스트 검색 UI로 전환하고 "오늘은 인식이 많아 검색으로 도와드릴게요" 표시 |
 | 폴백 | PlantNet 장애 시 Claude 비전으로 인식 (하루 최대 100회, 그 이상은 검색) |
 

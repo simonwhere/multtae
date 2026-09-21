@@ -37,6 +37,15 @@ export function photoUri(photoPath: string): string {
   return new File(Paths.document, photoPath).uri;
 }
 
+/**
+ * 업로드용 사진 파일 (3-5 사진 인식).
+ * expo-file-system 의 File 은 Blob 이라 FormData 에 그대로 넣을 수 있다.
+ * React Native 의 FormData 는 {uri, name, type} 객체를 더 이상 받지 않는다.
+ */
+export function photoFile(photoPath: string): Blob {
+  return new File(Paths.document, photoPath) as unknown as Blob;
+}
+
 export function photoExists(photoPath: string): boolean {
   return new File(Paths.document, photoPath).exists;
 }
