@@ -9,6 +9,10 @@ const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
 
 /** 알림 시각 기본값 08:00 (SPEC 3.6) */
 export const DEFAULT_NOTIFY_MINUTE = 8 * MINUTES_PER_HOUR;
+/** 폭염 때 분재 흙을 한 번 더 보는 시각 (SPEC 3.6, 6.1) */
+export const DEFAULT_BONSAI_EVENING_MINUTE = 19 * MINUTES_PER_HOUR;
+/** 겨울 분재 알림 시각. 오전 중 기온이 올라야 화분 속 물이 얼지 않는다 (SPEC 6.3) */
+export const DEFAULT_BONSAI_WINTER_MINUTE = 11 * MINUTES_PER_HOUR;
 
 /** 방해금지 구간. 하루 중 몇 분째인지로 적고, 시작이 끝보다 늦으면 자정을 넘는 구간이다 */
 export interface QuietHours {
@@ -19,6 +23,10 @@ export interface QuietHours {
 export interface NotificationSettings {
   /** 알림 시각. 하루 중 몇 분째 */
   notifyMinute: number;
+  /** 폭염 때 분재를 한 번 더 보는 시각 */
+  bonsaiEveningMinute: number;
+  /** 겨울 분재 알림 시각 */
+  bonsaiWinterMinute: number;
   quietHours: QuietHours | null;
 }
 
@@ -38,12 +46,18 @@ export function parseNotificationSettings(raw: {
   notifyTime: string | null;
   dndStart: string | null;
   dndEnd: string | null;
+  bonsaiEveningTime?: string | null;
+  bonsaiWinterTime?: string | null;
 }): NotificationSettings {
   const start = parseTimeOfDay(raw.dndStart);
   const end = parseTimeOfDay(raw.dndEnd);
 
   return {
     notifyMinute: parseTimeOfDay(raw.notifyTime) ?? DEFAULT_NOTIFY_MINUTE,
+    bonsaiEveningMinute:
+      parseTimeOfDay(raw.bonsaiEveningTime ?? null) ?? DEFAULT_BONSAI_EVENING_MINUTE,
+    bonsaiWinterMinute:
+      parseTimeOfDay(raw.bonsaiWinterTime ?? null) ?? DEFAULT_BONSAI_WINTER_MINUTE,
     quietHours: start === null || end === null || start === end ? null : { start, end },
   };
 }

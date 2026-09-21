@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { CalendarDate } from '../engine';
 import { planNotifications, SCHEDULE_DAYS } from './plan';
 import type { PlanInput, PlanPlant } from './plan';
-import { DEFAULT_NOTIFY_MINUTE } from './settings';
+import {
+  DEFAULT_BONSAI_EVENING_MINUTE,
+  DEFAULT_BONSAI_WINTER_MINUTE,
+  DEFAULT_NOTIFY_MINUTE,
+} from './settings';
 
 const KST = 540;
 const date = (month: number, day: number): CalendarDate => ({ year: 2026, month, day });
@@ -18,15 +22,30 @@ const soil = (nickname: string, waterDate: CalendarDate): PlanPlant => ({
   nickname,
   waterDate,
   hydro: false,
+  bonsai: false,
+});
+
+/** 분재는 물을 주는 대신 흙을 확인한다 (SPEC 6.1) */
+const bonsai = (nickname: string, waterDate: CalendarDate): PlanPlant => ({
+  nickname,
+  waterDate,
+  hydro: false,
+  bonsai: true,
 });
 
 function plan(patch: Partial<PlanInput>) {
   return planNotifications({
     plants: [],
     seasonChanges: [],
+    season: 'autumn',
     now: NOW,
     utcOffsetMinutes: KST,
-    settings: { notifyMinute: DEFAULT_NOTIFY_MINUTE, quietHours: null },
+    settings: {
+      notifyMinute: DEFAULT_NOTIFY_MINUTE,
+      bonsaiEveningMinute: DEFAULT_BONSAI_EVENING_MINUTE,
+      bonsaiWinterMinute: DEFAULT_BONSAI_WINTER_MINUTE,
+      quietHours: null,
+    },
     ...patch,
   });
 }
@@ -242,7 +261,12 @@ describe('planNotifications: 하루 상한과 방해금지 (SPEC.md 12.2)', () =
   it('설정한 알림 시각을 쓴다', () => {
     const planned = plan({
       plants: [soil('몬스테라', date(9, 28))],
-      settings: { notifyMinute: 7 * 60 + 30, quietHours: null },
+      settings: {
+        notifyMinute: 7 * 60 + 30,
+        bonsaiEveningMinute: DEFAULT_BONSAI_EVENING_MINUTE,
+        bonsaiWinterMinute: DEFAULT_BONSAI_WINTER_MINUTE,
+        quietHours: null,
+      },
     });
 
     expect(planned[0].minuteOfDay).toBe(450);
@@ -251,7 +275,12 @@ describe('planNotifications: 하루 상한과 방해금지 (SPEC.md 12.2)', () =
   it('방해금지 구간에 걸리면 종료 시각으로 옮긴다', () => {
     const planned = plan({
       plants: [soil('몬스테라', date(9, 27))],
-      settings: { notifyMinute: 480, quietHours: { start: 22 * 60, end: 9 * 60 } },
+      settings: {
+        notifyMinute: 480,
+        bonsaiEveningMinute: DEFAULT_BONSAI_EVENING_MINUTE,
+        bonsaiWinterMinute: DEFAULT_BONSAI_WINTER_MINUTE,
+        quietHours: { start: 22 * 60, end: 9 * 60 },
+      },
       now: at(9, 27, 8, 30),
     });
 
@@ -266,7 +295,12 @@ describe('planNotifications: 하루 상한과 방해금지 (SPEC.md 12.2)', () =
   it('밤 알림이 방해금지로 다음 날 아침으로 넘어가도 예약한 날의 알림이다', () => {
     const planned = plan({
       plants: [soil('몬스테라', date(9, 27))],
-      settings: { notifyMinute: 23 * 60, quietHours: { start: 22 * 60, end: 7 * 60 } },
+      settings: {
+        notifyMinute: 23 * 60,
+        bonsaiEveningMinute: DEFAULT_BONSAI_EVENING_MINUTE,
+        bonsaiWinterMinute: DEFAULT_BONSAI_WINTER_MINUTE,
+        quietHours: { start: 22 * 60, end: 7 * 60 },
+      },
     });
 
     expect(planned[0]).toMatchObject({
@@ -287,5 +321,72 @@ describe('planNotifications: 시간대', () => {
     });
 
     expect(planned[0]).toMatchObject({ id: 'water-20260927-0', date: date(9, 27), minuteOfDay: 480 });
+  });
+});
+
+describe('분재 흙 확인 알림 (SPEC.md 6.1, 12.1)', () => {
+  it('분재는 물 주기 대신 흙을 확인하라고 한다. 일반 식물과 다른 알림이다', () => {
+    const planned = plan({ plants: [bonsai('곰솔', date(9, 27))] });
+
+    expect(planned[0]).toMatchObject({
+      id: 'bonsai-20260927-0',
+      type: 'bonsai',
+      minuteOfDay: 480,
+      title: '흙 확인할 때',
+      body: '곰솔 흙이 말랐는지 봐 주세요',
+      target: 'today',
+    });
+  });
+
+  it('같은 날 분재는 묶고, 일반 식물과는 따로 알린다 (하루 상한 12.2)', () => {
+    const planned = plan({
+      plants: [soil('몬스테라', date(9, 27)), bonsai('곰솔', date(9, 27)), bonsai('단풍', date(9, 27))],
+    });
+    const today = planned.filter((n) => n.date.day === 27);
+
+    expect(today).toHaveLength(2);
+    expect(today.map((n) => n.type)).toEqual(['water', 'bonsai']);
+    expect(today[1]?.body).toBe('곰솔, 단풍 2개 흙이 말랐는지 봐 주세요');
+  });
+
+  it('폭염에는 저녁 7시에 한 번 더 본다', () => {
+    const planned = plan({
+      plants: [bonsai('곰솔', date(8, 1))],
+      season: 'heat',
+      now: at(8, 1, 6),
+    });
+    const first = planned.filter((n) => n.date.day === 1);
+
+    expect(first.map((n) => n.id)).toEqual(['bonsai-20260801-0', 'bonsai-20260801-1']);
+    expect(first[0]?.minuteOfDay).toBe(480);
+    expect(first[1]?.minuteOfDay).toBe(19 * 60);
+  });
+
+  it('겨울에는 화분 속 물이 얼지 않게 11시로 미룬다 (6.3)', () => {
+    const planned = plan({
+      plants: [bonsai('곰솔', date(12, 1))],
+      season: 'winter',
+      now: at(12, 1, 6),
+    });
+
+    expect(planned[0]).toMatchObject({ id: 'bonsai-20261201-0', minuteOfDay: 11 * 60 });
+  });
+
+  it('계절이 바뀌면 그 뒤 날짜는 새 계절 규칙으로 짠다', () => {
+    const planned = plan({
+      plants: [bonsai('곰솔', date(11, 20))],
+      season: 'autumn',
+      seasonChanges: [{ season: 'winter', date: date(11, 16), trend: 'longer' }],
+      now: at(11, 14, 6),
+    });
+    const check = planned.find((n) => n.type === 'bonsai' && n.date.day === 20);
+
+    expect(check?.minuteOfDay).toBe(11 * 60);
+  });
+
+  it('분재가 밀리면 일반 식물처럼 밀림으로 알린다', () => {
+    const planned = plan({ plants: [bonsai('곰솔', date(9, 24))] });
+
+    expect(planned[0]).toMatchObject({ type: 'overdue', body: '곰솔 4일 지났어요' });
   });
 });

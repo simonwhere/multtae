@@ -46,18 +46,19 @@ function trendOf(
 export function forecast(
   items: readonly PlantWithSpace[],
   context: ForecastContext,
-): Pick<PlanInput, 'plants' | 'seasonChanges'> {
+): Pick<PlanInput, 'plants' | 'seasonChanges' | 'season'> {
   const { now, utcOffsetMinutes, coefficients } = context;
-  if (items.length === 0) return { plants: [], seasonChanges: [] };
-
   const bounds = coefficients.seasonBounds;
   const today = toCalendarDate(now, utcOffsetMinutes);
+  const todaySeason = getSeason(today, bounds);
+  if (items.length === 0) return { plants: [], seasonChanges: [], season: todaySeason };
+
   const lastDay = addDays(today, SCHEDULE_DAYS - 1);
 
   // 전환일은 달력 날짜 그대로 기기 시간대에서 쓴다 (12.2 시간대)
   const changes: (SeasonChange & { from: Season })[] = [];
   const yesterdaySeason = getSeason(addDays(today, -1), bounds);
-  let season = getSeason(today, bounds);
+  let season = todaySeason;
   // 오늘 바뀐 계절도 알린다. 그래야 오늘 8시 전에 앱을 열어도 그날 알림이 빠지지 않는다
   if (season !== yesterdaySeason) changes.push({ season, date: today, from: yesterdaySeason });
 
@@ -81,10 +82,16 @@ export function forecast(
         { today: change.date, season: change.season, coefficients, utcOffsetMinutes },
       );
     }
-    return { nickname: plant.nickname, waterDate, hydro: plant.soilType === 'hydro' };
+    return {
+      nickname: plant.nickname,
+      waterDate,
+      hydro: plant.soilType === 'hydro',
+      bonsai: plant.isBonsai,
+    };
   });
 
   return {
+    season: todaySeason,
     plants,
     seasonChanges: changes.map(({ season: to, date, from }) => ({
       season: to,

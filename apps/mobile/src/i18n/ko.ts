@@ -201,6 +201,9 @@ export const ko = {
     waterBody: (names: string) => `${names} 물 줄 때`,
     /** 수경은 물주기 대신 물 교체 (4.2) */
     hydroBody: (names: string) => `${names} 물 갈 때`,
+    /** 분재는 물을 주는 대신 흙을 확인한다 (SPEC 6.1) */
+    bonsaiTitle: '흙 확인할 때',
+    bonsaiBody: (names: string) => `${names} 흙이 말랐는지 봐 주세요`,
     overdueTitle: '물주기가 밀렸어요',
     overdueOne: (name: string, days: number) => `${name} ${days}일 지났어요`,
     overdueMany: (names: string) => `${names} 물 줄 날이 지났어요`,

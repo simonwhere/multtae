@@ -62,8 +62,9 @@ describe('forecast: 알림을 짜기 전에 식물별 물주기 날짜와 계절
     );
 
     expect(result).toEqual({
-      plants: [{ nickname: '몬스테라', waterDate: date(9, 27), hydro: false }],
+      plants: [{ nickname: '몬스테라', waterDate: date(9, 27), hydro: false, bonsai: false }],
       seasonChanges: [],
+      season: 'autumn',
     });
   });
 
@@ -78,9 +79,9 @@ describe('forecast: 알림을 짜기 전에 식물별 물주기 날짜와 계절
 
     expect(result.plants).toEqual([
       // 겨울 11일: 11월 10일 + 11일
-      { nickname: '몬스테라', waterDate: date(11, 21), hydro: false },
+      { nickname: '몬스테라', waterDate: date(11, 21), hydro: false, bonsai: false },
       // 전환 전에 예정된 식물은 그대로
-      { nickname: '벤자민', waterDate: date(11, 14), hydro: false },
+      { nickname: '벤자민', waterDate: date(11, 14), hydro: false, bonsai: false },
     ]);
     expect(result.seasonChanges).toEqual([{ season: 'winter', date: date(11, 16), trend: 'longer' }]);
   });
@@ -123,6 +124,26 @@ describe('forecast: 알림을 짜기 전에 식물별 물주기 날짜와 계절
   });
 
   it('식물이 없으면 계절 전환도 알리지 않는다', () => {
-    expect(forecast([], context(at(11, 10, 7)))).toEqual({ plants: [], seasonChanges: [] });
+    expect(forecast([], context(at(11, 10, 7)))).toEqual({
+      plants: [],
+      seasonChanges: [],
+      // 11월 10일은 아직 가을이다. 겨울은 11월 16일부터
+      season: 'autumn',
+    });
+  });
+});
+
+describe('forecast: 분재 (SPEC.md 6.1)', () => {
+  it('분재인지 알려 준다. 알림 문구와 시각이 달라진다', () => {
+    const pine = item({ nickname: '곰솔', isBonsai: true, bonsaiGroup: 'conifer' });
+
+    expect(forecast([pine], context(at(11, 12, 7))).plants[0]).toMatchObject({
+      nickname: '곰솔',
+      bonsai: true,
+    });
+  });
+
+  it('오늘의 계절도 알려 준다', () => {
+    expect(forecast([item({})], context(at(7, 30, 7))).season).toBe('heat');
   });
 });

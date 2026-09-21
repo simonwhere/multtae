@@ -31,7 +31,12 @@ describe('parseNotificationSettings (SPEC.md 3.6)', () => {
     const settings = parseNotificationSettings({ notifyTime: null, dndStart: null, dndEnd: null });
 
     expect(DEFAULT_NOTIFY_MINUTE).toBe(hm(8));
-    expect(settings).toEqual({ notifyMinute: hm(8), quietHours: null });
+    expect(settings).toMatchObject({
+      notifyMinute: hm(8),
+      bonsaiEveningMinute: hm(19),
+      bonsaiWinterMinute: hm(11),
+      quietHours: null,
+    });
   });
 
   it('알림 시각과 방해금지 구간을 읽는다', () => {
@@ -41,13 +46,16 @@ describe('parseNotificationSettings (SPEC.md 3.6)', () => {
       dndEnd: '07:00',
     });
 
-    expect(settings).toEqual({ notifyMinute: hm(7, 30), quietHours: { start: hm(22), end: hm(7) } });
+    expect(settings).toMatchObject({
+      notifyMinute: hm(7, 30),
+      quietHours: { start: hm(22), end: hm(7) },
+    });
   });
 
   it('깨진 알림 시각은 기본값으로, 한쪽만 있거나 시작과 끝이 같은 방해금지는 없는 것으로 본다', () => {
     expect(
       parseNotificationSettings({ notifyTime: '25:00', dndStart: '22:00', dndEnd: null }),
-    ).toEqual({ notifyMinute: hm(8), quietHours: null });
+    ).toMatchObject({ notifyMinute: hm(8), quietHours: null });
     expect(
       parseNotificationSettings({ notifyTime: null, dndStart: '09:00', dndEnd: '09:00' }).quietHours,
     ).toBeNull();
@@ -95,5 +103,19 @@ describe('shiftOutOfQuietHours: 방해금지 구간에 걸리면 종료 시각�
       date: date(9, 27),
       minuteOfDay: hm(7),
     });
+  });
+});
+
+describe('분재 알림 시각 (SPEC.md 3.6, 6.1, 6.3)', () => {
+  it('설정한 값을 읽는다', () => {
+    const settings = parseNotificationSettings({
+      notifyTime: null,
+      dndStart: null,
+      dndEnd: null,
+      bonsaiEveningTime: '18:00',
+      bonsaiWinterTime: '10:30',
+    });
+
+    expect(settings).toMatchObject({ bonsaiEveningMinute: hm(18), bonsaiWinterMinute: hm(10, 30) });
   });
 });

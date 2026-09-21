@@ -20,10 +20,11 @@ export const OVERDUE_REPEAT_DAYS = 3;
 export const MAX_NAMES = 3;
 
 const MS_PER_MINUTE = 60_000;
-/** 아침 알림의 slot. 분재 저녁 체크(4-2)가 1 을 쓴다 */
+/** 하루 안에서 알림을 구분하는 자리. 분재는 폭염 때 저녁에 한 번 더 본다 (SPEC 6.1) */
 const MORNING_SLOT = 0;
+const EVENING_SLOT = 1;
 
-export type NotificationType = 'water' | 'overdue' | 'season';
+export type NotificationType = 'water' | 'overdue' | 'season' | 'bonsai';
 /** 알림을 누르면 갈 곳 (12.1) */
 export type NotificationTarget = 'today';
 
@@ -45,6 +46,8 @@ export interface PlanPlant {
   waterDate: CalendarDate;
   /** 수경은 물주기 대신 물 교체를 알린다 (4.2) */
   hydro: boolean;
+  /** 분재는 물 주기 대신 흙을 확인하라고 따로 알린다 (6.1) */
+  bonsai: boolean;
 }
 
 export interface SeasonNotice {
@@ -58,6 +61,8 @@ export interface SeasonNotice {
 export interface PlanInput {
   plants: readonly PlanPlant[];
   seasonChanges: readonly SeasonNotice[];
+  /** 오늘의 계절. 전환일 뒤의 날짜는 seasonChanges 로 본다 */
+  season: Season;
   now: number;
   /** 기기 시간대의 UTC 오프셋(분). 알림은 기기 시간대로 센다 (12.2) */
   utcOffsetMinutes: number;
@@ -85,7 +90,10 @@ function morningLines(
   const t = ko.notifications;
   const lines: { type: NotificationType; title: string; text: string }[] = [];
 
-  const due = input.plants.filter((plant) => diffDays(plant.waterDate, day) === 0);
+  // 분재는 따로 알린다 (6.1)
+  const due = input.plants.filter(
+    (plant) => !plant.bonsai && diffDays(plant.waterDate, day) === 0,
+  );
   const soil = due.filter((plant) => !plant.hydro);
   const hydro = due.filter((plant) => plant.hydro);
   if (soil.length > 0) lines.push({ type: 'water', title: t.waterTitle, text: t.waterBody(names(soil)) });
@@ -121,6 +129,30 @@ function morningLines(
   return lines;
 }
 
+/** 그날의 계절. 전환일부터 새 계절이다 */
+function seasonOn(day: CalendarDate, input: PlanInput): Season {
+  let season = input.season;
+  for (const change of input.seasonChanges) {
+    if (diffDays(change.date, day) >= 0) season = change.season;
+  }
+  return season;
+}
+
+/**
+ * 분재 흙 확인 알림의 시각 (SPEC 6.1, 6.3).
+ * 폭염에는 아침과 저녁 두 번, 겨울에는 화분 속 물이 얼지 않게 늦은 오전 한 번이다.
+ */
+function bonsaiMinutes(season: Season, settings: NotificationSettings): [number, number][] {
+  if (season === 'winter') return [[settings.bonsaiWinterMinute, MORNING_SLOT]];
+  if (season === 'heat') {
+    return [
+      [settings.notifyMinute, MORNING_SLOT],
+      [settings.bonsaiEveningMinute, EVENING_SLOT],
+    ];
+  }
+  return [[settings.notifyMinute, MORNING_SLOT]];
+}
+
 export function planNotifications(input: PlanInput): PlannedNotification[] {
   // 식물이 없으면 계절이 바뀌어도 알릴 것이 없다
   if (input.plants.length === 0) return [];
@@ -148,6 +180,44 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
       body: lines.map((line) => line.text).join('\n'),
       target: 'today',
     });
+  }
+
+  return [...planned, ...planBonsai(input)].sort(byWhen);
+}
+
+/** 이른 것부터. diffDays(from, to) 는 to 가 나중이면 양수라 순서를 뒤집어 쓴다 */
+function byWhen(a: PlannedNotification, b: PlannedNotification): number {
+  return diffDays(b.date, a.date) || a.minuteOfDay - b.minuteOfDay;
+}
+
+/** 분재 흙 확인 알림 (SPEC 6.1). 물주기 알림과 별개라 같은 아침에 둘 다 올 수 있다 (12.2 하루 상한) */
+function planBonsai(input: PlanInput): PlannedNotification[] {
+  const bonsai = input.plants.filter((plant) => plant.bonsai);
+  if (bonsai.length === 0) return [];
+
+  const today = toCalendarDate(input.now, input.utcOffsetMinutes);
+  const planned: PlannedNotification[] = [];
+
+  for (let offset = 0; offset < SCHEDULE_DAYS; offset += 1) {
+    const day = addDays(today, offset);
+    const due = bonsai.filter((plant) => diffDays(plant.waterDate, day) === 0);
+    if (due.length === 0) continue;
+
+    for (const [minute, slot] of bonsaiMinutes(seasonOn(day, input), input.settings)) {
+      const fire = shiftOutOfQuietHours(day, minute, input.settings.quietHours);
+      const fireAt = startOfDay(fire.date, input.utcOffsetMinutes) + fire.minuteOfDay * MS_PER_MINUTE;
+      if (fireAt <= input.now) continue;
+
+      planned.push({
+        id: notificationId('bonsai', day, slot),
+        type: 'bonsai',
+        date: fire.date,
+        minuteOfDay: fire.minuteOfDay,
+        title: ko.notifications.bonsaiTitle,
+        body: ko.notifications.bonsaiBody(names(due)),
+        target: 'today',
+      });
+    }
   }
 
   return planned;
