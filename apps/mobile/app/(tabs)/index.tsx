@@ -8,7 +8,7 @@ import { updatePlant } from '@/db/plants';
 import { canPostpone, toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
 import { askPermissionOnce, NotificationBanner, rescheduleSoon } from '@/notifications';
-import { formatMonthDay } from '@/plants/formula';
+import { formatMonthDay } from '@/plants/format';
 import { PlantCard } from '@/plants/plant-card';
 import { SwipeRow } from '@/plants/swipe-row';
 import { classifyToday, planPostpone } from '@/plants/today';
@@ -60,6 +60,8 @@ export default function TodayScreen() {
 
   const openWatered = (item: TodayItem) =>
     router.push({ pathname: '/sheet/watered', params: { plantId: item.plant.id } });
+  const openDetail = (item: TodayItem) =>
+    router.push({ pathname: '/plant/[id]', params: { id: item.plant.id } });
 
   async function postpone(item: TodayItem) {
     const patch = planPostpone(item.plant, context);
@@ -151,7 +153,7 @@ export default function TodayScreen() {
 
           {sections.upcoming.length > 0 ? <SectionTitle title={ko.today.upcoming} /> : null}
           {sections.upcoming.map((item) => (
-            <PlantCard key={item.plant.id} {...item} />
+            <PlantCard key={item.plant.id} {...item} onPress={() => openDetail(item)} />
           ))}
 
           {sections.done.length > 0 ? <SectionTitle title={ko.today.done} /> : null}
@@ -160,7 +162,8 @@ export default function TodayScreen() {
               key={item.plant.id}
               {...item}
               done
-              justWatered={item.plant.id === justWateredId}>
+              justWatered={item.plant.id === justWateredId}
+              onPress={() => openDetail(item)}>
               {item.plant.nextWaterAt ? (
                 <AppText variant="formula">
                   {ko.today.nextWater(

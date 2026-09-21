@@ -12,6 +12,8 @@ export const ko = {
     close: '닫기',
     save: '저장',
     edit: '수정',
+    cancel: '취소',
+    goBack: '뒤로',
   },
   tabs: {
     today: '오늘',
@@ -30,11 +32,11 @@ export const ko = {
   },
   seasonInfo: {
     title: (mode: string) => `지금은 ${mode} 모드예요`,
-    spring: '기본 주기 그대로 물을 줘요.',
-    monsoon: '습해서 흙이 천천히 말라요. 주기를 늘렸으니 흙이 마른 걸 확인하고 주세요. 받침 물은 바로 버려 주세요.',
-    heat: '흙이 빨리 말라 주기를 줄였어요. 다육과 선인장은 쉬는 때라 오히려 늘렸어요.',
-    autumn: '기본 주기 그대로 물을 줘요.',
-    winter: '자라는 속도가 느려져 주기를 늘렸어요. 난방으로 공기가 건조하니 잎 끝이 마르면 분무해 주세요.',
+    spring: '평소 주기대로 물을 주면 돼요.',
+    monsoon: '습해서 흙이 천천히 말라요. 물 주는 간격을 늘렸어요. 흙이 마른 걸 확인하고 주시고, 받침에 고인 물은 바로 버려 주세요.',
+    heat: '흙이 빨리 말라서 물 주는 간격을 줄였어요. 다육과 선인장은 쉬는 때라 오히려 늘렸어요.',
+    autumn: '평소 주기대로 물을 주면 돼요.',
+    winter: '식물이 천천히 자라는 때라 물 주는 간격을 늘렸어요. 난방으로 공기가 건조하니 잎 끝이 마르면 분무해 주세요.',
     next: (mode: string, date: string) => `${date}부터 ${mode} 모드로 바뀌어요.`,
     open: '계절 모드 설명 보기',
   },
@@ -50,14 +52,14 @@ export const ko = {
     allClear: '오늘은 물 줄 식물이 없어요',
     nextWater: (date: string) => `다음 물주기 ${date}`,
     postponeLimit: '세 번 미뤘어요. 오늘은 흙을 확인해 주세요.',
-    empty: '첫 공간을 등록해보세요',
+    empty: '식물을 둘 공간부터 등록해 보세요',
     registerSpace: '공간 등록',
     addSpace: '공간 추가',
     spaces: '등록한 공간',
     spaceLimit: '공간은 20개까지 등록할 수 있어요',
     registerPlant: '식물 등록',
     plants: '등록한 식물',
-    noPlants: '이제 이 공간에 식물을 놓아 보세요',
+    noPlants: '이제 식물을 등록해 보세요',
     plantLimit: '식물은 200개까지 등록할 수 있어요',
   },
   action: {
@@ -67,8 +69,8 @@ export const ko = {
   },
   wateredSheet: {
     title: (nickname: string) => `${nickname}에 물을 줬어요`,
-    soilQuestion: '주기 전 흙은 어땠나요',
-    soilGuide: '고르지 않아도 돼요. 고르면 이 식물의 주기를 맞춰 가요.',
+    soilQuestion: '물 주기 전에 흙은 어땠나요',
+    soilGuide: '안 골라도 괜찮아요. 고르면 이 식물에 맞게 물 줄 날을 맞춰 드려요.',
     /** 키는 SoilState */
     soilState: {
       dry: '바싹 말랐어요',
@@ -77,7 +79,7 @@ export const ko = {
     },
     soilStateHint: {
       dry: '다음부터 조금 더 자주 알려 드려요',
-      ok: '지금 주기를 그대로 둬요',
+      ok: '지금처럼 알려 드려요',
       wet: '다음부터 조금 더 천천히 알려 드려요',
     },
     leafDroop: '잎이 처졌어요',
@@ -87,7 +89,7 @@ export const ko = {
   },
   registerSheet: {
     title: '무엇을 등록할까요',
-    needSpace: '식물을 두려면 먼저 공간을 등록해 주세요',
+    needSpace: '식물을 등록하려면 먼저 공간이 있어야 해요',
   },
   records: {
     title: '기록',
@@ -109,6 +111,70 @@ export const ko = {
   plantsTab: {
     title: '식물',
     empty: '아직 등록한 식물이 없어요',
+  },
+  /** 식물 상세 (SPEC 3.4). 계산식은 보여 주지 않고 결과만 말한다 */
+  plantDetail: {
+    nextWater: '다음 물주기',
+    lastWatered: (date: string) => `마지막으로 물 준 날 ${date}`,
+    lastWateredUnknown: '아직 물 준 기록이 없어요',
+    bonsai: '분재',
+    info: '식물 정보',
+    space: '공간',
+    pot: '화분',
+    soil: '흙',
+    interval: '물주기',
+    intervalAuto: '자동',
+    intervalManual: '직접 정함',
+    nickname: '별명',
+    history: '최근 물주기',
+    historyEmpty: '아직 물 준 기록이 없어요',
+    historyMore: '기록 더 보기',
+    repotted: (date: string) => `마지막 분갈이 ${date}`,
+    delete: '식물 삭제',
+    deleteTitle: '이 식물을 삭제할까요',
+    deleteBody: '물주기 기록과 사진도 함께 지워져요. 되돌릴 수 없어요.',
+    deleteConfirm: '삭제',
+    notFound: '식물을 찾을 수 없어요',
+    /** 같은 흙 상태가 세 번 이어졌을 때 (5.4). 키는 흙 상태 */
+    streak: {
+      wet: '물 줄 때마다 흙이 아직 축축했어요. 이 식물은 물을 덜 줘도 되는 것 같아요.',
+      dry: '물 줄 때마다 흙이 바싹 말라 있었어요. 이 식물은 물을 더 자주 줘야 할 것 같아요.',
+      action: '물주기 직접 정하기',
+    },
+    /** 직접 정한 주기가 있는데 계절이 바뀌었을 때 한 번 묻는다 (5.5) */
+    seasonQuestion: {
+      title: (mode: string) => `${mode} 모드로 바뀌었어요`,
+      body: (days: number) => `직접 정한 ${days}일 간격을 계속 쓸까요, 계절에 맞춰 자동으로 바꿀까요`,
+      keep: '그대로 둘게요',
+      auto: '자동으로 바꾸기',
+    },
+  },
+  plantEdit: {
+    rename: {
+      title: '별명 바꾸기',
+      label: '별명',
+    },
+    interval: {
+      title: '물주기 정하기',
+      auto: (days: string) => `자동 · ${days}`,
+      autoHint: '계절과 자리에 맞춰 알아서 바꿔 드려요',
+      manual: '직접 정하기',
+      manualHint: '정한 간격 그대로 알려 드려요',
+      days: (days: number) => (days === 1 ? '매일' : `${days}일마다`),
+      fewer: '하루 줄이기',
+      more: '하루 늘리기',
+    },
+    repot: {
+      title: '분갈이했어요',
+      guide: '화분이나 흙이 바뀌면 물 줄 날을 새로 맞춰 드려요',
+      pot: '화분 크기',
+      soil: '흙',
+    },
+    move: {
+      title: '어디로 옮겼나요',
+      guide: '옮긴 자리의 빛에 맞춰 물 줄 날을 다시 맞춰 드려요',
+    },
+    saveFailed: '저장하지 못했어요. 다시 시도해 주세요.',
   },
   /** 로컬 알림의 제목과 본문 (SPEC 12.1) */
   notifications: {
@@ -225,13 +291,6 @@ export const ko = {
     l: '지름 21~30cm. 한 뼘을 넘어요',
     xl: '지름 30cm 초과. 두 손으로 들어야 해요',
   },
-  /** 계산식에 쓰는 이름 */
-  potSizeName: {
-    s: '소형',
-    m: '중형',
-    l: '대형',
-    xl: '특대형',
-  },
   /** 키는 SoilType */
   soilType: {
     potting: '일반 배양토',
@@ -245,20 +304,6 @@ export const ko = {
     akadama: '알갱이 흙이라 아주 빨리 말라요',
     hydro: '흙 없이 물에 담가 키워요',
   },
-  soilTypeName: {
-    potting: '배양토',
-    gritty: '마사',
-    akadama: '적옥토',
-    hydro: '수경',
-  },
-  /** 계산식에 쓰는 계절 이름. 키는 Season */
-  seasonName: {
-    spring: '봄',
-    monsoon: '장마',
-    heat: '폭염',
-    autumn: '가을',
-    winter: '겨울',
-  },
   /** 키는 BonsaiGroup */
   bonsaiGroup: {
     conifer: '침엽',
@@ -270,14 +315,13 @@ export const ko = {
     deciduous: '단풍, 느티, 소사',
     flowering: '명자, 철쭉, 모과',
   },
-  formula: {
-    days: (days: string) => `${days}일`,
-    learn: '보정',
-    hydro: (days: number) => `수경이라 ${days}일마다 물을 갈아요`,
-    manual: (days: number) => `직접 정한 주기 ${days}일`,
+  /** 날짜와 주기 표기 */
+  format: {
     monthDay: (month: number, day: number) => `${month}월 ${day}일`,
     dDay: (days: number) => `D-${days}`,
     overdue: (days: number) => `${days}일 밀림`,
+    every: (days: number) => (days === 1 ? '매일 물을 줘요' : `${days}일마다 물을 줘요`),
+    hydroEvery: (days: number) => `${days}일마다 물을 갈아 줘요`,
   },
   plantRegister: {
     progress: '식물 등록 진행',
@@ -294,9 +338,9 @@ export const ko = {
       title: '어떤 식물인가요',
       search: '이름으로 찾기',
       placeholder: '몬스테라, 고무나무',
-      noResult: '찾는 식물이 없어요. 모르겠어요를 눌러 종류만 골라도 돼요.',
+      noResult: '찾는 식물이 없으면 모르겠어요를 누르고 종류만 골라 주세요.',
       unknown: '모르겠어요',
-      unknownHint: '종류만 골라도 물주기를 계산할 수 있어요',
+      unknownHint: '종류만 알아도 물 줄 날을 알려 드릴 수 있어요',
       chooseGroup: '가장 가까운 종류를 골라 주세요',
     },
     pot: {
@@ -314,8 +358,8 @@ export const ko = {
     bonsai: {
       title: '분재로 키우나요',
       toggle: '분재예요',
-      guide: '분재는 물주기 대신 흙을 확인하라고 알려 드려요',
-      chooseGroup: '수종군을 골라 주세요',
+      guide: '분재는 물 줄 날 대신 흙을 확인할 때를 알려 드려요',
+      chooseGroup: '어떤 나무에 가까운가요',
     },
     finish: {
       title: '첫 물주기를 확인해 주세요',
@@ -329,10 +373,9 @@ export const ko = {
       unknown: '언제 줬는지 모르겠어요',
       unknownShort: '모름',
       nextWater: '다음 물주기',
-      unknownNote: (days: number) =>
-        `마지막 물 준 날을 몰라 첫 알림은 주기의 절반인 ${days}일 뒤에 드려요`,
+      unknownNote: (days: number) => `언제 줬는지 몰라서 첫 알림은 ${days}일 뒤에 드릴게요`,
       belowMin: '매일 흙을 확인해 주세요',
-      overdueNote: '이미 물 줄 때가 지났어요. 등록하면 오늘 할 일에 나와요.',
+      overdueNote: '물 줄 때가 이미 지났어요. 등록하면 오늘 탭에서 바로 볼 수 있어요.',
     },
     photoProblem: {
       denied: '카메라 권한이 꺼져 있어요. 설정에서 켜거나 앨범에서 골라 주세요.',
@@ -358,16 +401,16 @@ export const ko = {
     direction: {
       title: '창이 어느 쪽을 향하나요',
       guide: '해가 드는 시간으로 가늠해도 돼요. 아침에 들면 동, 한낮이면 남, 오후면 서예요.',
-      unknownWarning: '방향을 모르면 빛을 중간 정도로 가정해요. 나중에 공간에서 바꿀 수 있어요.',
+      unknownWarning: '방향을 모르면 빛을 중간 정도로 볼게요. 나중에 바꿀 수 있어요.',
     },
     type: {
       title: '어떤 자리인가요',
     },
     light: {
       title: '이 자리의 빛은 이 정도예요',
-      basisDefault: '방향과 자리 유형으로 정한 기본값이에요',
-      basisManual: '직접 고른 등급이에요',
-      choose: '빛 등급을 골라 주세요',
+      basisDefault: '창 방향과 자리로 가늠한 밝기예요. 실제와 다르면 바꿔 주세요.',
+      basisManual: '직접 고른 밝기예요',
+      choose: '이 자리의 밝기를 골라 주세요',
     },
     name: {
       title: '이 공간을 뭐라고 부를까요',

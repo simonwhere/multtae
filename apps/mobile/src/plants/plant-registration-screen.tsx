@@ -27,7 +27,7 @@ import {
 } from '@/ui';
 
 import { DaysLeft } from './days-left';
-import { formatFormula, formatMonthDay } from './formula';
+import { formatInterval, formatMonthDay } from './format';
 import {
   canAdvance,
   MAX_DAYS_AGO,
@@ -275,16 +275,12 @@ function daysAgoLabel(days: number): string {
 
 function FinishStep({
   draft,
-  space,
   preview,
-  season,
   existingNicknames,
   dispatch,
 }: {
   draft: PlantDraft;
-  space: Space | null;
   preview: WateringPreview | null;
-  season: ReturnType<typeof usePlantRegistration>['season'];
   existingNicknames: string[];
   dispatch: Dispatch;
 }) {
@@ -337,7 +333,7 @@ function FinishStep({
         />
       </Card>
 
-      {preview && space && draft.soilType ? (
+      {preview ? (
         <Card style={styles.stack}>
           <AppText variant="formula">{finish.nextWater}</AppText>
           <View style={styles.nextRow}>
@@ -346,15 +342,7 @@ function FinishStep({
             </AppText>
             <DaysLeft daysLeft={preview.daysLeft} />
           </View>
-          <AppText variant="formula">
-            {formatFormula(preview.result, {
-              season,
-              potSize: draft.potSize,
-              soilType: draft.soilType,
-              lightGrade: space.lightGrade,
-              spaceType: space.spaceType,
-            })}
-          </AppText>
+          <AppText variant="formula">{formatInterval(preview.result)}</AppText>
           {draft.wateredUnknown ? <AppText>{finish.unknownNote(preview.days)}</AppText> : null}
           {preview.result.mode === 'computed' && preview.result.belowMin && !draft.isBonsai ? (
             <AppText>{finish.belowMin}</AppText>
@@ -427,9 +415,7 @@ export function PlantRegistrationScreen() {
       {draft.step === 'finish' ? (
         <FinishStep
           draft={draft}
-          space={registration.space}
           preview={registration.preview}
-          season={registration.season}
           existingNicknames={registration.existingNicknames}
           dispatch={dispatch}
         />

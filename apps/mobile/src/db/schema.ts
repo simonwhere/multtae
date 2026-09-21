@@ -12,6 +12,7 @@ import {
   LIGHT_GRADES,
   LOGGED_SOIL_STATES,
   POT_SIZES,
+  SEASONS,
   SOIL_TYPES,
   SPACE_TYPES,
 } from '../engine/types';
@@ -85,6 +86,11 @@ export const plants = sqliteTable(
     learnFactor: real('learn_factor').notNull().default(1.0),
     /** 수동 고정 일수. null 이면 자동 */
     manualInterval: real('manual_interval'),
+    /**
+     * 주기를 직접 정했거나 그대로 두겠다고 답한 계절. 지금 계절과 다르면
+     * "자동으로 돌릴까요?"를 한 번 묻는다 (SPEC 5.5). 자동이면 null
+     */
+    manualSeason: text('manual_season', { enum: SEASONS }),
     lastWateredAt: integer('last_watered_at').notNull(),
     /**
      * 등록할 때 마지막 물 준 날을 몰라 last_watered_at 에 등록일을 넣어 둔 상태 (SPEC 5.5).

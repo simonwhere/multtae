@@ -15,6 +15,13 @@
       "when": 1789904888352,
       "tag": "0001_last_watered_unknown",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789956355371,
+      "tag": "0002_manual_season",
+      "breakpoints": true
     }
   ]
 }

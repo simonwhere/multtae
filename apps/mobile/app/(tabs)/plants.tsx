@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,9 +9,10 @@ import { nowContext } from '@/plants/use-now';
 import { useGarden } from '@/plants/use-plants';
 import { AppText, spacing, useColors } from '@/ui';
 
-// 식물 탭 (SPEC 3.4): 다음 물주기순 목록. 정렬·필터와 식물 상세는 2-5 에서 채운다.
+// 식물 탭 (SPEC 3.4): 다음 물주기순 목록. 카드를 누르면 식물 상세로 간다. 정렬·필터는 아직 없다.
 export default function PlantsScreen() {
   const colors = useColors();
+  const router = useRouter();
   const { garden } = useGarden();
   const context = nowContext(garden?.loadedAt);
 
@@ -30,6 +32,7 @@ export default function PlantsScreen() {
               key={item.plant.id}
               {...item}
               soil={classifyPlant(item.plant, context.now, context.utcOffsetMinutes)}
+              onPress={() => router.push({ pathname: '/plant/[id]', params: { id: item.plant.id } })}
             />
           ))}
         </ScrollView>

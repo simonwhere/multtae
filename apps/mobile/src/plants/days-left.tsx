@@ -1,6 +1,6 @@
 import { AppText, useColors } from '@/ui';
 
-import { formatDaysLeft } from './formula';
+import { formatDaysLeft } from './format';
 
 /**
  * 다음 물주기까지 남은 날. "D-3" 은 큰 세리프 숫자로 쓰고 (SPEC 14.3), 밀린 날은 한글이라 제목 서체로 쓴다.

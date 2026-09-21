@@ -8,7 +8,7 @@ import { listRecentWaterings } from '@/db/watering';
 import type { WateringWithPlant } from '@/db/watering';
 import { toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
-import { formatMonthDay } from '@/plants/formula';
+import { formatMonthDay } from '@/plants/format';
 import { AppText, Card, spacing, useColors } from '@/ui';
 
 const RECENT = 50;

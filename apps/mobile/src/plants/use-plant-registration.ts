@@ -155,7 +155,6 @@ export function usePlantRegistration() {
     draft,
     spaces,
     space,
-    season,
     preview,
     existingNicknames,
     atLimit: existingNicknames.length >= MAX_PLANTS,

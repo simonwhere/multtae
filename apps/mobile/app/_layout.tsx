@@ -44,6 +44,14 @@ export default function RootLayout() {
     );
   }
 
+  const sheetOptions = {
+    presentation: 'formSheet',
+    sheetAllowedDetents: 'fitToContents',
+    sheetGrabberVisible: true,
+    sheetCornerRadius: radius.card * 2,
+    contentStyle: { backgroundColor: colors.surface },
+  } as const;
+
   return (
     // 스와이프 동작(오늘 탭 카드)에 필요하다
     <GestureHandlerRootView style={styles.root}>
@@ -54,20 +62,20 @@ export default function RootLayout() {
         {/* 등록 플로우는 어디서든 모달로 뜬다 (SPEC 3) */}
         <Stack.Screen name="register/space" options={{ presentation: 'modal' }} />
         <Stack.Screen name="register/plant" options={{ presentation: 'modal' }} />
-        {/* 시트는 내용 높이만큼만 올라온다. 그래서 시트 화면에는 flex: 1 을 쓰지 않는다 */}
+        <Stack.Screen name="plant/[id]" />
+        {/* 시트는 내용 높이만큼만 올라온다. 그래서 시트 화면에는 flex: 1 과 ScrollView 를 쓰지 않는다 */}
         {['sheet/watered', 'sheet/season', 'sheet/register'].map((name) => (
-          <Stack.Screen
-            key={name}
-            name={name}
-            options={{
-              presentation: 'formSheet',
-              sheetAllowedDetents: 'fitToContents',
-              sheetGrabberVisible: true,
-              sheetCornerRadius: radius.card * 2,
-              contentStyle: { backgroundColor: colors.surface },
-            }}
-          />
+          <Stack.Screen key={name} name={name} options={sheetOptions} />
         ))}
+        {/* 공간 이동은 목록이 길어질 수 있어 스크롤되는 모달로 띄운다 */}
+        <Stack.Screen
+          name="sheet/plant-edit"
+          options={({ route }) =>
+            (route.params as { field?: string } | undefined)?.field === 'move'
+              ? { presentation: 'modal' }
+              : sheetOptions
+          }
+        />
       </Stack>
     </GestureHandlerRootView>
   );

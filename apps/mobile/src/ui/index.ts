@@ -1,6 +1,7 @@
 export * from './app-text';
 export * from './button';
 export * from './card';
+export * from './chevron';
 export * from './choice-card';
 export * from './fab';
 export * from './light-gauge';

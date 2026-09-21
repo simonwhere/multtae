@@ -37,3 +37,17 @@ export async function listRecentWaterings(
     .orderBy(desc(wateringLogs.wateredAt), desc(wateringLogs.id))
     .limit(limit);
 }
+
+/** 식물 하나의 물주기 기록. 최근 것부터 */
+export async function listPlantWaterings(
+  db: Database,
+  plantId: string,
+  limit: number,
+): Promise<WateringLog[]> {
+  return db
+    .select()
+    .from(wateringLogs)
+    .where(eq(wateringLogs.plantId, plantId))
+    .orderBy(desc(wateringLogs.wateredAt), desc(wateringLogs.id))
+    .limit(limit);
+}

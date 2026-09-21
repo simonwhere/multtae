@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { currentCoefficients } from '@/coefficients';
 import { nextSeasonChange, toSeoulDate } from '@/engine';
 import { ko } from '@/i18n/ko';
-import { formatMonthDay } from '@/plants/formula';
+import { formatMonthDay } from '@/plants/format';
 import { nowContext } from '@/plants/use-now';
 import { AppText, spacing } from '@/ui';
 

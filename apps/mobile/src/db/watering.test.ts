@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { getPlantWithSpace, insertPlant, updatePlant } from './plants';
+import { deletePlant, getPlantWithSpace, insertPlant, updatePlant } from './plants';
 import type { NewPlant, NewSpace } from './schema';
 import { insertSpace } from './spaces';
 import { createTestDb } from './testing/test-db';
 import type { TestDb } from './testing/test-db';
-import { listRecentWaterings, recordWatering } from './watering';
+import { listPlantWaterings, listRecentWaterings, recordWatering } from './watering';
 
 const livingRoom: NewSpace = {
   id: 'space-1',
@@ -100,5 +100,50 @@ describe('recordWatering: 물 줬어요', () => {
     const recent = await listRecentWaterings(db, 2);
 
     expect(recent.map((entry) => entry.log.wateredAt)).toEqual([30_000, 20_000]);
+  });
+
+  it('식물 하나의 기록만, 최근 것부터 돌려준다 (3.4 이력)', async () => {
+    await insertPlant(db, { ...monstera, id: 'plant-2', nickname: '곰솔' }, []);
+    await recordWatering(db, 'plant-1', patch, { ...log, id: 'a', wateredAt: 10_000 });
+    await recordWatering(db, 'plant-2', patch, { ...log, id: 'b', plantId: 'plant-2', wateredAt: 20_000 });
+    await recordWatering(db, 'plant-1', patch, { ...log, id: 'c', wateredAt: 30_000 });
+
+    const waterings = await listPlantWaterings(db, 'plant-1', 5);
+
+    expect(waterings.map((entry) => entry.id)).toEqual(['c', 'a']);
+    expect(await listPlantWaterings(db, 'plant-1', 1)).toHaveLength(1);
+  });
+});
+
+describe('deletePlant: 식물 삭제 (3.4 편집)', () => {
+  it('식물과 딸린 기록·사진 행을 지우고, 지워야 할 사진 파일 경로를 돌려준다', async () => {
+    await insertPlant(db, { ...monstera, id: 'plant-2', nickname: '곰솔', coverPhotoPath: 'plants/cover.jpg' }, [
+      { id: 'photo-1', plantId: 'plant-2', path: 'plants/cover.jpg', takenAt: 1 },
+      { id: 'photo-2', plantId: 'plant-2', path: 'plants/leaf.jpg', takenAt: 2 },
+    ]);
+    await recordWatering(
+      db,
+      'plant-2',
+      { lastWateredAt: 20_000 },
+      {
+        id: 'log-9',
+        plantId: 'plant-2',
+        wateredAt: 20_000,
+        soilState: 'ok',
+        source: 'user',
+      },
+    );
+
+    const paths = await deletePlant(db, 'plant-2');
+
+    expect(paths.sort()).toEqual(['plants/cover.jpg', 'plants/leaf.jpg']);
+    expect(await getPlantWithSpace(db, 'plant-2')).toBeNull();
+    expect(await listPlantWaterings(db, 'plant-2', 5)).toEqual([]);
+    // 다른 식물은 그대로다
+    expect(await getPlantWithSpace(db, 'plant-1')).not.toBeNull();
+  });
+
+  it('없는 식물이면 아무것도 하지 않는다', async () => {
+    expect(await deletePlant(db, 'ghost')).toEqual([]);
   });
 });

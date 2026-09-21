@@ -27,23 +27,15 @@ export interface ScheduleContext {
 }
 
 /**
- * 그날 그 계절이라면 이 식물의 다음 물주기는 언제인가. 오늘을 넣으면 지금의 값이고,
- * 다가올 전환일과 새 계절을 넣으면 전환 뒤의 값이다(알림을 미리 짤 때 쓴다).
- * - 이미 밀린 식물은 그대로 둔다. 지난 계절에 마른 흙을 새 주기만큼 더 기다리게 하지 않는다
- * - "내일로"로 미룬 식물도 그대로 둔다. 사용자가 정한 날이다
- * - 다시 센 날짜가 이미 지났으면 기준 날짜로 둔다. 계절이 바뀌자마자 밀림이 되지는 않는다
+ * 식으로 센 다음 물주기: 마지막 물 준 날 + 주기(모름이면 I/2) + 미룬 횟수.
+ * 그 날짜가 기준 날짜보다 앞이면 기준 날짜로 둔다. 조건이 바뀌자마자 밀림이 되지는 않는다.
  */
-export function waterDateAsOf(
+export function countWaterDate(
   plant: Plant,
   space: EngineSpace,
   context: ScheduleContext,
 ): CalendarDate {
   const { today, season, coefficients, utcOffsetMinutes } = context;
-  const stored =
-    plant.nextWaterAt === null ? null : toCalendarDate(plant.nextWaterAt, utcOffsetMinutes);
-
-  if (stored && (diffDays(today, stored) < 0 || plant.postponeCount > 0)) return stored;
-
   const result = computeInterval(toEnginePlant(plant), space, season, coefficients);
   const days = plant.lastWateredUnknown ? halfIntervalDays(result) : result.days;
   const counted = nextWaterDate(
@@ -53,6 +45,26 @@ export function waterDateAsOf(
   );
 
   return diffDays(today, counted) < 0 ? today : counted;
+}
+
+/**
+ * 그날 그 계절이라면 이 식물의 다음 물주기는 언제인가. 오늘을 넣으면 지금의 값이고,
+ * 다가올 전환일과 새 계절을 넣으면 전환 뒤의 값이다(알림을 미리 짤 때 쓴다).
+ * - 이미 밀린 식물은 그대로 둔다. 지난 계절에 마른 흙을 새 주기만큼 더 기다리게 하지 않는다
+ * - "내일로"로 미룬 식물도 그대로 둔다. 사용자가 정한 날이다
+ */
+export function waterDateAsOf(
+  plant: Plant,
+  space: EngineSpace,
+  context: ScheduleContext,
+): CalendarDate {
+  const stored =
+    plant.nextWaterAt === null
+      ? null
+      : toCalendarDate(plant.nextWaterAt, context.utcOffsetMinutes);
+
+  if (stored && (diffDays(context.today, stored) < 0 || plant.postponeCount > 0)) return stored;
+  return countWaterDate(plant, space, context);
 }
 
 /** 저장된 다음 물주기를 고쳐야 하면 고칠 값, 아니면 null */
