@@ -113,7 +113,7 @@ describe('withKoreanNames: 국명은 종 DB 에서 채운다 (SPEC.md 9.1)', () 
     ]);
 
     expect(named[0]).toMatchObject({ nameKo: '몬스테라' });
-    expect(named[1].nameKo).toBeUndefined();
+    expect(named[1]?.nameKo).toBeUndefined();
   });
 
   it('종 DB 조회가 실패하거나 모양이 다르면 그대로 둔다', () => {
