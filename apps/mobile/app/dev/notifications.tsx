@@ -59,8 +59,8 @@ export default function NotificationsDevScreen() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.paper }]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <AppText variant="formula">{`PERMISSION ${permission ?? 'unknown'} · SCHEDULED ${scheduled.length}`}</AppText>
-        {summary === '' ? null : <AppText variant="formula">{summary}</AppText>}
+        <AppText variant="caption">{`PERMISSION ${permission ?? 'unknown'} · SCHEDULED ${scheduled.length}`}</AppText>
+        {summary === '' ? null : <AppText variant="caption">{summary}</AppText>}
         <View style={styles.actions}>
           <Button label="rescheduleAll" onPress={() => void reschedule()} style={styles.fill} />
           <Button
@@ -74,10 +74,10 @@ export default function NotificationsDevScreen() {
 
         {scheduled.map((request) => (
           <Card key={request.identifier}>
-            <AppText variant="formula">{request.identifier}</AppText>
+            <AppText variant="caption">{request.identifier}</AppText>
             <AppText variant="titleSm">{request.content.title}</AppText>
             <AppText>{request.content.body}</AppText>
-            <AppText variant="formula">{JSON.stringify(request.trigger)}</AppText>
+            <AppText variant="caption">{JSON.stringify(request.trigger)}</AppText>
           </Card>
         ))}
       </ScrollView>

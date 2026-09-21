@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import type { Space } from '@/db/schema';
 import { ko } from '@/i18n/ko';
 import { photoUri } from '@/photos/photo-store';
-import { AppText, Card, LightGauge, spacing, useColors } from '@/ui';
+import { AppText, Card, LightGauge, radius, spacing, useColors } from '@/ui';
 
 /** 공간 카드 (SPEC 3.3): 사진, 이름, 방향, 유형, 빛 등급 */
 export interface SpaceCardProps {
@@ -30,20 +30,20 @@ export function SpaceCard({ space, plantCount, selected, onPress }: SpaceCardPro
           accessibilityIgnoresInvertColors
           contentFit="cover"
           source={{ uri: photoUri(space.photoPath) }}
-          style={[styles.photo, { backgroundColor: colors.soil.dry }]}
+          style={[styles.photo, { backgroundColor: colors.block }]}
         />
       ) : (
-        <View style={[styles.photo, { backgroundColor: colors.soil.dry }]} />
+        <View style={[styles.photo, { backgroundColor: colors.block }]} />
       )}
       <View style={styles.text}>
         <AppText variant="titleSm" numberOfLines={1}>
           {space.name}
         </AppText>
-        <AppText variant="formula">
+        <AppText variant="caption">
           {plantCount === undefined ? place : `${place}, ${ko.spacesTab.plantCount(plantCount)}`}
         </AppText>
         <View style={styles.light}>
-          <AppText variant="formula">{ko.lightGrade[space.lightGrade]}</AppText>
+          <AppText variant="caption">{ko.lightGrade[space.lightGrade]}</AppText>
           <LightGauge grade={space.lightGrade} />
         </View>
       </View>
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   photo: {
     width: 88,
     height: 66,
-    borderRadius: spacing.sm,
+    borderRadius: radius.control,
   },
   text: {
     flex: 1,

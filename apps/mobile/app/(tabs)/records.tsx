@@ -41,13 +41,13 @@ export default function RecordsScreen() {
                 <AppText variant="titleSm" style={styles.fill} numberOfLines={1}>
                   {nickname}
                 </AppText>
-                <AppText variant="formula">
+                <AppText variant="caption">
                   {formatMonthDay(
                     toCalendarDate(log.wateredAt, -new Date(log.wateredAt).getTimezoneOffset()),
                   )}
                 </AppText>
               </View>
-              <AppText variant="formula">
+              <AppText variant="caption">
                 {[
                   ko.records.watered,
                   ko.records.soilState[log.soilState],

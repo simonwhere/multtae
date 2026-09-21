@@ -8,8 +8,11 @@ import { useColors } from './use-colors';
 export interface ButtonProps {
   label: string;
   onPress: () => void;
-  /** primary: 글자색 면에 배경색 글자, secondary: 카드 면에 흙색 테두리 */
-  variant?: 'primary' | 'secondary';
+  /**
+   * primary: 주색 면, secondary: 옅은 면, surface: 카드 면(강조 면 위에 놓는 보조 버튼).
+   * 테두리는 쓰지 않는다 (SPEC 14.4)
+   */
+  variant?: 'primary' | 'secondary' | 'surface';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -17,9 +20,9 @@ export interface ButtonProps {
 export function Button({ label, onPress, variant = 'primary', disabled = false, style }: ButtonProps) {
   const colors = useColors();
   const primary = variant === 'primary';
-  const face = primary
-    ? { backgroundColor: colors.ink, borderColor: colors.ink }
-    : { backgroundColor: colors.surface, borderColor: colors.soil.dry };
+  const face = {
+    backgroundColor: primary ? colors.accent : variant === 'surface' ? colors.surface : colors.soft,
+  };
 
   return (
     <Pressable
@@ -34,7 +37,9 @@ export function Button({ label, onPress, variant = 'primary', disabled = false, 
         disabled && styles.disabled,
         style,
       ]}>
-      <AppText color={primary ? colors.paper : colors.ink}>{label}</AppText>
+      <AppText variant="label" color={primary ? colors.onAccent : colors.ink}>
+        {label}
+      </AppText>
     </Pressable>
   );
 }
@@ -42,11 +47,10 @@ export function Button({ label, onPress, variant = 'primary', disabled = false, 
 const styles = StyleSheet.create({
   button: {
     // 글자가 커져도 잘리지 않게 높이는 최소값만 둔다 (SPEC 15 동적 글자 크기)
-    minHeight: 48,
+    minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.card,
-    borderWidth: 1,
+    borderRadius: radius.control,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
   },

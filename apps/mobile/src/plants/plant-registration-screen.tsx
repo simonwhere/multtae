@@ -26,7 +26,7 @@ import {
   useColors,
 } from '@/ui';
 
-import { DaysLeft } from './days-left';
+import { DueTag } from './due-tag';
 import { formatInterval, formatMonthDay } from './format';
 import {
   canAdvance,
@@ -62,7 +62,7 @@ function PhotoStep({
   return (
     <View style={styles.stack}>
       <AppText>{ko.plantRegister.photo.guide}</AppText>
-      <AppText variant="formula">
+      <AppText variant="caption">
         {ko.plantRegister.photo.count(draft.photos.length, MAX_PLANT_PHOTOS)}
       </AppText>
       {draft.photos.length > 0 ? (
@@ -75,7 +75,7 @@ function PhotoStep({
                 accessibilityLabel={ko.plantRegister.photo.preview}
                 contentFit="cover"
                 source={{ uri: photoUri(photo.path) }}
-                style={[styles.photo, { backgroundColor: colors.soil.dry }]}
+                style={[styles.photo, { backgroundColor: colors.block }]}
               />
               <TextButton
                 label={ko.plantRegister.photo.remove}
@@ -126,7 +126,7 @@ function SpeciesStep({ draft, dispatch }: { draft: PlantDraft; dispatch: Dispatc
       />
       {chosen?.kind === 'unknown' ? (
         <View accessibilityRole="radiogroup" style={styles.stack}>
-          <AppText variant="formula">{ko.plantRegister.species.chooseGroup}</AppText>
+          <AppText variant="caption">{ko.plantRegister.species.chooseGroup}</AppText>
           {SELECTABLE_GROUPS.map((groupCode) => (
             <ChoiceCard
               key={groupCode}
@@ -160,7 +160,7 @@ function SpeciesStep({ draft, dispatch }: { draft: PlantDraft; dispatch: Dispatc
 function PotStep({ draft, dispatch }: { draft: PlantDraft; dispatch: Dispatch }) {
   return (
     <View style={styles.stack}>
-      <AppText variant="formula">{ko.plantRegister.pot.guide}</AppText>
+      <AppText variant="caption">{ko.plantRegister.pot.guide}</AppText>
       <View accessibilityRole="radiogroup" style={styles.stack}>
         {POT_SIZES.map((potSize) => (
           <ChoiceCard
@@ -241,17 +241,17 @@ function BonsaiStep({ draft, dispatch }: { draft: PlantDraft; dispatch: Dispatch
         <AppText style={styles.fill}>{ko.plantRegister.bonsai.toggle}</AppText>
         <Switch
           accessibilityLabel={ko.plantRegister.bonsai.toggle}
-          ios_backgroundColor={colors.soil.dry}
+          ios_backgroundColor={colors.gaugeEmpty}
           thumbColor={colors.surface}
-          trackColor={{ false: colors.soil.dry, true: colors.ink }}
+          trackColor={{ false: colors.gaugeEmpty, true: colors.accent }}
           value={draft.isBonsai}
           onValueChange={(isBonsai) => dispatch({ type: 'bonsaiToggled', isBonsai })}
         />
       </Card>
-      <AppText variant="formula">{ko.plantRegister.bonsai.guide}</AppText>
+      <AppText variant="caption">{ko.plantRegister.bonsai.guide}</AppText>
       {draft.isBonsai ? (
         <View accessibilityRole="radiogroup" style={styles.stack}>
-          <AppText variant="formula">{ko.plantRegister.bonsai.chooseGroup}</AppText>
+          <AppText variant="caption">{ko.plantRegister.bonsai.chooseGroup}</AppText>
           {BONSAI_GROUPS.map((bonsaiGroup) => (
             <ChoiceCard
               key={bonsaiGroup}
@@ -297,7 +297,7 @@ function FinishStep({
       />
 
       <Card style={styles.stack}>
-        <AppText variant="formula">{finish.lastWatered}</AppText>
+        <AppText variant="caption">{finish.lastWatered}</AppText>
         <View style={styles.stepper}>
           <Button
             label={finish.earlier}
@@ -312,7 +312,7 @@ function FinishStep({
               {draft.wateredUnknown ? finish.unknownShort : daysAgoLabel(draft.wateredDaysAgo)}
             </AppText>
             {preview && !draft.wateredUnknown ? (
-              <AppText variant="formula">{formatMonthDay(preview.lastWatered)}</AppText>
+              <AppText variant="caption">{formatMonthDay(preview.lastWatered)}</AppText>
             ) : null}
           </View>
           <Button
@@ -335,14 +335,19 @@ function FinishStep({
 
       {preview ? (
         <Card style={styles.stack}>
-          <AppText variant="formula">{finish.nextWater}</AppText>
+          <AppText variant="caption">{finish.nextWater}</AppText>
           <View style={styles.nextRow}>
             <AppText variant="titleLg" style={styles.fill}>
               {formatMonthDay(preview.nextWater)}
             </AppText>
-            <DaysLeft daysLeft={preview.daysLeft} />
+            <DueTag
+              soil={{
+                status: preview.daysLeft < 0 ? 'overdue' : preview.daysLeft === 0 ? 'due' : 'moist',
+                daysLeft: preview.daysLeft,
+              }}
+            />
           </View>
-          <AppText variant="formula">{formatInterval(preview.result)}</AppText>
+          <AppText variant="caption">{formatInterval(preview.result)}</AppText>
           {draft.wateredUnknown ? <AppText>{finish.unknownNote(preview.days)}</AppText> : null}
           {preview.result.mode === 'computed' && preview.result.belowMin && !draft.isBonsai ? (
             <AppText>{finish.belowMin}</AppText>
@@ -382,6 +387,7 @@ export function PlantRegistrationScreen() {
   return (
     <RegistrationShell
       progress={progressOf(draft)}
+      steps={PLANT_STEPS.length}
       progressLabel={ko.plantRegister.progress}
       title={ko.plantRegister[draft.step].title}
       onClose={close}

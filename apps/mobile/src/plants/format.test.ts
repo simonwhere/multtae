@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { computeInterval, DEFAULT_COEFFICIENTS } from '../engine';
 import type { EnginePlant, EngineSpace } from '../engine';
-import { formatDaysLeft, formatInterval, formatMonthDay } from './format';
+import {
+  formatDaysLeft,
+  formatDottedDate,
+  formatInterval,
+  formatMonthDay,
+  formatWeekday,
+} from './format';
 
 const C = DEFAULT_COEFFICIENTS;
 
@@ -41,9 +47,15 @@ describe('날짜 표기', () => {
     expect(formatMonthDay({ year: 2026, month: 9, day: 27 })).toBe('9월 27일');
   });
 
-  it('남은 일수는 D-day 로, 오늘은 D-0, 지났으면 밀린 일수로', () => {
+  it('남은 일수는 D-day 로, 물 줄 날은 "오늘", 지났으면 지난 일수로', () => {
     expect(formatDaysLeft(7)).toBe('D-7');
-    expect(formatDaysLeft(0)).toBe('D-0');
-    expect(formatDaysLeft(-3)).toBe('3일 밀림');
+    expect(formatDaysLeft(0)).toBe('오늘');
+    expect(formatDaysLeft(-3)).toBe('3일 지남');
+  });
+
+  it('오늘 탭의 큰 날짜는 "9.21", 요일은 한글로', () => {
+    expect(formatDottedDate({ year: 2026, month: 9, day: 21 })).toBe('9.21');
+    expect(formatWeekday({ year: 2026, month: 9, day: 21 })).toBe('월요일');
+    expect(formatWeekday({ year: 2026, month: 9, day: 27 })).toBe('일요일');
   });
 });

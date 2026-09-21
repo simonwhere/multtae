@@ -21,11 +21,11 @@ export interface ChoiceCardProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** 여럿 중 하나를 고르는 카드. 고른 것은 테두리 굵기와 체크 표시로도 구분한다 (SPEC 15) */
+/** 여럿 중 하나를 고르는 카드. 고른 것은 강조 면과 주색 테두리, 체크 표시로 구분한다 (SPEC 15) */
 export function ChoiceCard({
   label,
   hint,
-  hintVariant = 'formula',
+  hintVariant = 'caption',
   leading,
   selected,
   onPress,
@@ -43,11 +43,11 @@ export function ChoiceCard({
       style={({ pressed }) => [
         styles.card,
         {
-          backgroundColor: colors.surface,
-          borderColor: selected ? colors.ink : colors.soil.dry,
-          borderWidth: selected ? 2 : 1,
+          backgroundColor: selected ? colors.highlight : colors.surface,
+          borderColor: selected ? colors.accent : colors.hair,
+          borderWidth: selected ? 1.5 : 1,
           // 테두리가 굵어져도 안쪽 내용이 움직이지 않게 한다
-          padding: spacing.lg - (selected ? 1 : 0),
+          padding: spacing.lg - (selected ? 0.5 : 0),
         },
         centered && styles.centered,
         pressed && styles.pressed,
@@ -56,14 +56,18 @@ export function ChoiceCard({
       {leading}
       <View style={centered ? undefined : styles.text}>
         <AppText variant={centered ? 'titleSm' : 'body'}>{label}</AppText>
-        {hint ? <AppText variant={hintVariant}>{hint}</AppText> : null}
+        {hint ? (
+          <AppText variant={hintVariant} color={colors.sub}>
+            {hint}
+          </AppText>
+        ) : null}
       </View>
       {selected && !centered ? (
         <Svg width={20} height={20} viewBox="0 0 20 20">
           <Path
             d="M4 10.5 L8.5 15 L16 6"
-            stroke={colors.ink}
-            strokeWidth={1.5}
+            stroke={colors.accent}
+            strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
@@ -80,7 +84,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: radius.card,
+    borderRadius: radius.control + 2,
   },
   centered: {
     justifyContent: 'center',

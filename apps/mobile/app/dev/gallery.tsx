@@ -5,23 +5,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { SoilStatus } from '@/engine/soil';
 import { ko } from '@/i18n/ko';
-import { AppText, Button, Card, SoilGauge, spacing, useColors } from '@/ui';
+import { AppText, Button, Card, DayGauge, spacing, Sprig, Tag, useColors } from '@/ui';
 
 // 개발용 컴포넌트 갤러리 (/dev/gallery). 배포 빌드에서는 홈으로 돌려보낸다.
 // 구역 이름은 개발자만 보므로 영어로 두고, 한국어 예시는 ko.ts 의 실제 문구를 쓴다.
 
-const GAUGE_SAMPLES: { label: string; status: SoilStatus; moisture: number }[] = [
-  { label: 'moist 1.0', status: 'moist', moisture: 1 },
-  { label: 'moist 0.6', status: 'moist', moisture: 0.6 },
-  { label: 'moist 0.2', status: 'moist', moisture: 0.2 },
-  { label: 'due', status: 'due', moisture: 0 },
-  { label: 'overdue', status: 'overdue', moisture: 0 },
+const GAUGE_SAMPLES: { label: string; status: SoilStatus; moisture: number; totalDays: number }[] = [
+  { label: '7 / 7', status: 'moist', moisture: 1, totalDays: 7 },
+  { label: '4 / 7', status: 'moist', moisture: 4 / 7, totalDays: 7 },
+  { label: '1 / 2', status: 'moist', moisture: 0.5, totalDays: 2 },
+  { label: '20 / 35', status: 'moist', moisture: 20 / 35, totalDays: 35 },
+  { label: 'due', status: 'due', moisture: 0, totalDays: 7 },
+  { label: 'overdue', status: 'overdue', moisture: 0, totalDays: 9 },
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <AppText variant="formula">{title}</AppText>
+      <AppText variant="caption">{title}</AppText>
       {children}
     </View>
   );
@@ -37,27 +38,40 @@ export default function GalleryScreen() {
 
   const swatches: [string, string][] = [
     ['ink', colors.ink],
+    ['sub', colors.sub],
     ['paper', colors.paper],
     ['surface', colors.surface],
-    ['soil.wet', colors.soil.wet],
-    ['soil.dry', colors.soil.dry],
-    ['soil.crack', colors.soil.crack],
-    ['moss', colors.moss],
-    ['water', colors.water],
-    ['warn', colors.warn],
+    ['hair', colors.hair],
+    ['soft', colors.soft],
+    ['block', colors.block],
+    ['accent', colors.accent],
+    ['highlight', colors.highlight],
+    ['gaugeEmpty', colors.gaugeEmpty],
+    ['berry', colors.berry],
+    ['berryTint', colors.berryTint],
+    ['berryEmpty', colors.berryEmpty],
+    ['sprig', colors.sprig],
   ];
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.paper }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Section title="TYPE 14.3">
-          <AppText variant="numeralLg">D-3</AppText>
+          <AppText variant="numeralLg">9.21</AppText>
+          <AppText variant="numeralMd">9.28</AppText>
           <AppText variant="numeralSm">12</AppText>
           <AppText variant="titleLg">{ko.today.title}</AppText>
           <AppText variant="titleSm">{ko.app.name}</AppText>
           <AppText>{ko.today.empty}</AppText>
           <AppText variant="scientific">Monstera deliciosa</AppText>
-          <AppText variant="formula">7 × 1.0 × 1.0 × 1.3 × 1.0 × 1.0 × 1.15 = 10</AppText>
+          <AppText variant="label">{ko.today.due}</AppText>
+          <AppText variant="caption">{ko.today.nextWater(ko.format.monthDay(9, 28))}</AppText>
+          <View style={styles.row}>
+            <Tag label="D-3" />
+            <Tag label={ko.format.dDay(0)} tone="highlight" />
+            <Tag label={ko.format.overdue(3)} tone="berry" />
+            <Sprig size={48} />
+          </View>
         </Section>
 
         <Section title="COLOR 14.2">
@@ -65,38 +79,25 @@ export default function GalleryScreen() {
             {swatches.map(([name, value]) => (
               <View key={name} style={styles.swatch}>
                 <View
-                  style={[styles.chip, { backgroundColor: value, borderColor: colors.soil.dry }]}
+                  style={[styles.chip, { backgroundColor: value, borderColor: colors.hair }]}
                 />
-                <AppText variant="formula">{name}</AppText>
+                <AppText variant="caption">{name}</AppText>
               </View>
             ))}
           </View>
         </Section>
 
-        <Section title="SOIL GAUGE 14.1 band">
+        <Section title="DAY GAUGE 14.1">
           <Card style={styles.stack}>
             {GAUGE_SAMPLES.map((sample) => (
               <View key={sample.label} style={styles.row}>
-                <AppText variant="formula" style={styles.rowLabel}>
+                <AppText variant="caption" style={styles.rowLabel}>
                   {sample.label}
                 </AppText>
-                <SoilGauge status={sample.status} moisture={sample.moisture} style={styles.fill} />
-              </View>
-            ))}
-          </Card>
-        </Section>
-
-        <Section title="SOIL GAUGE 14.1 pot (bonsai)">
-          <Card style={styles.stack}>
-            {GAUGE_SAMPLES.map((sample) => (
-              <View key={sample.label} style={styles.row}>
-                <AppText variant="formula" style={styles.rowLabel}>
-                  {sample.label}
-                </AppText>
-                <SoilGauge
-                  variant="pot"
+                <DayGauge
                   status={sample.status}
                   moisture={sample.moisture}
+                  totalDays={sample.totalDays}
                   style={styles.fill}
                 />
               </View>
@@ -105,17 +106,26 @@ export default function GalleryScreen() {
         </Section>
 
         <Section title="CARD + BUTTON 14.4">
-          <Card style={styles.stack}>
+          <Card tone={watered ? 'surface' : 'highlight'} style={styles.stack}>
             <View style={styles.cardHeader}>
               <View style={styles.fill}>
                 <AppText variant="titleSm">{ko.app.name}</AppText>
                 <AppText variant="scientific">Pinus thunbergii</AppText>
               </View>
-              <AppText variant="numeralSm" color={watered ? colors.moss : colors.water}>
-                {watered ? 'D-7' : 'D-0'}
-              </AppText>
+              <Tag
+                label={ko.format.dDay(watered ? 7 : 0)}
+                tone={watered ? 'soft' : 'surface'}
+              />
             </View>
-            <SoilGauge status={watered ? 'moist' : 'due'} moisture={watered ? 1 : 0} />
+            {/* key 가 바뀌면 새로 그려져서 빈 데서부터 차는 모습을 다시 본다 */}
+            <DayGauge
+              key={String(watered)}
+              status={watered ? 'moist' : 'due'}
+              moisture={watered ? 1 : 0}
+              totalDays={7}
+              onHighlight={!watered}
+              animateFill={watered}
+            />
             <View style={styles.actions}>
               <Button
                 label={ko.action.watered}
@@ -125,7 +135,7 @@ export default function GalleryScreen() {
               />
               <Button
                 label={ko.action.postpone}
-                variant="secondary"
+                variant={watered ? 'secondary' : 'surface'}
                 onPress={() => setWatered(false)}
                 style={styles.fill}
               />

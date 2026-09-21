@@ -48,7 +48,7 @@ export default function RootLayout() {
     presentation: 'formSheet',
     sheetAllowedDetents: 'fitToContents',
     sheetGrabberVisible: true,
-    sheetCornerRadius: radius.card * 2,
+    sheetCornerRadius: radius.sheet,
     contentStyle: { backgroundColor: colors.surface },
   } as const;
 

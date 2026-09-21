@@ -5,7 +5,7 @@ import type { CalendarDate } from './types';
 
 const date = (year: number, month: number, day: number): CalendarDate => ({ year, month, day });
 
-describe('getSoilGaugeState: 흙 게이지의 진행률 (SPEC.md 14.1)', () => {
+describe('getSoilGaugeState: 물주기 게이지의 진행률 (SPEC.md 14.1)', () => {
   // 시나리오 A: 9월 20일에 물을 주고 7일 주기라 9월 27일이 다음 물주기
   const lastWatered = date(2026, 9, 20);
   const nextWater = date(2026, 9, 27);
@@ -15,6 +15,7 @@ describe('getSoilGaugeState: 흙 게이지의 진행률 (SPEC.md 14.1)', () => {
       status: 'moist',
       moisture: 1,
       daysLeft: 7,
+      totalDays: 7,
     });
   });
 
@@ -33,6 +34,7 @@ describe('getSoilGaugeState: 흙 게이지의 진행률 (SPEC.md 14.1)', () => {
       status: 'due',
       moisture: 0,
       daysLeft: 0,
+      totalDays: 7,
     });
   });
 
@@ -41,13 +43,14 @@ describe('getSoilGaugeState: 흙 게이지의 진행률 (SPEC.md 14.1)', () => {
       status: 'overdue',
       moisture: 0,
       daysLeft: -3,
+      totalDays: 7,
     });
   });
 
   it('달을 넘겨도 센다', () => {
     const state = getSoilGaugeState(date(2026, 12, 28), date(2027, 1, 12), date(2027, 1, 2));
 
-    expect(state).toMatchObject({ status: 'moist', daysLeft: 10 });
+    expect(state).toMatchObject({ status: 'moist', daysLeft: 10, totalDays: 15 });
     expect(state.moisture).toBeCloseTo(10 / 15, 10);
   });
 
@@ -68,7 +71,7 @@ describe('getSoilGaugeState: 흙 게이지의 진행률 (SPEC.md 14.1)', () => {
   it('"내일로" 미뤄 예정일이 늘어나면 그만큼 다시 젖은 쪽으로 간다', () => {
     const postponed = getSoilGaugeState(lastWatered, date(2026, 9, 28), date(2026, 9, 27));
 
-    expect(postponed).toMatchObject({ status: 'moist', daysLeft: 1 });
+    expect(postponed).toMatchObject({ status: 'moist', daysLeft: 1, totalDays: 8 });
     expect(postponed.moisture).toBeCloseTo(1 / 8, 10);
   });
 
@@ -77,12 +80,13 @@ describe('getSoilGaugeState: 흙 게이지의 진행률 (SPEC.md 14.1)', () => {
       status: 'moist',
       moisture: 1,
       daysLeft: 9,
+      totalDays: 7,
     });
   });
 
   it('예정일이 물 준 날과 같거나 앞선 잘못된 데이터도 0~1 안에 든다', () => {
     const state = getSoilGaugeState(lastWatered, date(2026, 9, 19), date(2026, 9, 18));
 
-    expect(state).toEqual({ status: 'moist', moisture: 1, daysLeft: 1 });
+    expect(state).toEqual({ status: 'moist', moisture: 1, daysLeft: 1, totalDays: 1 });
   });
 });

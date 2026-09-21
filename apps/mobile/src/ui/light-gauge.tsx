@@ -21,8 +21,8 @@ export function LightGauge({ grade }: { grade: LightGrade }) {
           style={[
             styles.cell,
             {
-              borderColor: colors.ink,
-              backgroundColor: index < filled ? colors.ink : colors.surface,
+              borderColor: index < filled ? colors.accent : colors.gaugeEmpty,
+              backgroundColor: index < filled ? colors.accent : colors.gaugeEmpty,
             },
           ]}
         />

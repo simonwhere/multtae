@@ -13,10 +13,12 @@ export function NotificationBanner() {
   if (permission !== 'denied') return null;
 
   return (
-    <View style={[styles.banner, { backgroundColor: colors.surface, borderColor: colors.warn }]}>
+    <View style={[styles.banner, { backgroundColor: colors.berryTint }]}>
       <View style={styles.text}>
-        <AppText variant="titleSm">{ko.notifications.offTitle}</AppText>
-        <AppText variant="formula">{ko.notifications.offBody}</AppText>
+        <AppText variant="label">{ko.notifications.offTitle}</AppText>
+        <AppText variant="caption" color={colors.ink}>
+          {ko.notifications.offBody}
+        </AppText>
       </View>
       <TextButton label={ko.notifications.openSettings} onPress={() => void Linking.openSettings()} />
     </View>
@@ -28,11 +30,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderLeftWidth: 4,
-    padding: spacing.md,
-    marginTop: spacing.md,
+    borderRadius: radius.control,
+    padding: spacing.lg,
+    marginTop: spacing.xs,
   },
   text: {
     flex: 1,

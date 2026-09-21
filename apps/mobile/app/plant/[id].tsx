@@ -15,8 +15,8 @@ import {
   planKeepManual,
   planManualInterval,
 } from '@/plants/care';
-import { DaysLeft } from '@/plants/days-left';
-import { formatInterval, formatMonthDay } from '@/plants/format';
+import { DueTag } from '@/plants/due-tag';
+import { formatDottedDate, formatInterval, formatMonthDay } from '@/plants/format';
 import { classifyPlant, toEnginePlant } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
@@ -27,9 +27,10 @@ import {
   Button,
   Card,
   Chevron,
+  DayGauge,
   radius,
-  SoilGauge,
   spacing,
+  Tag,
   TextButton,
   useColors,
 } from '@/ui';
@@ -46,13 +47,34 @@ function InfoRow({ label, value, onPress }: { label: string; value: string; onPr
       accessibilityLabel={`${label} ${value}`}
       onPress={onPress}
       style={({ pressed }) => [styles.infoRow, pressed && styles.pressed]}>
-      <AppText variant="formula" style={styles.infoLabel}>
+      <AppText variant="caption" style={styles.infoLabel}>
         {label}
       </AppText>
       <AppText numberOfLines={1} style={styles.infoValue}>
         {value}
       </AppText>
       <Chevron />
+    </Pressable>
+  );
+}
+
+function BackButton({ onPress }: { onPress: () => void }) {
+  const colors = useColors();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={ko.common.goBack}
+      hitSlop={spacing.sm}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.back,
+        { backgroundColor: colors.surface, borderColor: colors.hair },
+        pressed && styles.pressed,
+      ]}>
+      <View style={styles.backIcon}>
+        <Chevron />
+      </View>
     </Pressable>
   );
 }
@@ -71,7 +93,7 @@ export default function PlantDetailScreen() {
     return (
       <SafeAreaView style={[styles.screen, { backgroundColor: colors.paper }]}>
         <View style={styles.header}>
-          <TextButton label={ko.common.goBack} onPress={close} />
+          <BackButton onPress={close} />
         </View>
         {detail === 'missing' ? (
           <View style={styles.center}>
@@ -126,48 +148,60 @@ export default function PlantDetailScreen() {
   return (
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.paper }]}>
       <View style={styles.header}>
-        <TextButton label={ko.common.goBack} onPress={close} />
+        <BackButton onPress={close} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {plant.coverPhotoPath ? (
-          <Image
-            accessibilityIgnoresInvertColors
-            contentFit="cover"
-            source={{ uri: photoUri(plant.coverPhotoPath) }}
-            style={[styles.photo, { backgroundColor: colors.soil.dry }]}
-          />
-        ) : null}
-
         <View style={styles.names}>
           <AppText variant="titleLg" accessibilityRole="header">
             {plant.nickname}
           </AppText>
           {species ? <AppText variant="scientific">{species.scientificName}</AppText> : null}
-          <AppText variant="formula">
-            {[species?.nameKo ?? ko.groupName[plant.groupCode], plant.isBonsai ? t.bonsai : null, space.name]
-              .filter((part) => part !== null)
-              .join(' · ')}
-          </AppText>
+          <View style={styles.tags}>
+            <Tag label={species?.nameKo ?? ko.groupName[plant.groupCode]} tone="highlight" />
+            {plant.isBonsai ? <Tag label={t.bonsai} /> : null}
+            <Tag label={space.name} />
+          </View>
         </View>
 
-        <Card style={styles.stack}>
-          <AppText variant="formula">{t.nextWater}</AppText>
+        {plant.coverPhotoPath ? (
+          <Image
+            accessibilityIgnoresInvertColors
+            contentFit="cover"
+            source={{ uri: photoUri(plant.coverPhotoPath) }}
+            style={[styles.photo, { backgroundColor: colors.block }]}
+          />
+        ) : null}
+
+        <Card tone="highlight" style={styles.stack}>
           <View style={styles.nextRow}>
-            <AppText variant="titleLg" style={styles.fill}>
-              {dateOf(plant.nextWaterAt ?? plant.lastWateredAt)}
-            </AppText>
-            <DaysLeft daysLeft={soil.daysLeft} />
+            <View
+              accessible
+              accessibilityLabel={`${t.nextWater} ${dateOf(plant.nextWaterAt ?? plant.lastWateredAt)}`}
+              style={styles.nextDate}>
+              <AppText variant="label" color={colors.sub}>
+                {t.nextWater}
+              </AppText>
+              <AppText variant="numeralMd">
+                {formatDottedDate(
+                  toCalendarDate(plant.nextWaterAt ?? plant.lastWateredAt, context.utcOffsetMinutes),
+                )}
+              </AppText>
+            </View>
+            <DueTag soil={soil} onHighlight />
           </View>
-          <SoilGauge
-            variant={plant.isBonsai ? 'pot' : 'band'}
+          <DayGauge
             status={soil.status}
             moisture={soil.moisture}
+            totalDays={soil.totalDays}
+            onHighlight
           />
-          <AppText>{formatInterval(result)}</AppText>
-          <AppText variant="formula">
-            {plant.lastWateredUnknown ? t.lastWateredUnknown : t.lastWatered(dateOf(plant.lastWateredAt))}
-          </AppText>
+          <View style={styles.nextFacts}>
+            <AppText variant="caption">{formatInterval(result)}</AppText>
+            <AppText variant="caption">
+              {plant.lastWateredUnknown ? t.lastWateredUnknown : t.lastWatered(dateOf(plant.lastWateredAt))}
+            </AppText>
+          </View>
           <Button
             label={ko.action.watered}
             onPress={() =>
@@ -204,16 +238,18 @@ export default function PlantDetailScreen() {
         ) : null}
 
         <View style={styles.section}>
-          <AppText variant="formula">{t.info}</AppText>
+          <AppText variant="label" style={styles.sectionTitle}>
+            {t.info}
+          </AppText>
           <Card style={styles.rows}>
             <InfoRow label={t.space} value={space.name} onPress={() => edit('move')} />
-            <View style={[styles.divider, { backgroundColor: colors.soil.dry }]} />
+            <View style={[styles.divider, { backgroundColor: colors.hair }]} />
             <InfoRow
               label={t.pot}
               value={`${ko.potSize[plant.potSize]} · ${ko.soilType[plant.soilType]}`}
               onPress={() => edit('repot')}
             />
-            <View style={[styles.divider, { backgroundColor: colors.soil.dry }]} />
+            <View style={[styles.divider, { backgroundColor: colors.hair }]} />
             <InfoRow
               label={t.interval}
               value={
@@ -223,16 +259,18 @@ export default function PlantDetailScreen() {
               }
               onPress={() => edit('interval')}
             />
-            <View style={[styles.divider, { backgroundColor: colors.soil.dry }]} />
+            <View style={[styles.divider, { backgroundColor: colors.hair }]} />
             <InfoRow label={t.nickname} value={plant.nickname} onPress={() => edit('name')} />
           </Card>
           {plant.lastRepotAt ? (
-            <AppText variant="formula">{t.repotted(dateOf(plant.lastRepotAt))}</AppText>
+            <AppText variant="caption">{t.repotted(dateOf(plant.lastRepotAt))}</AppText>
           ) : null}
         </View>
 
         <View style={styles.section}>
-          <AppText variant="formula">{t.history}</AppText>
+          <AppText variant="label" style={styles.sectionTitle}>
+            {t.history}
+          </AppText>
           {history.length === 0 ? (
             <AppText>{t.historyEmpty}</AppText>
           ) : (
@@ -240,11 +278,11 @@ export default function PlantDetailScreen() {
               {history.map((log, index) => (
                 <View key={log.id}>
                   {index > 0 ? (
-                    <View style={[styles.divider, { backgroundColor: colors.soil.dry }]} />
+                    <View style={[styles.divider, { backgroundColor: colors.hair }]} />
                   ) : null}
                   <View style={styles.historyRow}>
                     <AppText style={styles.fill}>{dateOf(log.wateredAt)}</AppText>
-                    <AppText variant="formula">{ko.records.soilState[log.soilState]}</AppText>
+                    <AppText variant="caption">{ko.records.soilState[log.soilState]}</AppText>
                   </View>
                 </View>
               ))}
@@ -255,7 +293,9 @@ export default function PlantDetailScreen() {
           ) : null}
         </View>
 
-        <Button label={t.delete} variant="secondary" onPress={confirmDelete} />
+        <View style={styles.delete}>
+          <TextButton label={t.delete} tone="berry" onPress={confirmDelete} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -280,20 +320,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl - spacing.xs,
     paddingBottom: spacing.xl * 2,
   },
+  back: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.control,
+    borderWidth: 1,
+  },
+  backIcon: {
+    transform: [{ rotate: '180deg' }],
+  },
   photo: {
     width: '100%',
-    aspectRatio: 4 / 3,
-    borderRadius: radius.card,
+    height: 230,
+    borderRadius: radius.card + 4,
   },
   names: {
-    gap: spacing.xs,
+    gap: spacing.sm,
+  },
+  tags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
+  },
+  nextDate: {
+    flex: 1,
+    gap: spacing.xs + 2,
+  },
+  nextFacts: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  sectionTitle: {
+    marginHorizontal: spacing.xs,
+  },
+  delete: {
+    alignItems: 'center',
   },
   stack: {
     gap: spacing.md,
   },
   nextRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
   fill: {
     flex: 1,

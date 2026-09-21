@@ -39,8 +39,10 @@ export function SwipeRow({ onWatered, onPostpone, children }: SwipeRowProps) {
           accessibilityRole="button"
           accessibilityLabel={ko.action.watered}
           onPress={() => run(onWatered)}
-          style={[styles.action, styles.left, { backgroundColor: colors.ink }]}>
-          <AppText color={colors.paper}>{ko.action.watered}</AppText>
+          style={[styles.action, styles.left, { backgroundColor: colors.accent }]}>
+          <AppText variant="label" color={colors.onAccent}>
+            {ko.action.watered}
+          </AppText>
         </Pressable>
       )}
       renderRightActions={
@@ -53,7 +55,7 @@ export function SwipeRow({ onWatered, onPostpone, children }: SwipeRowProps) {
                 style={[
                   styles.action,
                   styles.right,
-                  { backgroundColor: colors.surface, borderColor: colors.soil.dry },
+                  { backgroundColor: colors.soft, borderColor: colors.soft },
                 ]}>
                 <AppText>{ko.action.postpone}</AppText>
               </Pressable>

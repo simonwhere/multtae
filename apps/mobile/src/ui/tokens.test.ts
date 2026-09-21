@@ -20,96 +20,99 @@ function contrast(foreground: string, background: string): number {
 
 const SCHEMES: ColorScheme[] = ['light', 'dark'];
 
-describe('색 토큰: SPEC.md 14.2 값 그대로', () => {
-  it('라이트', () => {
+describe('색 토큰: SPEC.md 14.2 화원 라벨', () => {
+  it('라이트는 시안의 값 그대로다', () => {
     expect(colors.light).toMatchObject({
-      soil: { wet: '#4A3728', dry: '#C9B08A', crack: '#9E8B76' },
-      paper: '#F4EFE6',
-      moss: '#5B6B3E',
-      water: '#3F6E8C',
-      warn: '#B5542E',
+      ink: '#1F2B25',
+      sub: '#5A675F',
+      paper: '#F4F6F2',
+      surface: '#FFFFFF',
+      accent: '#2F5F49',
+      highlight: '#E4EDD3',
+      berry: '#8E3646',
     });
   });
 
-  it('다크', () => {
-    expect(colors.dark).toMatchObject({
-      soil: { wet: '#5C4534', dry: '#8A7355', crack: '#6B5D4D' },
-      paper: '#1C1814',
-      moss: '#7A8C55',
-      water: '#6F9EBB',
-      warn: '#D4784F',
-    });
+  it('바탕은 베이지가 아니다: 붉은 기보다 초록 기가 많다', () => {
+    const [red, green] = [1, 3].map((start) => Number.parseInt(colors.light.paper.slice(start, start + 2), 16));
+
+    expect(green).toBeGreaterThan(red);
   });
 
-  it('라이트의 글자색은 젖은 흙 색과 같다', () => {
-    expect(colors.light.ink).toBe(colors.light.soil.wet);
-  });
-});
-
-describe.each(SCHEMES)('대비 (%s): SPEC.md 15 접근성', (scheme) => {
-  const c = colors[scheme];
-
-  it('글자색은 배경과 카드 면 위에서 본문 기준(4.5)을 넘는다', () => {
-    expect(contrast(c.ink, c.paper)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(c.ink, c.surface)).toBeGreaterThanOrEqual(4.5);
+  it.each(SCHEMES)('%s: 글자색은 바탕·카드·옅은 면·강조 면 위에서 본문 기준(4.5)을 넘는다', (scheme) => {
+    const c = colors[scheme];
+    for (const background of [c.paper, c.surface, c.soft, c.highlight]) {
+      expect(contrast(c.ink, background)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
-  it('주 버튼(글자색 면 + 배경색 글자)도 본문 기준을 넘는다', () => {
-    expect(contrast(c.paper, c.ink)).toBeGreaterThanOrEqual(4.5);
+  it.each(SCHEMES)('%s: 보조 글자도 바탕·카드·강조 면 위에서 본문 기준을 넘는다', (scheme) => {
+    const c = colors[scheme];
+    for (const background of [c.paper, c.surface, c.highlight]) {
+      expect(contrast(c.sub, background)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
-  it('완료(moss)와 물주기 강조(water) 글자는 배경 위에서 본문 기준을 넘는다', () => {
-    expect(contrast(c.moss, c.paper)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(c.water, c.paper)).toBeGreaterThanOrEqual(4.5);
+  it.each(SCHEMES)('%s: 주 버튼(주색 면 + 그 위의 글자)은 본문 기준을 넘는다', (scheme) => {
+    const c = colors[scheme];
+    expect(contrast(c.onAccent, c.accent)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('경고색(warn)은 UI 요소 기준(3)을 넘는다', () => {
-    expect(contrast(c.warn, c.paper)).toBeGreaterThanOrEqual(3);
-    expect(contrast(c.warn, c.surface)).toBeGreaterThanOrEqual(3);
+  it.each(SCHEMES)('%s: 주색 글자(완료, 고른 탭)는 카드와 강조 면 위에서 본문 기준을 넘는다', (scheme) => {
+    const c = colors[scheme];
+    expect(contrast(c.accent, c.surface)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.accent, c.highlight)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('흙 게이지의 선(글자색)은 마른 흙·밀린 흙 위에서 UI 요소 기준을 넘는다', () => {
-    expect(contrast(c.ink, c.soil.dry)).toBeGreaterThanOrEqual(3);
-    expect(contrast(c.ink, c.soil.crack)).toBeGreaterThanOrEqual(3);
+  it.each(SCHEMES)('%s: 밀림 글자는 밀림 이름표와 카드, 바탕 위에서 본문 기준을 넘는다', (scheme) => {
+    const c = colors[scheme];
+    for (const background of [c.berryTint, c.surface, c.paper]) {
+      expect(contrast(c.berry, background)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
-  it('젖은 흙과 마른 흙은 서로 구분된다', () => {
-    expect(contrast(c.soil.wet, c.soil.dry)).toBeGreaterThanOrEqual(1.9);
+  it.each(SCHEMES)('%s: 게이지의 찬 칸과 빈 칸은 UI 요소 기준(3)으로 구분된다', (scheme) => {
+    const c = colors[scheme];
+    expect(contrast(c.accent, c.gaugeEmpty)).toBeGreaterThanOrEqual(3);
+    expect(contrast(c.accent, c.berryEmpty)).toBeGreaterThanOrEqual(3);
   });
 
-  it('카드 면은 배경보다 한 단계 밝다 (SPEC 14.4)', () => {
-    expect(luminance(c.surface)).toBeGreaterThan(luminance(c.paper));
+  it.each(SCHEMES)('%s: 카드 면은 바탕과 구분된다', (scheme) => {
+    expect(colors[scheme].surface).not.toBe(colors[scheme].paper);
   });
 });
 
 describe('타이포그래피: SPEC.md 14.3', () => {
-  it('숫자·D-day 는 Instrument Serif 40~56pt, 자간 −2%', () => {
-    expect(typography.numeralLg).toMatchObject({ fontFamily: fonts.serif, fontSize: 56 });
-    expect(typography.numeralSm).toMatchObject({ fontFamily: fonts.serif, fontSize: 40 });
-    expect(typography.numeralLg.letterSpacing).toBeCloseTo(-1.12, 6);
-    expect(typography.numeralSm.letterSpacing).toBeCloseTo(-0.8, 6);
+  it('큰 숫자는 Figtree SemiBold 26~56pt', () => {
+    expect(typography.numeralLg).toMatchObject({ fontFamily: fonts.numeral, fontSize: 56 });
+    expect(typography.numeralMd).toMatchObject({ fontFamily: fonts.numeral, fontSize: 48 });
+    expect(typography.numeralSm).toMatchObject({ fontFamily: fonts.numeral, fontSize: 26 });
   });
 
-  it('제목은 Pretendard SemiBold 20~24pt', () => {
-    expect(typography.titleLg).toMatchObject({ fontFamily: fonts.sansSemiBold, fontSize: 24 });
-    expect(typography.titleSm).toMatchObject({ fontFamily: fonts.sansSemiBold, fontSize: 20 });
-  });
-
-  it('본문은 Pretendard 15pt, 행간 1.55', () => {
+  it('한글은 Pretendard: 제목은 SemiBold, 본문은 15pt 행간 1.55', () => {
+    expect(typography.titleLg).toMatchObject({ fontFamily: fonts.sansSemiBold, fontSize: 30 });
+    expect(typography.titleSm).toMatchObject({ fontFamily: fonts.sansSemiBold, fontSize: 18 });
+    expect(typography.label).toMatchObject({ fontFamily: fonts.sansSemiBold, fontSize: 15 });
     expect(typography.body).toMatchObject({ fontFamily: fonts.sans, fontSize: 15 });
-    expect(typography.body.lineHeight).toBeCloseTo(23.25, 6);
+    expect(typography.body.lineHeight).toBeCloseTo(15 * 1.55, 5);
   });
 
-  it('학명은 Instrument Serif Italic 13pt, 계산식은 고정폭 숫자 13pt', () => {
-    expect(typography.scientific).toMatchObject({ fontFamily: fonts.serifItalic, fontSize: 13 });
-    expect(typography.formula).toMatchObject({ fontSize: 13, fontVariant: ['tabular-nums'] });
+  it('이름표와 작은 글자는 13pt. 한글이 섞이므로 Pretendard 다', () => {
+    expect(typography.tag).toMatchObject({ fontFamily: fonts.sansSemiBold, fontSize: 13 });
+    expect(typography.caption).toMatchObject({ fontFamily: fonts.sans, fontSize: 13 });
+  });
+
+  it('학명은 라틴 글자라 Figtree 13pt', () => {
+    expect(typography.scientific).toMatchObject({ fontFamily: fonts.latin, fontSize: 13 });
   });
 });
 
 describe('컴포넌트 원칙: SPEC.md 14.4', () => {
-  it('카드 모서리 12pt, 전환 200ms, 흙 게이지 600ms', () => {
-    expect(radius.card).toBe(12);
-    expect(motion.transition).toBe(200);
-    expect(motion.soilGauge).toBe(600);
+  it('카드 20pt, 버튼·입력 14pt, 이름표 8pt, 게이지 칸 4pt', () => {
+    expect(radius).toMatchObject({ card: 20, control: 14, tag: 8, gauge: 4 });
+  });
+
+  it('전환 200ms, 게이지 600ms', () => {
+    expect(motion).toEqual({ transition: 200, gauge: 600 });
   });
 });

@@ -189,8 +189,8 @@ export default function PlantEditSheet() {
           <AppText variant="titleSm" accessibilityRole="header">
             {t.repot.title}
           </AppText>
-          <AppText variant="formula">{t.repot.guide}</AppText>
-          <AppText variant="formula">{t.repot.pot}</AppText>
+          <AppText variant="caption">{t.repot.guide}</AppText>
+          <AppText variant="caption">{t.repot.pot}</AppText>
           <View style={styles.row}>
             {POT_SIZES.map((size) => (
               <ChoiceCard
@@ -203,7 +203,7 @@ export default function PlantEditSheet() {
               />
             ))}
           </View>
-          <AppText variant="formula">{t.repot.soil}</AppText>
+          <AppText variant="caption">{t.repot.soil}</AppText>
           <View style={styles.grid}>
             {SOIL_TYPES.map((soil) => (
               <ChoiceCard
@@ -224,7 +224,7 @@ export default function PlantEditSheet() {
           <AppText variant="titleSm" accessibilityRole="header">
             {t.move.title}
           </AppText>
-          <AppText variant="formula">{t.move.guide}</AppText>
+          <AppText variant="caption">{t.move.guide}</AppText>
           <ScrollView style={styles.fill} contentContainerStyle={styles.list}>
             {spaces.map((candidate) => (
               <ChoiceCard

@@ -12,12 +12,11 @@ export function Chevron() {
     <Svg width={SIZE} height={SIZE} viewBox="0 0 16 16" accessibilityElementsHidden>
       <Path
         d="M6 3l5 5-5 5"
-        stroke={colors.ink}
+        stroke={colors.sub}
         strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
-        opacity={0.5}
       />
     </Svg>
   );

@@ -60,14 +60,14 @@ function PhotoStep({
   return (
     <View style={styles.stack}>
       <AppText>{ko.spaceRegister.photo.guide}</AppText>
-      <AppText variant="formula">{ko.spaceRegister.photo.landscape}</AppText>
+      <AppText variant="caption">{ko.spaceRegister.photo.landscape}</AppText>
       {draft.photoPath ? (
         <Image
           accessibilityIgnoresInvertColors
           accessibilityLabel={ko.spaceRegister.photo.preview}
           contentFit="cover"
           source={{ uri: photoUri(draft.photoPath) }}
-          style={[styles.photo, { backgroundColor: colors.soil.dry }]}
+          style={[styles.photo, { backgroundColor: colors.block }]}
         />
       ) : null}
       {problem ? <Notice message={PHOTO_PROBLEM[problem]} /> : null}
@@ -100,7 +100,7 @@ function DirectionStep({ draft, dispatch }: { draft: SpaceDraft; dispatch: Dispa
 
   return (
     <View style={styles.stack}>
-      <AppText variant="formula">{ko.spaceRegister.direction.guide}</AppText>
+      <AppText variant="caption">{ko.spaceRegister.direction.guide}</AppText>
       {/* 나침반처럼 북은 위, 남은 아래에 둔다 */}
       <View accessibilityRole="radiogroup" style={styles.stack}>
         <View style={styles.row}>
@@ -165,7 +165,7 @@ function LightStep({ draft, dispatch }: { draft: SpaceDraft; dispatch: Dispatch 
       </Card>
       {editing ? (
         <View accessibilityRole="radiogroup" style={styles.stack}>
-          <AppText variant="formula">{ko.spaceRegister.light.choose}</AppText>
+          <AppText variant="caption">{ko.spaceRegister.light.choose}</AppText>
           {LIGHT_GRADES.map((lightGrade) => (
             <ChoiceCard
               key={lightGrade}
@@ -230,6 +230,7 @@ export function SpaceRegistrationScreen() {
   return (
     <RegistrationShell
       progress={progressOf(draft)}
+      steps={SPACE_STEPS.length}
       progressLabel={ko.spaceRegister.progress}
       title={ko.spaceRegister[draft.step].title}
       onClose={close}

@@ -32,7 +32,7 @@ export default function RegisterSheet() {
         onPress={() => router.replace('/register/plant')}
       />
       {spaceCount === 0 ? (
-        <AppText variant="formula">{ko.registerSheet.needSpace}</AppText>
+        <AppText variant="caption">{ko.registerSheet.needSpace}</AppText>
       ) : null}
       <Button
         label={ko.today.registerSpace}

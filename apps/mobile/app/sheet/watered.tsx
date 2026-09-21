@@ -79,7 +79,7 @@ export default function WateredSheet() {
       {hydro ? null : (
         <View accessibilityRole="radiogroup" style={styles.stack}>
           <AppText>{ko.wateredSheet.soilQuestion}</AppText>
-          <AppText variant="formula">{ko.wateredSheet.soilGuide}</AppText>
+          <AppText variant="caption">{ko.wateredSheet.soilGuide}</AppText>
           {SOIL_STATES.map((state) => (
             <ChoiceCard
               key={state}

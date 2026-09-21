@@ -9,28 +9,32 @@ export interface CardProps {
   /** 있으면 카드 전체가 눌린다 */
   onPress?: () => void;
   accessibilityLabel?: string;
-  /** 여럿 중 고른 카드. 테두리가 글자색으로 굵어진다 */
+  /** 여럿 중 고른 카드. 테두리가 주색으로 바뀐다 */
   selected?: boolean;
+  /** highlight: 새순 연두의 강조 면. 오늘 물 줄 카드와 다음 물주기 카드에 쓴다 */
+  tone?: 'surface' | 'highlight';
   style?: StyleProp<ViewStyle>;
 }
 
-// 14.4: 모서리 12pt, 그림자 없음, paper 보다 한 단계 밝은 면색, 1px 흙색 테두리
+// 14.4: 모서리 20pt, 그림자 없음, 흰 면에 아주 옅은 1px 선. 강조 면은 선 없이 면만 쓴다
 export function Card({
   children,
   onPress,
   accessibilityLabel,
   selected = false,
+  tone = 'surface',
   style,
 }: CardProps) {
   const colors = useColors();
+  const highlighted = tone === 'highlight';
   const face = [
     styles.card,
     {
-      backgroundColor: colors.surface,
-      borderColor: selected ? colors.ink : colors.soil.dry,
-      borderWidth: selected ? 2 : 1,
+      backgroundColor: highlighted ? colors.highlight : colors.surface,
+      borderColor: selected ? colors.accent : highlighted ? colors.highlight : colors.hair,
+      borderWidth: selected ? 1.5 : 1,
       // 테두리가 굵어져도 안쪽 내용이 움직이지 않게 한다
-      padding: spacing.lg - (selected ? 1 : 0),
+      padding: spacing.lg - (selected ? 0.5 : 0),
     },
   ];
 

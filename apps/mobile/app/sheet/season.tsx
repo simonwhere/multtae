@@ -20,7 +20,7 @@ export default function SeasonSheet() {
       </AppText>
       <AppText>{ko.seasonInfo[season]}</AppText>
       {next ? (
-        <AppText variant="formula">
+        <AppText variant="caption">
           {ko.seasonInfo.next(ko.seasonMode[next.season], formatMonthDay(next.date))}
         </AppText>
       ) : null}

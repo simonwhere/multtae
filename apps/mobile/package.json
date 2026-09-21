@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@expo-google-fonts/figtree": "^0.4.1",
     "drizzle-orm": "^0.45.2",
     "expo": "~57.0.24",
     "expo-constants": "~57.0.19",

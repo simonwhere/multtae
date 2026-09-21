@@ -6,14 +6,16 @@ import { ko } from '@/i18n/ko';
 import { AppText } from './app-text';
 import { Button } from './button';
 import { Notice } from './notice';
-import { SoilGauge } from './soil-gauge';
+import { DayGauge } from './day-gauge';
 import { TextButton } from './text-button';
 import { spacing } from './tokens';
 import { useColors } from './use-colors';
 
 export interface RegistrationShellProps {
-  /** 0~1. 진행 표시는 흙 게이지가 차오르는 형태다 (SPEC 14.5) */
+  /** 0~1. 진행 표시는 단계마다 한 칸씩 차는 게이지다 (SPEC 14.5) */
   progress: number;
+  /** 전체 단계 수. 게이지의 칸 수다 */
+  steps: number;
   progressLabel: string;
   /** 이 화면의 질문 하나 */
   title: string;
@@ -32,6 +34,7 @@ export interface RegistrationShellProps {
 /** 등록 플로우의 공통 틀: 닫기와 진행 게이지, 한 화면 한 질문, 하단의 이전·다음 */
 export function RegistrationShell({
   progress,
+  steps,
   progressLabel,
   title,
   onClose,
@@ -57,9 +60,10 @@ export function RegistrationShell({
         {/* iOS 시트 안에서는 상단 여백이 0 이고, 전체 화면으로 뜨는 Android 에서는 상태 표시줄만큼 내려온다 */}
         <SafeAreaView edges={['top']} style={styles.header}>
           <TextButton label={ko.common.close} onPress={onClose} />
-          <SoilGauge
-            status="moist"
-            moisture={blockedMessage ? 0 : progress}
+          <DayGauge
+            status={blockedMessage ? 'due' : 'moist'}
+            moisture={progress}
+            totalDays={steps}
             accessibilityLabel={progressLabel}
           />
         </SafeAreaView>

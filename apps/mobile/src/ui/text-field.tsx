@@ -15,19 +15,25 @@ export function TextField({ label, hint, ...input }: TextFieldProps) {
 
   return (
     <View style={styles.field}>
-      <AppText variant="formula">{label}</AppText>
+      <AppText variant="caption" color={colors.sub}>
+        {label}
+      </AppText>
       <TextInput
         accessibilityLabel={label}
-        placeholderTextColor={colors.soil.crack}
-        selectionColor={colors.water}
+        placeholderTextColor={colors.sub}
+        selectionColor={colors.accent}
         {...input}
         style={[
           typography.body,
           styles.input,
-          { color: colors.ink, backgroundColor: colors.surface, borderColor: colors.soil.dry },
+          { color: colors.ink, backgroundColor: colors.surface, borderColor: colors.hair },
         ]}
       />
-      {hint ? <AppText variant="formula">{hint}</AppText> : null}
+      {hint ? (
+        <AppText variant="caption" color={colors.sub}>
+          {hint}
+        </AppText>
+      ) : null}
     </View>
   );
 }
@@ -37,8 +43,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   input: {
-    minHeight: 48,
-    borderRadius: radius.card,
+    minHeight: 50,
+    borderRadius: radius.control,
     borderWidth: 1,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,

@@ -42,8 +42,9 @@ export const ko = {
   },
   today: {
     title: '오늘',
-    monthUnit: '월',
-    dayUnit: '일',
+    /** 오늘 탭의 큰 날짜 "9.21" */
+    date: (month: number, day: number) => `${month}.${day}`,
+    weekday: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
     overdue: '밀림',
     due: '오늘 물 줄 식물',
     upcoming: '다가옴',
@@ -318,8 +319,8 @@ export const ko = {
   /** 날짜와 주기 표기 */
   format: {
     monthDay: (month: number, day: number) => `${month}월 ${day}일`,
-    dDay: (days: number) => `D-${days}`,
-    overdue: (days: number) => `${days}일 밀림`,
+    dDay: (days: number) => (days === 0 ? '오늘' : `D-${days}`),
+    overdue: (days: number) => `${days}일 지남`,
     every: (days: number) => (days === 1 ? '매일 물을 줘요' : `${days}일마다 물을 줘요`),
     hydroEvery: (days: number) => `${days}일마다 물을 갈아 줘요`,
   },
