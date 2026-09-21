@@ -11,6 +11,7 @@ import { recordWatering } from '@/db/watering';
 import { SOIL_STATES } from '@/engine';
 import type { SoilState } from '@/engine';
 import { ko } from '@/i18n/ko';
+import { rescheduleSoon } from '@/notifications';
 import { planWatering } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
@@ -61,6 +62,7 @@ export default function WateredSheet() {
         });
       }
       markWatered(plant.id);
+      rescheduleSoon();
       router.back();
     } catch {
       setFailed(true);

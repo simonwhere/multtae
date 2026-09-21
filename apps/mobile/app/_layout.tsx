@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { db } from '@/db/client';
 import migrations from '@/db/migrations/migrations';
 import { ko } from '@/i18n/ko';
+import { useNotifications } from '@/notifications';
 import { AppText, radius, spacing, useColors } from '@/ui';
 import { fontAssets } from '@/ui/fonts';
 
@@ -27,6 +28,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (ready) SplashScreen.hide();
   }, [ready]);
+
+  // 알림은 DB 를 읽어서 짠다. 마이그레이션이 끝난 뒤에 시작한다
+  useNotifications(migrated);
 
   if (!ready) {
     return null;

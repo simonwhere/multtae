@@ -7,6 +7,7 @@ import { db } from '@/db/client';
 import { updatePlant } from '@/db/plants';
 import { canPostpone, toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
+import { askPermissionOnce, NotificationBanner, rescheduleSoon } from '@/notifications';
 import { formatMonthDay } from '@/plants/formula';
 import { PlantCard } from '@/plants/plant-card';
 import { SwipeRow } from '@/plants/swipe-row';
@@ -45,6 +46,12 @@ export default function TodayScreen() {
     return () => clearTimeout(timer);
   }, [justWateredId, clearWatered]);
 
+  // 알림 권한은 식물이 생긴 뒤에 묻는다. 첫 식물을 저장하고 돌아온 이 화면에서 시스템 창이 뜬다
+  const hasPlants = (garden?.plants.length ?? 0) > 0;
+  useEffect(() => {
+    if (hasPlants) void askPermissionOnce();
+  }, [hasPlants]);
+
   const context = nowContext(garden?.loadedAt);
   const today = toCalendarDate(context.now, context.utcOffsetMinutes);
   const sections = garden
@@ -58,6 +65,8 @@ export default function TodayScreen() {
     const patch = planPostpone(item.plant, context);
     if (!patch) return;
     await updatePlant(db, item.plant.id, patch);
+    // "내일로"는 알림도 하루 옮긴다 (SPEC 12.2 미룸)
+    rescheduleSoon();
     reload();
   }
 
@@ -83,6 +92,8 @@ export default function TodayScreen() {
           <AppText variant="formula">{ko.seasonMode[context.season]}</AppText>
         </Pressable>
       </View>
+
+      <NotificationBanner />
 
       {sections === null || garden === null ? null : garden.spaces.length === 0 ? (
         // 공간을 먼저 등록하고 식물을 놓는다 (SPEC 1)

@@ -5,10 +5,15 @@ interface PlantUiState {
   justWateredId: string | null;
   markWatered: (plantId: string) => void;
   clearWatered: () => void;
+  /** 화면 밖에서 식물이 바뀌면(계절 전환 재계산) 올라간다. 목록을 보여 주는 화면이 이걸 보고 다시 읽는다 */
+  gardenVersion: number;
+  bumpGarden: () => void;
 }
 
 export const usePlantUi = create<PlantUiState>((set) => ({
   justWateredId: null,
   markWatered: (plantId) => set({ justWateredId: plantId }),
   clearWatered: () => set({ justWateredId: null }),
+  gardenVersion: 0,
+  bumpGarden: () => set((state) => ({ gardenVersion: state.gardenVersion + 1 })),
 }));

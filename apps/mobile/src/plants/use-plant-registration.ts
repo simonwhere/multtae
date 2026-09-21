@@ -8,6 +8,7 @@ import { insertPlant, listPlantsWithSpace } from '@/db/plants';
 import type { Space } from '@/db/schema';
 import { listSpaces } from '@/db/spaces';
 import { getSeasonAt, toCalendarDate } from '@/engine';
+import { rescheduleSoon } from '@/notifications';
 import { deletePhoto, photoExists, pickPhoto as pickAndStorePhoto } from '@/photos/photo-store';
 import type { PhotoProblem, PhotoSource } from '@/photos/photo-store';
 
@@ -140,6 +141,7 @@ export function usePlantRegistration() {
     try {
       await insertPlant(db, created.plant, created.photos);
       await clearPlantDraft(db);
+      rescheduleSoon();
       return true;
     } catch {
       setSaveFailed(true);

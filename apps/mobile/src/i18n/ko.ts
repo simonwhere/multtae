@@ -110,6 +110,37 @@ export const ko = {
     title: '식물',
     empty: '아직 등록한 식물이 없어요',
   },
+  /** 로컬 알림의 제목과 본문 (SPEC 12.1) */
+  notifications: {
+    /** 안드로이드 알림 채널 이름 */
+    channel: '물주기 알림',
+    /** 식물명은 shown 만큼만 적고 나머지는 "외 N개" (12.2 묶기) */
+    names: (shown: readonly string[], total: number) => {
+      if (total === 1) return shown[0];
+      const list = shown.join(', ');
+      return total > shown.length ? `${list} 외 ${total - shown.length}개` : `${list} ${total}개`;
+    },
+    waterTitle: '물때예요',
+    waterBody: (names: string) => `${names} 물 줄 때`,
+    /** 수경은 물주기 대신 물 교체 (4.2) */
+    hydroBody: (names: string) => `${names} 물 갈 때`,
+    overdueTitle: '물주기가 밀렸어요',
+    overdueOne: (name: string, days: number) => `${name} ${days}일 지났어요`,
+    overdueMany: (names: string) => `${names} 물 줄 날이 지났어요`,
+    seasonTitle: (mode: string) => `${mode} 모드`,
+    /** 새 계절에 내 식물들의 주기가 어떻게 바뀌나 */
+    seasonTrend: {
+      longer: '물주기가 전체적으로 늘었어요',
+      shorter: '물주기가 전체적으로 줄었어요',
+      same: '물주기는 그대로예요',
+    },
+    /** 다른 알림에 한 줄로 합칠 때 */
+    seasonLine: (mode: string, trend: string) => `오늘부터 ${mode} 모드, ${trend}`,
+    /** 알림 권한이 꺼져 있을 때 오늘 탭 상단 배너 (12.2) */
+    offTitle: '알림이 꺼져 있어요',
+    offBody: '설정에서 알림을 켜면 물 줄 날을 알려 드려요.',
+    openSettings: '설정 열기',
+  },
   /** 흙 게이지의 스크린리더 문구. 키는 SoilStatus */
   soilGauge: {
     moist: '흙이 촉촉해요',

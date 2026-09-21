@@ -1,11 +1,13 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { db } from '@/db/client';
 import { listPlantsWithSpace } from '@/db/plants';
 import type { PlantWithSpace } from '@/db/plants';
 import type { Space } from '@/db/schema';
 import { listSpaces } from '@/db/spaces';
+
+import { usePlantUi } from './ui-store';
 
 export interface Garden {
   spaces: Space[];
@@ -25,6 +27,12 @@ export function useGarden(): { garden: Garden | null; reload: () => void } {
   }, []);
 
   useFocusEffect(reload);
+
+  // 계절이 바뀌어 다음 물주기를 고쳐 썼을 때도 다시 읽는다
+  const gardenVersion = usePlantUi((state) => state.gardenVersion);
+  useEffect(() => {
+    if (gardenVersion > 0) reload();
+  }, [gardenVersion, reload]);
 
   return { garden, reload };
 }
