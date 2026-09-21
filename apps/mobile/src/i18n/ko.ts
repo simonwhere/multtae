@@ -350,6 +350,7 @@ export const ko = {
       search: '이름으로 찾기',
       placeholder: '몬스테라, 고무나무',
       noResult: '찾는 식물이 없으면 모르겠어요를 누르고 종류만 골라 주세요.',
+      searching: '찾고 있어요',
       unknown: '모르겠어요',
       unknownHint: '종류만 알아도 물 줄 날을 알려 드릴 수 있어요',
       chooseGroup: '가장 가까운 종류를 골라 주세요',

@@ -11,7 +11,6 @@ import { ko } from '@/i18n/ko';
 import { photoUri } from '@/photos/photo-store';
 import type { PhotoProblem, PhotoSource } from '@/photos/photo-store';
 import { SpaceCard } from '@/spaces/space-card';
-import { searchSpecies } from '@/species/seed';
 import {
   AppText,
   Button,
@@ -40,6 +39,7 @@ import {
 } from './registration';
 import type { PlantDraft, PlantDraftAction, WateringPreview } from './registration';
 import { useIdentify } from './use-identify';
+import { useSpeciesSearch } from './use-species-search';
 import { usePlantRegistration } from './use-plant-registration';
 
 type Dispatch = (action: PlantDraftAction) => void;
@@ -116,7 +116,7 @@ function SpeciesStep({
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [notFound, setNotFound] = useState(false);
-  const results = searchSpecies(query);
+  const { results, searching: looking } = useSpeciesSearch(query);
   const chosen = draft.species;
   const t = ko.plantRegister.species;
   const { state, choosing } = identify;
@@ -222,7 +222,9 @@ function SpeciesStep({
                 onPress={() => dispatch({ type: 'speciesChosen', species })}
               />
             ))}
-            {results.length === 0 ? <AppText>{t.noResult}</AppText> : null}
+            {results.length === 0 ? (
+              <AppText>{looking ? t.searching : t.noResult}</AppText>
+            ) : null}
           </View>
         </>
       ) : null}
