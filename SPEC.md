@@ -695,7 +695,7 @@ flowchart LR
 
 **photos**: id, plant_id, path, taken_at, width, height.
 
-**settings** (key-value): notify_time, bonsai_evening_time, bonsai_winter_time, dnd_start, dnd_end, region_code, heating_start, heating_end, season_overrides(JSON), onboarding_done, device_id(진단 한도용 랜덤 uuid), draft_space·draft_plant(JSON, 공간·식물 등록을 중간에 나갔을 때 이어서 하기 위한 초안).
+**settings** (key-value): notify_time, bonsai_evening_time, bonsai_winter_time, dnd_start, dnd_end, region_code, heating_start, heating_end, season_overrides(JSON), onboarding_done, device_id(진단 한도용 랜덤 uuid), draft_space·draft_plant(JSON, 공간·식물 등록을 중간에 나갔을 때 이어서 하기 위한 초안), coefficients_cache(JSON, 마지막으로 받은 서버 계수).
 
 **species_cache**: 서버 `species` 행을 그대로 복사, `fetched_at` 추가. 30일 지나면 백그라운드 갱신.
 
@@ -708,9 +708,9 @@ flowchart LR
 | season_bounds | year, season, start_date, end_date. 기상청 장마 발표 반영용 (2차) | anon select |
 | species_reports | scientific_name, reason, created_at | anon insert |
 | weather_cache | region_code, fetched_at, payload(jsonb) | Edge Function만 |
-| usage_counters | date, function_name, count. 일일 한도 관리 | Edge Function만 |
+| usage_counters | date, function_name, subject(진단 한도용 기기 식별값의 해시, 함수 전체 한도는 빈 문자열), count. 일일 한도 관리 | Edge Function만 |
 
-앱은 시작 시 `coefficients` 전체(20행 미만)를 받아 로컬에 저장하고, 서버 접속이 안 되면 마지막 값으로 동작한다. 앱 번들에도 기본값을 하드코딩해 첫 실행 오프라인을 지원한다.
+앱은 시작 시 `coefficients` 전체(20행 미만)를 받아 로컬에 저장하고, 서버 접속이 안 되면 마지막 값으로 동작한다. 앱 번들에도 기본값을 하드코딩해 첫 실행 오프라인을 지원한다. 행의 키와 jsonb 안쪽 이름은 snake_case(`base_interval`, `space_type`, `learning.soil_state` 등)이고, 앱은 받은 값을 전부 검사해서 빠지거나 이상한 값이 하나라도 있으면 통째로 버린다. 앱이 아는 것보다 높은 `version` 도 받지 않는다. 테이블 SQL 은 `supabase/migrations`, 첫 값은 번들 기본값에서 만든 `supabase/seed/coefficients.sql` 이다(`pnpm seed:coefficients`). 서버 주소와 anon 키는 `EXPO_PUBLIC_SUPABASE_URL`·`EXPO_PUBLIC_SUPABASE_ANON_KEY` 로 넣고, 비어 있으면 서버를 부르지 않는다.
 
 ### 11.3 진단 한도용 기기 식별
 

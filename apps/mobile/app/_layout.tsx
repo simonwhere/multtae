@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { useCoefficients } from '@/coefficients/use-coefficients';
 import { db } from '@/db/client';
 import migrations from '@/db/migrations/migrations';
 import { ko } from '@/i18n/ko';
@@ -22,15 +23,20 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   const { success: migrated, error: migrationError } = useMigrations(db, migrations);
 
+  // 계수는 DB 에 저장해 둔 마지막 서버 값을 먼저 읽는다 (SPEC 11.2). 없으면 번들 기본값이다
+  const coefficientsLoaded = useCoefficients(migrated);
+
   // 서체를 못 읽어도 시스템 서체로 계속 간다. DB 는 없으면 안 된다.
-  const ready = (fontsLoaded || fontError !== null) && (migrated || migrationError !== undefined);
+  const ready =
+    (fontsLoaded || fontError !== null) &&
+    ((migrated && coefficientsLoaded) || migrationError !== undefined);
 
   useEffect(() => {
     if (ready) SplashScreen.hide();
   }, [ready]);
 
-  // 알림은 DB 를 읽어서 짠다. 마이그레이션이 끝난 뒤에 시작한다
-  useNotifications(migrated);
+  // 알림은 DB 와 계수를 읽어서 짠다. 둘 다 준비된 뒤에 시작한다
+  useNotifications(migrated && coefficientsLoaded);
 
   if (!ready) {
     return null;

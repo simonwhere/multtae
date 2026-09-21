@@ -49,6 +49,8 @@ export const SETTING_KEYS = [
   // 등록 플로우를 중간에 나갔을 때 이어서 하기 위한 초안 JSON (SPEC 4)
   'draft_space',
   'draft_plant',
+  // 마지막으로 받은 서버 계수 (SPEC 11.2). 서버에 닿지 않을 때 이 값으로 돈다
+  'coefficients_cache',
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 
