@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Switch, View } from 'react-native';
 
 import { currentCoefficients } from '@/coefficients';
 import { BONSAI_GROUPS } from '@/db/schema';
@@ -39,6 +39,7 @@ import {
   SELECTABLE_GROUPS,
 } from './registration';
 import type { PlantDraft, PlantDraftAction, WateringPreview } from './registration';
+import { useIdentify } from './use-identify';
 import { usePlantRegistration } from './use-plant-registration';
 
 type Dispatch = (action: PlantDraftAction) => void;
@@ -102,31 +103,133 @@ function PhotoStep({
   );
 }
 
-function SpeciesStep({ draft, dispatch }: { draft: PlantDraft; dispatch: Dispatch }) {
+function SpeciesStep({
+  draft,
+  dispatch,
+  identify,
+}: {
+  draft: PlantDraft;
+  dispatch: Dispatch;
+  identify: ReturnType<typeof useIdentify>;
+}) {
+  const colors = useColors();
+  const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
+  const [notFound, setNotFound] = useState(false);
   const results = searchSpecies(query);
   const chosen = draft.species;
+  const t = ko.plantRegister.species;
+  const { state, choosing } = identify;
+
+  async function pick(scientificName: string) {
+    setNotFound(false);
+    const species = await identify.chooseCandidate(scientificName);
+    if (!species) {
+      // 서버가 정보를 못 만들었다. 식물군만 고르게 한다 (SPEC 9.4)
+      setNotFound(true);
+      dispatch({ type: 'speciesUnknown' });
+      return;
+    }
+    dispatch({ type: 'speciesChosen', species });
+  }
+
+  // 사진을 보는 중
+  if (state.status === 'loading' && !searching) {
+    return (
+      <View style={styles.stack}>
+        <View style={styles.identifying}>
+          <ActivityIndicator color={colors.accent} />
+          <AppText variant="titleSm">{t.identifying}</AppText>
+          <AppText variant="caption">{t.identifyWait}</AppText>
+        </View>
+      </View>
+    );
+  }
+
+  // 인식 결과가 있고 아직 검색으로 넘어가지 않았다
+  const showCandidates = !searching && state.status === 'done' && state.candidates.length > 0;
+  const failed = !searching && (state.status === 'failed' || (state.status === 'done' && state.candidates.length === 0));
 
   return (
     <View style={styles.stack}>
-      <TextField
-        label={ko.plantRegister.species.search}
-        placeholder={ko.plantRegister.species.placeholder}
-        autoCorrect={false}
-        returnKeyType="search"
-        value={query}
-        onChangeText={setQuery}
-      />
-      {/* 목록이 길어서 "모르겠어요"는 위에 둔다 */}
-      <ChoiceCard
-        label={ko.plantRegister.species.unknown}
-        hint={ko.plantRegister.species.unknownHint}
-        selected={chosen?.kind === 'unknown'}
-        onPress={() => dispatch({ type: 'speciesUnknown' })}
-      />
+      {showCandidates && state.status === 'done' ? (
+        <>
+          <AppText variant="caption">{t.candidates}</AppText>
+          <View accessibilityRole="radiogroup" style={styles.stack}>
+            {state.candidates.map((candidate) => (
+              <ChoiceCard
+                key={candidate.scientificName}
+                label={candidate.commonNames[0] ?? candidate.scientificName}
+                hint={
+                  choosing === candidate.scientificName
+                    ? t.loadingSpecies
+                    : `${candidate.scientificName} · ${t.candidateHint(candidate.score)}`
+                }
+                selected={
+                  chosen?.kind === 'known' &&
+                  chosen.species.scientificName === candidate.scientificName
+                }
+                onPress={() => void pick(candidate.scientificName)}
+              />
+            ))}
+          </View>
+          <TextButton label={t.searchInstead} onPress={() => setSearching(true)} />
+        </>
+      ) : null}
+
+      {/* 실패하면 바로 아래에 검색이 나오므로 따로 버튼을 두지 않는다 */}
+      {failed ? (
+        <Notice
+          message={
+            state.status === 'failed' && state.reason === 'limit'
+              ? t.limit
+              : state.status === 'done'
+                ? t.noMatch
+                : t.unavailable
+          }
+        />
+      ) : null}
+
+      {notFound ? <Notice message={t.notFound} /> : null}
+
+      {searching || failed || state.status === 'idle' ? (
+        <>
+          <TextField
+            label={t.search}
+            placeholder={t.placeholder}
+            autoCorrect={false}
+            returnKeyType="search"
+            value={query}
+            onChangeText={setQuery}
+          />
+          {/* 목록이 길어서 "모르겠어요"는 위에 둔다 */}
+          <ChoiceCard
+            label={t.unknown}
+            hint={t.unknownHint}
+            selected={chosen?.kind === 'unknown'}
+            onPress={() => dispatch({ type: 'speciesUnknown' })}
+          />
+          <View accessibilityRole="radiogroup" style={styles.stack}>
+            {results.map((species) => (
+              <ChoiceCard
+                key={species.scientificName}
+                label={species.nameKo}
+                hint={species.scientificName}
+                hintVariant="scientific"
+                selected={
+                  chosen?.kind === 'known' && chosen.species.scientificName === species.scientificName
+                }
+                onPress={() => dispatch({ type: 'speciesChosen', species })}
+              />
+            ))}
+            {results.length === 0 ? <AppText>{t.noResult}</AppText> : null}
+          </View>
+        </>
+      ) : null}
+
       {chosen?.kind === 'unknown' ? (
         <View accessibilityRole="radiogroup" style={styles.stack}>
-          <AppText variant="caption">{ko.plantRegister.species.chooseGroup}</AppText>
+          <AppText variant="caption">{t.chooseGroup}</AppText>
           {SELECTABLE_GROUPS.map((groupCode) => (
             <ChoiceCard
               key={groupCode}
@@ -138,21 +241,6 @@ function SpeciesStep({ draft, dispatch }: { draft: PlantDraft; dispatch: Dispatc
           ))}
         </View>
       ) : null}
-      <View accessibilityRole="radiogroup" style={styles.stack}>
-        {results.map((species) => (
-          <ChoiceCard
-            key={species.scientificName}
-            label={species.nameKo}
-            hint={species.scientificName}
-            hintVariant="scientific"
-            selected={chosen?.kind === 'seed' && chosen.scientificName === species.scientificName}
-            onPress={() =>
-              dispatch({ type: 'speciesChosen', scientificName: species.scientificName })
-            }
-          />
-        ))}
-        {results.length === 0 ? <AppText>{ko.plantRegister.species.noResult}</AppText> : null}
-      </View>
     </View>
   );
 }
@@ -364,6 +452,7 @@ export function PlantRegistrationScreen() {
   const router = useRouter();
   const colors = useColors();
   const registration = usePlantRegistration();
+  const identify = useIdentify();
   const { draft, dispatch } = registration;
 
   if (!draft) {
@@ -376,12 +465,19 @@ export function PlantRegistrationScreen() {
   const isFirst = draft.step === PLANT_STEPS[0];
   const isLast = draft.step === PLANT_STEPS[PLANT_STEPS.length - 1];
 
+  const current = draft;
+
   async function advance() {
-    if (!isLast) {
-      dispatch({ type: 'next' });
-    } else if (await registration.save()) {
-      close();
+    if (isLast) {
+      if (await registration.save()) close();
+      return;
     }
+
+    // 사진을 다 고르고 넘어가는 참에 인식을 시작한다. 종 단계에 닿으면 결과가 나와 있다 (SPEC 4.2)
+    if (current.step === 'photo' && identify.state.status === 'idle') {
+      void identify.identify(current.photos.map((photo) => photo.path));
+    }
+    dispatch({ type: 'next' });
   }
 
   return (
@@ -406,7 +502,7 @@ export function PlantRegistrationScreen() {
           onRemove={registration.removePhoto}
         />
       ) : null}
-      {draft.step === 'species' ? <SpeciesStep draft={draft} dispatch={dispatch} /> : null}
+      {draft.step === 'species' ? <SpeciesStep draft={draft} dispatch={dispatch} identify={identify} /> : null}
       {draft.step === 'pot' ? <PotStep draft={draft} dispatch={dispatch} /> : null}
       {draft.step === 'soil' ? <SoilStep draft={draft} dispatch={dispatch} /> : null}
       {draft.step === 'space' ? (
@@ -457,6 +553,11 @@ const styles = StyleSheet.create({
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  identifying: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xl,
   },
   stepper: {
     flexDirection: 'row',

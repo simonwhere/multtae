@@ -86,6 +86,11 @@ export const plants = sqliteTable(
     bonsaiGroup: text('bonsai_group', { enum: BONSAI_GROUPS }),
     /** U */
     learnFactor: real('learn_factor').notNull().default(1.0),
+    /**
+     * 종별 기본 주기(일). 등록할 때 고른 종에서 가져와 저장한다 (3-5).
+     * null 이면 엔진이 식물군 기본값을 쓴다. 저장해 두어야 오프라인에서도 같은 값으로 센다
+     */
+    baseInterval: real('base_interval'),
     /** 수동 고정 일수. null 이면 자동 */
     manualInterval: real('manual_interval'),
     /**

@@ -1,0 +1,1 @@
+ALTER TABLE `plants` ADD `base_interval` real;

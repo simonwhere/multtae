@@ -1,6 +1,6 @@
 /**
  * 식물 등록 플로우의 상태와 규칙 (SPEC.md 4.2). 화면과 무관한 순수 함수라 Node 에서 테스트한다.
- * 2-2 는 사진 인식 없이 번들 시드 30종을 텍스트로 찾는다. 인식 연결은 3-5.
+ * 고른 종은 번들 시드에서 왔든 사진 인식·서버 검색에서 왔든 KnownSpecies 로 같게 다룬다 (3-5).
  */
 import { BONSAI_GROUPS } from '../db/schema';
 import type { BonsaiGroup, NewPhoto, NewPlant } from '../db/schema';
@@ -12,6 +12,7 @@ import {
   nextWaterDate,
   POT_SIZES,
   SOIL_TYPES,
+  GROUP_CODES,
   startOfDay,
   toCalendarDate,
 } from '../engine';
@@ -28,7 +29,6 @@ import type {
 import { ko } from '../i18n/ko';
 import { uniqueName } from '../lib/unique-name';
 import { isBoolean, isNullOr, isOneOf, isString, parseJsonObject } from '../lib/validate';
-import { findSeedSpecies, speciesBaseInterval } from '../species/seed';
 
 export const PLANT_STEPS = ['photo', 'species', 'pot', 'soil', 'space', 'bonsai', 'finish'] as const;
 export type PlantStep = (typeof PLANT_STEPS)[number];
@@ -53,8 +53,21 @@ export interface DraftPhoto {
   height: number;
 }
 
+/**
+ * 고른 종. 번들 시드에서 고르든 사진 인식·검색으로 서버에서 받든 같은 모양이다 (3-5).
+ * 초안에 값을 그대로 담아 두어, 나중에 이어서 할 때 서버를 다시 부르지 않는다.
+ */
+export interface KnownSpecies {
+  scientificName: string;
+  nameKo: string;
+  groupCode: GroupCode;
+  /** 종별 기본 주기(일). 없으면 식물군 기본값 */
+  baseInterval: number | null;
+  bonsaiGroup: BonsaiGroup | null;
+}
+
 export type SpeciesChoice =
-  | { kind: 'seed'; scientificName: string }
+  | { kind: 'known'; species: KnownSpecies }
   /** "모르겠어요". 식물군을 고르기 전에는 groupCode 가 null */
   | { kind: 'unknown'; groupCode: SelectableGroup | null };
 
@@ -81,7 +94,7 @@ export interface PlantDraft {
 export type PlantDraftAction =
   | { type: 'photoAdded'; photo: DraftPhoto }
   | { type: 'photoRemoved'; path: string }
-  | { type: 'speciesChosen'; scientificName: string }
+  | { type: 'speciesChosen'; species: KnownSpecies }
   | { type: 'speciesUnknown' }
   | { type: 'groupChosen'; groupCode: SelectableGroup }
   | { type: 'potChosen'; potSize: PotSize }
@@ -113,8 +126,8 @@ export function createPlantDraft(id: string): PlantDraft {
   };
 }
 
-function seedOf(draft: PlantDraft) {
-  return draft.species?.kind === 'seed' ? findSeedSpecies(draft.species.scientificName) : undefined;
+function knownOf(draft: PlantDraft): KnownSpecies | undefined {
+  return draft.species?.kind === 'known' ? draft.species.species : undefined;
 }
 
 /** 저장될 식물군 (10.2). 분재 토글이 켜져 있으면 수종군이 정한다. 아직 정할 수 없으면 null */
@@ -125,10 +138,10 @@ export function resolveGroupCode(draft: PlantDraft): GroupCode | null {
   }
   if (draft.species?.kind === 'unknown') return draft.species.groupCode;
 
-  const seed = seedOf(draft);
-  if (!seed) return null;
+  const known = knownOf(draft);
+  if (!known) return null;
   // 분재 수종을 분재가 아닌 화분으로 키우면 온대 수목으로 본다
-  return seed.bonsaiGroup ? 'temperate' : seed.groupCode;
+  return known.bonsaiGroup ? 'temperate' : known.groupCode;
 }
 
 /**
@@ -136,10 +149,10 @@ export function resolveGroupCode(draft: PlantDraft): GroupCode | null {
  * 일반 종을 분재로(또는 분재 수종을 일반 화분으로) 키우면 종별 값의 전제가 달라지므로 쓰지 않는다.
  */
 export function resolveBaseInterval(draft: PlantDraft): number | null {
-  return speciesBaseInterval(
-    draft.species?.kind === 'seed' ? draft.species.scientificName : null,
-    draft.isBonsai,
-  );
+  const known = knownOf(draft);
+  // 일반 종을 분재로(또는 분재 수종을 일반 화분으로) 키우면 종별 값의 전제가 달라지므로 쓰지 않는다
+  if (!known || draft.isBonsai !== (known.bonsaiGroup !== null)) return null;
+  return known.baseInterval;
 }
 
 /** 저장될 별명: 고쳤으면 그 별명, 아니면 국명(종을 모르면 식물군 이름). 같은 별명이 있으면 번호를 붙인다 */
@@ -147,7 +160,7 @@ export function resolveNickname(draft: PlantDraft, existingNicknames: readonly s
   if (draft.nickname !== null) return draft.nickname.trim();
 
   const groupCode = resolveGroupCode(draft);
-  const base = seedOf(draft)?.nameKo ?? (groupCode ? ko.groupName[groupCode] : '');
+  const base = knownOf(draft)?.nameKo ?? (groupCode ? ko.groupName[groupCode] : '');
   return base === '' ? '' : uniqueName(base, existingNicknames);
 }
 
@@ -156,7 +169,7 @@ function isStepFilled(draft: PlantDraft, step: PlantStep): boolean {
     case 'photo':
       return draft.photos.length > 0;
     case 'species':
-      return draft.species?.kind === 'seed' || (draft.species?.groupCode ?? null) !== null;
+      return draft.species?.kind === 'known' || (draft.species?.groupCode ?? null) !== null;
     case 'pot':
       return true;
     case 'soil':
@@ -195,10 +208,10 @@ export function reducePlantDraft(draft: PlantDraft, action: PlantDraftAction): P
       return { ...draft, photos: draft.photos.filter((photo) => photo.path !== action.path) };
     case 'speciesChosen': {
       // 종 DB 에 수종군이 있으면 분재 토글과 수종군을 자동으로 고른다 (4.2)
-      const bonsaiGroup = findSeedSpecies(action.scientificName)?.bonsaiGroup ?? null;
+      const { bonsaiGroup } = action.species;
       return {
         ...draft,
-        species: { kind: 'seed', scientificName: action.scientificName },
+        species: { kind: 'known', species: action.species },
         isBonsai: bonsaiGroup !== null,
         bonsaiGroup,
       };
@@ -222,7 +235,7 @@ export function reducePlantDraft(draft: PlantDraft, action: PlantDraftAction): P
       return {
         ...draft,
         isBonsai: action.isBonsai,
-        bonsaiGroup: action.isBonsai ? (seedOf(draft)?.bonsaiGroup ?? null) : null,
+        bonsaiGroup: action.isBonsai ? (knownOf(draft)?.bonsaiGroup ?? null) : null,
       };
     case 'bonsaiGroupChosen':
       return { ...draft, bonsaiGroup: action.bonsaiGroup };
@@ -316,13 +329,14 @@ export function toNewPlant(
     plant: {
       id: draft.id,
       spaceId: draft.spaceId,
-      scientificName: draft.species?.kind === 'seed' ? draft.species.scientificName : null,
+      scientificName: knownOf(draft)?.scientificName ?? null,
       nickname: resolveNickname(draft, context.existingNicknames),
       groupCode,
       potSize: draft.potSize,
       soilType: draft.soilType,
       isBonsai: draft.isBonsai,
       bonsaiGroup: draft.bonsaiGroup,
+      baseInterval: resolveBaseInterval(draft),
       learnFactor: context.coefficients.learning.initial,
       // 날짜만 의미가 있으므로 시간대가 조금 어긋나도 날짜가 바뀌지 않게 정오로 둔다
       lastWateredAt: startOfDay(preview.lastWatered, context.utcOffsetMinutes) + 12 * MS_PER_HOUR,
@@ -350,12 +364,23 @@ function isDraftPhoto(value: unknown): value is DraftPhoto {
   );
 }
 
+function isKnownSpecies(value: unknown): value is KnownSpecies {
+  if (typeof value !== 'object' || value === null) return false;
+  const species = value as Record<string, unknown>;
+  return (
+    isString(species.scientificName) &&
+    species.scientificName !== '' &&
+    isString(species.nameKo) &&
+    isOneOf(GROUP_CODES, species.groupCode) &&
+    (species.baseInterval === null || typeof species.baseInterval === 'number') &&
+    isNullOr(species.bonsaiGroup, (v): v is BonsaiGroup => isOneOf(BONSAI_GROUPS, v))
+  );
+}
+
 function isSpeciesChoice(value: unknown): value is SpeciesChoice {
   if (typeof value !== 'object' || value === null) return false;
   const choice = value as Record<string, unknown>;
-  if (choice.kind === 'seed') {
-    return isString(choice.scientificName) && findSeedSpecies(choice.scientificName) !== undefined;
-  }
+  if (choice.kind === 'known') return isKnownSpecies(choice.species);
   return (
     choice.kind === 'unknown' &&
     isNullOr(choice.groupCode, (v): v is SelectableGroup => isOneOf(SELECTABLE_GROUPS, v))

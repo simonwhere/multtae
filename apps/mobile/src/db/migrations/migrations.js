@@ -4,13 +4,15 @@ import journal from './meta/_journal.json';
 import m0000 from './0000_init.sql';
 import m0001 from './0001_last_watered_unknown.sql';
 import m0002 from './0002_manual_season.sql';
+import m0003 from './0003_plant_base_interval.sql';
 
   export default {
     journal,
     migrations: {
       m0000,
 m0001,
-m0002
+m0002,
+m0003
     }
   }
   

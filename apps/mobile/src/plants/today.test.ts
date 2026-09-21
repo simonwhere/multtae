@@ -37,6 +37,7 @@ function plant(patch: Partial<Plant>): Plant {
     isBonsai: false,
     bonsaiGroup: null,
     learnFactor: 1.0,
+    baseInterval: 7,
     manualInterval: null,
     manualSeason: null,
     lastWateredAt: at(9, 20, 12),
@@ -105,26 +106,14 @@ describe('classifyToday: 오늘 탭의 구역 (SPEC.md 3.2)', () => {
 });
 
 describe('toEnginePlant: 저장된 식물을 엔진 입력으로', () => {
-  it('시드 종의 종별 기본 주기를 붙인다', () => {
-    const zz = toEnginePlant(plant({ scientificName: 'Zamioculcas zamiifolia', groupCode: 'temperate' }));
+  it('식물에 저장해 둔 종별 기본 주기를 쓴다', () => {
+    const zz = toEnginePlant(plant({ groupCode: 'temperate', baseInterval: 14 }));
 
     expect(zz).toMatchObject({ groupCode: 'temperate', baseInterval: 14, learnFactor: 1.0 });
   });
 
-  it('종을 모르거나 개별 주기가 없는 종은 식물군 기본값을 쓴다', () => {
-    expect(toEnginePlant(plant({ scientificName: null })).baseInterval).toBeNull();
-    expect(toEnginePlant(plant({ scientificName: 'Epipremnum aureum' })).baseInterval).toBeNull();
-  });
-
-  it('일반 종을 분재로 키우면 종별 주기를 쓰지 않는다', () => {
-    const bonsaiZz = plant({
-      scientificName: 'Zamioculcas zamiifolia',
-      groupCode: 'bonsai_deciduous',
-      isBonsai: true,
-      bonsaiGroup: 'deciduous',
-    });
-
-    expect(toEnginePlant(bonsaiZz).baseInterval).toBeNull();
+  it('없으면 null 이고 엔진이 식물군 기본값을 쓴다', () => {
+    expect(toEnginePlant(plant({ baseInterval: null })).baseInterval).toBeNull();
   });
 });
 

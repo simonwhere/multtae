@@ -101,19 +101,6 @@ export function findSeedSpecies(scientificName: string): SeedSpecies | undefined
   return SEED_SPECIES.find((species) => species.scientificName === scientificName);
 }
 
-/**
- * 종별 기본 주기. 없으면 null 이고 엔진이 식물군 기본값을 쓴다.
- * 일반 종을 분재로(또는 분재 수종을 일반 화분으로) 키우면 종별 값의 전제가 달라지므로 쓰지 않는다.
- */
-export function speciesBaseInterval(
-  scientificName: string | null,
-  isBonsai: boolean,
-): number | null {
-  const species = scientificName ? findSeedSpecies(scientificName) : undefined;
-  if (!species || isBonsai !== (species.bonsaiGroup !== null)) return null;
-  return species.baseInterval;
-}
-
 const normalize = (text: string) => text.toLowerCase().replace(/\s+/g, '');
 
 /** 낮을수록 잘 맞는다. 맞지 않으면 null */

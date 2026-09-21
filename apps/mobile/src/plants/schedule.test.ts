@@ -25,6 +25,7 @@ function plant(patch: Partial<Plant>): Plant {
     isBonsai: false,
     bonsaiGroup: null,
     learnFactor: 1.0,
+    baseInterval: 7,
     manualInterval: null,
     manualSeason: null,
     lastWateredAt: at(11, 10, 12),
@@ -61,6 +62,8 @@ describe('planReschedule: 다음 물주기를 지금의 계절·계수로 다시
     const echeveria = plant({
       scientificName: 'Echeveria elegans',
       groupCode: 'succulent',
+      // 종별 값이 없어 식물군 기본값 14 를 쓴다
+      baseInterval: null,
       nextWaterAt: at(11, 24),
     });
 

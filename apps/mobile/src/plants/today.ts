@@ -24,7 +24,6 @@ import type {
   Season,
   SoilGaugeState,
 } from '../engine';
-import { speciesBaseInterval } from '../species/seed';
 
 /** "다가옴"에 보여 줄 범위: 3일 내 예정 (3.2) */
 export const UPCOMING_DAYS = 3;
@@ -89,14 +88,14 @@ export function classifyToday(
   return sections;
 }
 
-/** 저장된 식물을 엔진 입력으로. 종별 기본 주기는 종 목록에서 찾아 붙인다 */
+/** 저장된 식물을 엔진 입력으로 */
 export function toEnginePlant(plant: Plant): EnginePlant {
   return {
     groupCode: plant.groupCode,
     potSize: plant.potSize,
     soilType: plant.soilType,
     learnFactor: plant.learnFactor,
-    baseInterval: speciesBaseInterval(plant.scientificName, plant.isBonsai),
+    baseInterval: plant.baseInterval,
     manualInterval: plant.manualInterval,
   };
 }

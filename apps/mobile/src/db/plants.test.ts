@@ -9,6 +9,7 @@ import { setSetting } from './settings';
 import { insertSpace } from './spaces';
 import { createTestDb } from './testing/test-db';
 import type { TestDb } from './testing/test-db';
+import { findSeedSpecies } from '../species/seed';
 
 const livingRoom: NewSpace = {
   id: 'space-1',
@@ -45,6 +46,13 @@ beforeEach(async () => {
   ({ db } = createTestDb());
   await insertSpace(db, livingRoom);
 });
+
+/** 번들 시드에서 고른 종. 서버에서 받은 종과 같은 모양이다 */
+function seed(scientificName: string) {
+  const found = findSeedSpecies(scientificName);
+  if (!found) throw new Error(`시드에 없는 학명: ${scientificName}`);
+  return found;
+}
 
 describe('식물 저장소', () => {
   it('처음에는 식물이 없다', async () => {
@@ -87,7 +95,7 @@ describe('식물 등록 임시 저장 (SPEC 4)', () => {
   const draft = [
     { type: 'photoAdded', photo: { path: 'plants/p.jpg', width: 960, height: 1280 } } as const,
     { type: 'next' } as const,
-    { type: 'speciesChosen', scientificName: 'Pinus thunbergii' } as const,
+    { type: 'speciesChosen', species: seed('Pinus thunbergii') } as const,
   ].reduce(reducePlantDraft, createPlantDraft('plant-9'));
 
   it('저장한 적이 없으면 null 이다', async () => {

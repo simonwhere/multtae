@@ -1,0 +1,66 @@
+/**
+ * 사진으로 식물 종을 알아본다 (SPEC.md 9.1, 4.2).
+ * 사진은 Edge Function 으로만 보내고 서버에 저장하지 않는다 (CLAUDE.md 절대 규칙).
+ */
+import { photoUri } from '@/photos/photo-store';
+
+import { callFunction, FunctionError } from './client';
+
+/** PlantNet 이 받는 부위. 지금은 잎으로만 보낸다. 부위 태그 UI 는 SPEC 3-5 뒤로 미뤘다 */
+export const DEFAULT_ORGAN = 'leaf';
+
+export interface IdentifyCandidate {
+  scientificName: string;
+  commonNames: string[];
+  /** 0~1 */
+  score: number;
+}
+
+export type IdentifyOutcome =
+  /** 후보를 받았다. 비어 있을 수도 있다 (닮은 종을 못 찾음) */
+  | { kind: 'candidates'; candidates: IdentifyCandidate[] }
+  /** 오늘 인식이 많았다. 앱은 텍스트 검색으로 넘어간다 (9.1 한도 방어) */
+  | { kind: 'limit' }
+  /** 서버 설정이 없거나 닿지 않는다. 검색으로 넘어간다 */
+  | { kind: 'unavailable' };
+
+function isCandidate(value: unknown): value is IdentifyCandidate {
+  if (typeof value !== 'object' || value === null) return false;
+  const entry = value as Record<string, unknown>;
+  return (
+    typeof entry.scientificName === 'string' &&
+    entry.scientificName !== '' &&
+    typeof entry.score === 'number' &&
+    Array.isArray(entry.commonNames)
+  );
+}
+
+/** 사진 경로(문서 폴더 기준 상대 경로) 들로 인식을 부른다 */
+export async function identifyPlant(photoPaths: readonly string[]): Promise<IdentifyOutcome> {
+  if (photoPaths.length === 0) return { kind: 'candidates', candidates: [] };
+
+  const form = new FormData();
+  for (const [index, path] of photoPaths.entries()) {
+    // React Native 의 FormData 는 파일을 이 모양으로 받는다
+    form.append('images', {
+      uri: photoUri(path),
+      name: `plant-${index + 1}.jpg`,
+      type: 'image/jpeg',
+    } as unknown as Blob);
+    form.append('organs', DEFAULT_ORGAN);
+  }
+
+  try {
+    const body = await callFunction<{ candidates: unknown }>('identify', {
+      method: 'POST',
+      body: form,
+    });
+    if (!body) return { kind: 'unavailable' };
+
+    const candidates = Array.isArray(body.candidates) ? body.candidates.filter(isCandidate) : [];
+    return { kind: 'candidates', candidates };
+  } catch (error) {
+    if (error instanceof FunctionError && error.code === 'limit') return { kind: 'limit' };
+    return { kind: 'unavailable' };
+  }
+}

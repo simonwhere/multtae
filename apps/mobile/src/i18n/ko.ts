@@ -136,6 +136,16 @@ export const ko = {
     deleteBody: '물주기 기록과 사진도 함께 지워져요. 되돌릴 수 없어요.',
     deleteConfirm: '삭제',
     notFound: '식물을 찾을 수 없어요',
+    /** 관리 카드 (3.4). 종 DB 에서 받아 둔 것이 있을 때만 보여 준다 */
+    care: '키우는 법',
+    careLight: '빛',
+    careWater: '물',
+    careHumidity: '습도',
+    careTemp: '온도',
+    careSoil: '흙',
+    careTempRange: (min: number, max: number) => `${min}~${max}도`,
+    careTempMin: (min: number) => `${min}도 이상`,
+    careToxic: '반려동물에게 독성이 있어요',
     /** 같은 흙 상태가 세 번 이어졌을 때 (5.4). 키는 흙 상태 */
     streak: {
       wet: '물 줄 때마다 흙이 아직 축축했어요. 이 식물은 물을 덜 줘도 되는 것 같아요.',
@@ -343,6 +353,18 @@ export const ko = {
       unknown: '모르겠어요',
       unknownHint: '종류만 알아도 물 줄 날을 알려 드릴 수 있어요',
       chooseGroup: '가장 가까운 종류를 골라 주세요',
+      /** 사진 인식 (SPEC 4.2, 9.1) */
+      identifying: '사진을 보고 있어요',
+      identifyWait: '잠시만 기다려 주세요',
+      candidates: '이 식물인가요',
+      candidateHint: (score: number) => `사진과 ${Math.round(score * 100)}% 닮았어요`,
+      loadingSpecies: '키우는 법을 가져오고 있어요',
+      noMatch: '닮은 식물을 찾지 못했어요. 이름으로 찾아 주세요.',
+      limit: '오늘은 사진 인식이 많아 이름으로 찾도록 도와드릴게요.',
+      unavailable: '사진으로 찾지 못했어요. 이름으로 찾아 주세요.',
+      searchInstead: '이름으로 찾기',
+      retry: '다시 찾아보기',
+      notFound: '이 식물의 정보를 아직 못 구했어요. 종류만 골라 주세요.',
     },
     pot: {
       title: '화분은 얼마나 큰가요',

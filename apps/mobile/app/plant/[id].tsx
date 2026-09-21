@@ -15,6 +15,7 @@ import {
   planKeepManual,
   planManualInterval,
 } from '@/plants/care';
+import { CareCard } from '@/plants/care-card';
 import { DueTag } from '@/plants/due-tag';
 import { formatDottedDate, formatInterval, formatMonthDay } from '@/plants/format';
 import { classifyPlant, toEnginePlant } from '@/plants/today';
@@ -104,7 +105,7 @@ export default function PlantDetailScreen() {
     );
   }
 
-  const { plant, space, waterings } = detail;
+  const { plant, space, waterings, care } = detail;
   const t = ko.plantDetail;
   const context = nowContext(detail.loadedAt);
   const soil = classifyPlant(plant, context.now, context.utcOffsetMinutes);
@@ -236,6 +237,8 @@ export default function PlantDetailScreen() {
             <Button label={t.streak.action} variant="secondary" onPress={() => edit('interval')} />
           </Card>
         ) : null}
+
+        <CareCard species={care} />
 
         <View style={styles.section}>
           <AppText variant="label" style={styles.sectionTitle}>

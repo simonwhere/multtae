@@ -19,6 +19,7 @@ import {
   toNewPlant,
 } from './registration';
 import type { PlantDraft, PlantDraftAction } from './registration';
+import { findSeedSpecies } from '../species/seed';
 
 const C = DEFAULT_COEFFICIENTS;
 const apply = (draft: PlantDraft, ...actions: PlantDraftAction[]) =>
@@ -34,10 +35,17 @@ const brightWindow: EngineSpace = { lightGrade: 'medium', spaceType: 'indoor_win
 const monstera = apply(
   empty,
   { type: 'photoAdded', photo: photo('a') },
-  { type: 'speciesChosen', scientificName: 'Monstera deliciosa' },
+  { type: 'speciesChosen', species: seed('Monstera deliciosa') },
   { type: 'soilChosen', soilType: 'potting' },
   { type: 'spaceChosen', spaceId: 'space-1' },
 );
+
+/** 번들 시드에서 고른 종. 서버에서 받은 종과 같은 모양이다 */
+function seed(scientificName: string) {
+  const found = findSeedSpecies(scientificName);
+  if (!found) throw new Error(`시드에 없는 학명: ${scientificName}`);
+  return found;
+}
 
 describe('식물 등록 단계 (SPEC.md 4.2)', () => {
   it('사진 → 종 → 화분 → 흙 → 공간 → 분재 → 첫 알림 확인 순서다', () => {
@@ -107,7 +115,7 @@ describe('종 선택과 식물군 (SPEC 4.2, 10.2)', () => {
   });
 
   it('분재 수종을 고르면 분재 토글과 수종군이 자동으로 켜진다', () => {
-    const pine = apply(empty, { type: 'speciesChosen', scientificName: 'Pinus thunbergii' });
+    const pine = apply(empty, { type: 'speciesChosen', species: seed('Pinus thunbergii') });
 
     expect(pine).toMatchObject({ isBonsai: true, bonsaiGroup: 'conifer' });
     expect(resolveGroupCode(pine)).toBe('bonsai_conifer');
@@ -116,8 +124,8 @@ describe('종 선택과 식물군 (SPEC 4.2, 10.2)', () => {
   it('분재가 아닌 종으로 바꾸면 분재 설정이 풀린다', () => {
     const changed = apply(
       empty,
-      { type: 'speciesChosen', scientificName: 'Pinus thunbergii' },
-      { type: 'speciesChosen', scientificName: 'Monstera deliciosa' },
+      { type: 'speciesChosen', species: seed('Pinus thunbergii') },
+      { type: 'speciesChosen', species: seed('Monstera deliciosa') },
     );
 
     expect(changed).toMatchObject({ isBonsai: false, bonsaiGroup: null });
@@ -126,7 +134,7 @@ describe('종 선택과 식물군 (SPEC 4.2, 10.2)', () => {
   it('분재 토글을 켜면 수종군을 골라야 하고, 수종군이 식물군을 정한다', () => {
     const olive = apply(
       { ...empty, step: 'bonsai' },
-      { type: 'speciesChosen', scientificName: 'Olea europaea' },
+      { type: 'speciesChosen', species: seed('Olea europaea') },
       { type: 'bonsaiToggled', isBonsai: true },
     );
     expect(canAdvance(olive)).toBe(false);
@@ -144,7 +152,7 @@ describe('종 선택과 식물군 (SPEC 4.2, 10.2)', () => {
   it('분재 수종의 토글을 끄면 온대 수목으로 본다', () => {
     const gardenPine = apply(
       empty,
-      { type: 'speciesChosen', scientificName: 'Pinus thunbergii' },
+      { type: 'speciesChosen', species: seed('Pinus thunbergii') },
       { type: 'bonsaiToggled', isBonsai: false },
     );
 
@@ -155,7 +163,7 @@ describe('종 선택과 식물군 (SPEC 4.2, 10.2)', () => {
   it('토글을 다시 켜면 종의 수종군이 돌아온다', () => {
     const pine = apply(
       empty,
-      { type: 'speciesChosen', scientificName: 'Pinus thunbergii' },
+      { type: 'speciesChosen', species: seed('Pinus thunbergii') },
       { type: 'bonsaiToggled', isBonsai: false },
       { type: 'bonsaiToggled', isBonsai: true },
     );
@@ -166,7 +174,7 @@ describe('종 선택과 식물군 (SPEC 4.2, 10.2)', () => {
   it('일반 종을 분재로 키우면 종별 주기 대신 분재군 기본값을 쓴다 (얕은 분은 훨씬 빨리 마른다)', () => {
     const bonsaiZz = apply(
       empty,
-      { type: 'speciesChosen', scientificName: 'Zamioculcas zamiifolia' },
+      { type: 'speciesChosen', species: seed('Zamioculcas zamiifolia') },
       { type: 'bonsaiToggled', isBonsai: true },
       { type: 'bonsaiGroupChosen', bonsaiGroup: 'deciduous' },
     );
@@ -276,7 +284,7 @@ describe('첫 물주기 확인 (SPEC 4.2 완료, 5.5)', () => {
   it('분재로 켜면 분재군 계수로 계산한다: 흑송, 폭염, 테라스, 적옥토 → 1일', () => {
     const pine = apply(
       monstera,
-      { type: 'speciesChosen', scientificName: 'Pinus thunbergii' },
+      { type: 'speciesChosen', species: seed('Pinus thunbergii') },
       { type: 'soilChosen', soilType: 'akadama' },
     );
     const terrace: EngineSpace = { lightGrade: 'high', spaceType: 'terrace' };
@@ -318,6 +326,8 @@ describe('저장할 식물 만들기', () => {
       isBonsai: false,
       bonsaiGroup: null,
       learnFactor: 1.0,
+      // 고른 종의 기본 주기를 그대로 저장한다. 오프라인에서도 같은 값으로 센다
+      baseInterval: 7,
       // 물 준 날의 정오, 다음 물주기 날의 0시 (둘 다 기기 시간대)
       lastWateredAt: Date.UTC(2026, 8, 20, 3, 0),
       lastWateredUnknown: false,
@@ -359,7 +369,7 @@ describe('저장할 식물 만들기', () => {
   it('분재는 수종군과 분재 식물군을 저장한다', () => {
     const pine = apply(
       monstera,
-      { type: 'speciesChosen', scientificName: 'Pinus thunbergii' },
+      { type: 'speciesChosen', species: seed('Pinus thunbergii') },
       { type: 'soilChosen', soilType: 'akadama' },
     );
 
@@ -406,7 +416,10 @@ describe('임시 저장 복원 (SPEC 4)', () => {
     expect(broken({ step: 'checkout' })).toBeNull();
     expect(broken({ photos: 'a.jpg' })).toBeNull();
     expect(broken({ photos: [{ path: 1, width: 1, height: 1 }] })).toBeNull();
-    expect(broken({ species: { kind: 'seed', scientificName: 'Nonexistent plantus' } })).toBeNull();
+    expect(broken({ species: { kind: 'known', species: { scientificName: '' } } })).toBeNull();
+    expect(
+      broken({ species: { kind: 'known', species: { ...seed('Monstera deliciosa'), groupCode: 'x' } } }),
+    ).toBeNull();
     expect(broken({ species: { kind: 'unknown', groupCode: 'bonsai_conifer' } })).toBeNull();
     expect(broken({ potSize: 'xxl' })).toBeNull();
     expect(broken({ soilType: 'sand' })).toBeNull();

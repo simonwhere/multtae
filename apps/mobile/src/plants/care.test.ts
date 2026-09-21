@@ -47,6 +47,7 @@ function plant(patch: Partial<Plant>): Plant {
     isBonsai: false,
     bonsaiGroup: null,
     learnFactor: 1.15,
+    baseInterval: 7,
     manualInterval: null,
     manualSeason: null,
     lastWateredAt: at(9, 20, 12),
