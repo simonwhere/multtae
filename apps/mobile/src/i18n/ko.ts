@@ -54,6 +54,13 @@ export const ko = {
     nextWater: (date: string) => `다음 물주기 ${date}`,
     postponeLimit: '세 번 미뤘어요. 오늘은 흙을 확인해 주세요.',
     empty: '식물을 둘 공간부터 등록해 보세요',
+    /** 분재 월동 경고 (SPEC 6.3) */
+    winter: {
+      deciduous_indoor: (names: string) =>
+        `${names} 같은 잡목은 실내에서 겨울을 나면 휴면을 못 해 약해져요. 발코니나 테라스로 옮겨 주세요.`,
+      conifer_indoor: (names: string) =>
+        `${names}은 바깥에서 겨울을 나는 것이 좋아요. 난방이 닿지 않는 곳으로 옮겨 주세요.`,
+    },
     registerSpace: '공간 등록',
     addSpace: '공간 추가',
     spaces: '등록한 공간',

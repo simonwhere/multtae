@@ -28,8 +28,8 @@ export function upcomingTaskMonth(
 ): { taskCode: string; labelKo: string; month: number } | null {
   if (tasks.length === 0) return null;
 
-  // 이번 달부터 세어 몇 달 뒤인지. 같은 달이면 0 이라 가장 먼저다
-  const monthsAway = (start: number) => (start - month + 12) % 12;
+  // 몇 달 뒤인지. 이번 달에 시작하는 것은 이미 "이번 달 할 일"에 나오므로 한 해 뒤로 민다
+  const monthsAway = (start: number) => (start - month + 12) % 12 || 12;
   const next = [...tasks].sort((a, b) => monthsAway(a.monthStart) - monthsAway(b.monthStart))[0];
 
   return next

@@ -91,7 +91,7 @@ describe('planNotifications: 물주기 알림 (SPEC.md 12.1)', () => {
     const planned = plan({
       plants: [
         soil('몬스테라', date(9, 28)),
-        { nickname: '스킨답서스', waterDate: date(9, 28), hydro: true },
+        { nickname: '스킨답서스', waterDate: date(9, 28), hydro: true, bonsai: false },
       ],
     });
 

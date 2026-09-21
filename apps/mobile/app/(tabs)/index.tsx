@@ -12,11 +12,12 @@ import { formatDottedDate, formatMonthDay, formatWeekday } from '@/plants/format
 import { PlantCard } from '@/plants/plant-card';
 import { SwipeRow } from '@/plants/swipe-row';
 import { classifyToday, planPostpone } from '@/plants/today';
+import { winterWarnings } from '@/plants/winter';
 import type { TodayItem } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { useGarden } from '@/plants/use-plants';
-import { AppText, Button, motion, radius, spacing, Sprig, useColors } from '@/ui';
+import { AppText, Button, motion, Notice, radius, spacing, Sprig, useColors } from '@/ui';
 
 function SectionTitle({ title }: { title: string }) {
   return (
@@ -118,6 +119,16 @@ export default function TodayScreen() {
         </View>
 
         <NotificationBanner />
+
+        {/* 분재 월동 경고 (SPEC 6.3). 한파·서리 경고는 날씨가 붙는 5주차에 더한다 */}
+        {garden
+          ? winterWarnings(garden.plants, context.season).map((warning) => (
+              <Notice
+                key={warning.kind}
+                message={ko.today.winter[warning.kind](warning.nicknames.join(', '))}
+              />
+            ))
+          : null}
 
         {sections === null || garden === null ? null : garden.spaces.length === 0 ? (
           // 공간을 먼저 등록하고 식물을 놓는다 (SPEC 1)

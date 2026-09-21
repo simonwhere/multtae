@@ -23,7 +23,11 @@ export function TaskCard({ tasks, today, onToggle }: TaskCardProps) {
 
   const t = ko.plantDetail;
   const now = activeTasks(tasks, today);
-  const upcoming = upcomingTaskMonth(tasks, today.month);
+  // 올해 마친 작업은 다음 작업에서도 뺀다
+  const upcoming = upcomingTaskMonth(
+    tasks.filter((task) => task.doneYear !== today.year),
+    today.month,
+  );
   // 이번 달 것을 이미 마쳤는지
   const doneThisMonth = tasks.filter(
     (task) => task.doneYear === today.year && now.every((open) => open.id !== task.id),

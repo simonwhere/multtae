@@ -60,6 +60,15 @@ describe('upcomingTaskMonth: 다음 작업이 몇 월인가 (SPEC.md 3.4)', () =
   it('작업이 없으면 null', () => {
     expect(upcomingTaskMonth([], 5)).toBeNull();
   });
+
+  it('이번 달에 시작하는 것은 이미 할 일에 나오므로 뒤로 민다', () => {
+    const tasks = [
+      task({ taskCode: 'pull_old_needles', monthStart: 9, monthEnd: 10 }),
+      task({ taskCode: 'wiring', monthStart: 10, monthEnd: 2 }),
+    ];
+
+    expect(upcomingTaskMonth(tasks, 9)).toMatchObject({ taskCode: 'wiring', month: 10 });
+  });
 });
 
 describe('taskRowsFor: 종 DB 의 작업을 식물의 캘린더로 옮긴다 (SPEC.md 6.2)', () => {
