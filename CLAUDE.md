@@ -6,7 +6,7 @@
 ## 스택
 
 - apps/mobile: Expo SDK 최신 안정, TypeScript strict, expo-router, zustand, drizzle-orm + expo-sqlite
-- supabase/functions: Deno Edge Functions (identify, light-grade, species, diagnose, weather)
+- supabase/functions: Deno Edge Functions (identify, light-grade, species, diagnose, weather). 순수 로직은 _shared 에 두고 vitest 로 테스트하며, Deno 전용 API 는 각 함수의 index.ts 에만 둔다. 배포는 pnpm functions:deploy (npx supabase, 로그인 필요)
 - 테스트: vitest. src/engine 은 커버리지 100% 유지
 - 패키지 매니저: pnpm, 워크스페이스
 

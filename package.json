@@ -7,8 +7,9 @@
     "start": "pnpm --filter @multtae/mobile start",
     "ios": "pnpm --filter @multtae/mobile ios",
     "android": "pnpm --filter @multtae/mobile android",
-    "test": "pnpm --filter @multtae/mobile test",
-    "typecheck": "pnpm --filter @multtae/mobile typecheck",
-    "db:generate": "pnpm --filter @multtae/mobile db:generate"
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @multtae/mobile db:generate",
+    "functions:deploy": "npx -y supabase@latest functions deploy --project-ref jddopglqjtrvwmzylrlk"
   }
 }

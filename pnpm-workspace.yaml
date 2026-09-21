@@ -1,5 +1,7 @@
 packages:
   - apps/*
+  # Edge Function 의 순수 로직을 vitest 로 테스트한다 (Deno 런타임 없이)
+  - supabase
 
 # vitest(vite)와 drizzle-kit이 쓰는 esbuild의 postinstall(플랫폼 바이너리 확인)만 허용한다.
 allowBuilds:
