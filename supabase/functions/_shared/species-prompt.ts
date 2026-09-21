@@ -14,7 +14,9 @@ export const SYSTEM_PROMPT = [
 
 /** 10.2 식물군 매핑 규칙. 우선순위가 높은 것부터 본다 */
 const GROUP_RULES = [
-  '1. 분재로 키우는 수종이면 침엽은 bonsai_conifer, 그 밖은 bonsai_deciduous 로 하고 bonsai_group 을 conifer/deciduous/flowering 중에 고른다.',
+  '1. 한국에서 주로 분재로 유통되고 일반 화분으로는 거의 키우지 않는 수종일 때만 bonsai_conifer(침엽) 또는 bonsai_deciduous(그 밖)로 하고 bonsai_group 을 conifer/deciduous/flowering 중에 고른다.',
+  '   소나무, 곰솔, 향나무, 진백, 주목, 단풍, 소사, 느티, 명자, 모과, 철쭉이 그런 수종이다.',
+  '   분재로도 쓰이지만 일반 화분이나 정원수로 더 흔하면 분재가 아니다: 율마, 벤자민, 올리브, 회양목, 사철나무, 석류, 동백.',
   '2. 다육질 잎·줄기, 선인장과, 아가베·알로에·산세베리아는 succulent.',
   '3. 원산지가 열대·아열대 우림이고 실내 최저 10도 이상이 필요하면 tropical.',
   '4. 지중해·온대 원산 목본이고 실내 최저 0~5도를 견디면 temperate.',
