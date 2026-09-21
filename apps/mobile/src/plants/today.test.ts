@@ -236,3 +236,31 @@ describe('planPostpone: "내일로" (SPEC.md 5.5)', () => {
     expect(patch?.nextWaterAt).toBe(at(9, 28));
   });
 });
+
+describe('분재의 응답 (SPEC.md 6.1)', () => {
+  const pine = () =>
+    plant({ groupCode: 'bonsai_conifer', isBonsai: true, bonsaiGroup: 'conifer', baseInterval: 2 });
+
+  it('말랐음: 물을 주고 배운 값은 그대로 둔다', () => {
+    const plan = planWatering(
+      pine(),
+      livingRoom,
+      { soilState: 'dry', leafDroop: false },
+      { ...context, logId: 'log-1' },
+    );
+
+    expect(plan.plantPatch.learnFactor).toBe(1.0);
+    expect(plan.log.soilState).toBe('dry');
+  });
+
+  it('아직 촉촉: 흙 상태 3택 대신 촉촉 응답 자체가 주기를 늘린다', () => {
+    const plan = planWatering(
+      pine(),
+      livingRoom,
+      { soilState: 'wet', leafDroop: false },
+      { ...context, logId: 'log-1' },
+    );
+
+    expect(plan.plantPatch.learnFactor).toBe(1.15);
+  });
+});

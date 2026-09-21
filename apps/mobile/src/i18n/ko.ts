@@ -85,6 +85,12 @@ export const ko = {
     },
     leafDroop: '잎이 처졌어요',
     hydroTitle: (nickname: string) => `${nickname}의 물을 갈았어요`,
+    /** 분재는 물 주기 전에 흙을 확인한다 (SPEC 6.1) */
+    bonsaiTitle: (nickname: string) => `${nickname} 흙은 어땠나요`,
+    bonsaiDry: '말랐어요',
+    bonsaiDryHint: '물을 주고 다음 확인 날을 다시 세요',
+    bonsaiMoist: '아직 촉촉해요',
+    bonsaiMoistHint: '오늘은 건너뛰고 내일 다시 봐요',
     waterCloudy: '물이 탁했어요',
     failed: '기록하지 못했어요. 다시 시도해 주세요.',
   },

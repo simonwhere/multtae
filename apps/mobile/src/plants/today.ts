@@ -127,6 +127,7 @@ export interface WateringPlan {
 
 /**
  * "물 줬어요": 흙 상태로 U 를 갱신하고 오늘부터 다음 물주기를 다시 센다.
+ * 분재는 "말랐음 / 아직 촉촉" 두 가지로 답한다 (6.1).
  * 밀린 식물이어도 밀린 일수는 학습에 넣지 않는다 (5.5). 수경과 수동 고정은 배우지 않는다.
  * 기록의 interval_calc·factor_snapshot 은 이때 새로 계산한 값이다. 다음 기록과의 간격과 견주어 통계를 낸다 (3.5).
  */
@@ -139,8 +140,12 @@ export function planWatering(
   const { coefficients, season, now, utcOffsetMinutes } = context;
   const enginePlant = toEnginePlant(plant);
   const learns = computeInterval(enginePlant, space, season, coefficients).mode === 'computed';
+  // 분재는 흙 3택 대신 "말랐음 / 아직 촉촉" 두 가지로 답한다 (6.1).
+  // 촉촉 응답 자체가 주기를 늘리고, 말랐음은 배운 값을 그대로 둔다
+  const forLearning =
+    plant.isBonsai && input.soilState === 'dry' ? 'ok' : input.soilState;
   const learnFactor = learns
-    ? applyFeedback(plant.learnFactor, input.soilState, input.leafDroop, coefficients)
+    ? applyFeedback(plant.learnFactor, forLearning, input.leafDroop, coefficients)
     : plant.learnFactor;
 
   const result = computeInterval({ ...enginePlant, learnFactor }, space, season, coefficients);

@@ -5,14 +5,14 @@ import { StyleSheet, View } from 'react-native';
 
 import { db } from '@/db/client';
 import { insertEvent } from '@/db/events';
-import { getPlantWithSpace } from '@/db/plants';
+import { getPlantWithSpace, updatePlant } from '@/db/plants';
 import type { PlantWithSpace } from '@/db/plants';
 import { recordWatering } from '@/db/watering';
-import { SOIL_STATES } from '@/engine';
+import { applyFeedback, SOIL_STATES } from '@/engine';
 import type { SoilState } from '@/engine';
 import { ko } from '@/i18n/ko';
 import { rescheduleSoon } from '@/notifications';
-import { planWatering } from '@/plants/today';
+import { planPostpone, planWatering } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { AppText, Button, ChoiceCard, Notice, spacing } from '@/ui';
@@ -39,6 +39,25 @@ export default function WateredSheet() {
 
   const { plant, space } = target;
   const hydro = plant.soilType === 'hydro';
+  const bonsai = plant.isBonsai && !hydro;
+
+  /** 분재의 "아직 촉촉해요": 물을 주지 않고 내일 다시 본다. 촉촉 응답이 주기를 늘린다 (SPEC 6.1) */
+  async function postponeMoist() {
+    setBusy(true);
+    setFailed(false);
+    try {
+      const context = nowContext();
+      const learned = applyFeedback(plant.learnFactor, 'wet', false, context.coefficients);
+      // 세 번을 넘겨 미룰 수 없으면 날짜는 그대로 두고 배운 값만 올린다. 그러면 내일 밀림으로 나온다
+      const patch = planPostpone(plant, context);
+      await updatePlant(db, plant.id, { ...(patch ?? {}), learnFactor: learned });
+      rescheduleSoon();
+      router.back();
+    } catch {
+      setFailed(true);
+      setBusy(false);
+    }
+  }
 
   async function finish() {
     setBusy(true);
@@ -48,7 +67,7 @@ export default function WateredSheet() {
         plant,
         space,
         // 흙 상태를 고르지 않으면 건너뛴 것으로 기록하고 U 는 그대로 둔다
-        { soilState: soilState ?? 'skipped', leafDroop: !hydro && checked },
+        { soilState: bonsai ? 'dry' : (soilState ?? 'skipped'), leafDroop: !hydro && !bonsai && checked },
         { ...nowContext(), logId: randomUUID() },
       );
       await recordWatering(db, plant.id, plan.plantPatch, plan.log);
@@ -73,10 +92,28 @@ export default function WateredSheet() {
   return (
     <View style={styles.sheet}>
       <AppText variant="titleSm" accessibilityRole="header">
-        {hydro ? ko.wateredSheet.hydroTitle(plant.nickname) : ko.wateredSheet.title(plant.nickname)}
+        {hydro
+          ? ko.wateredSheet.hydroTitle(plant.nickname)
+          : bonsai
+            ? ko.wateredSheet.bonsaiTitle(plant.nickname)
+            : ko.wateredSheet.title(plant.nickname)}
       </AppText>
 
-      {hydro ? null : (
+      {bonsai ? (
+        <View style={styles.stack}>
+          <Button label={ko.wateredSheet.bonsaiDry} disabled={busy} onPress={() => void finish()} />
+          <Button
+            label={ko.wateredSheet.bonsaiMoist}
+            variant="secondary"
+            disabled={busy}
+            onPress={() => void postponeMoist()}
+          />
+          <AppText variant="caption">{ko.wateredSheet.bonsaiDryHint}</AppText>
+          <AppText variant="caption">{ko.wateredSheet.bonsaiMoistHint}</AppText>
+        </View>
+      ) : null}
+
+      {hydro || bonsai ? null : (
         <View accessibilityRole="radiogroup" style={styles.stack}>
           <AppText>{ko.wateredSheet.soilQuestion}</AppText>
           <AppText variant="caption">{ko.wateredSheet.soilGuide}</AppText>
@@ -93,14 +130,18 @@ export default function WateredSheet() {
         </View>
       )}
 
-      <ChoiceCard
-        label={hydro ? ko.wateredSheet.waterCloudy : ko.wateredSheet.leafDroop}
-        selected={checked}
-        onPress={() => setChecked((value) => !value)}
-      />
+      {bonsai ? null : (
+        <ChoiceCard
+          label={hydro ? ko.wateredSheet.waterCloudy : ko.wateredSheet.leafDroop}
+          selected={checked}
+          onPress={() => setChecked((value) => !value)}
+        />
+      )}
 
       {failed ? <Notice message={ko.wateredSheet.failed} /> : null}
-      <Button label={ko.action.done} disabled={busy} onPress={() => void finish()} />
+      {bonsai ? null : (
+        <Button label={ko.action.done} disabled={busy} onPress={() => void finish()} />
+      )}
     </View>
   );
 }
