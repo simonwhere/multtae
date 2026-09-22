@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Plant } from '../db/schema';
 import { DEFAULT_COEFFICIENTS } from '../engine';
 import type { CalendarDate, EngineSpace, Season } from '../engine';
-import { planReschedule, waterDateAsOf } from './schedule';
+import { planReschedule, planSpaceReschedule, waterDateAsOf } from './schedule';
 
 const C = DEFAULT_COEFFICIENTS;
 const KST = 540;
@@ -180,5 +180,26 @@ describe('waterDateAsOf: 그날 그 계절이라면 다음 물주기는 언제�
     const early = plant({ lastWateredAt: at(11, 7, 12), nextWaterAt: at(11, 14) });
 
     expect(waterDateAsOf(early, window, on(date(11, 16), 'winter'))).toEqual(date(11, 14));
+  });
+});
+
+describe('planSpaceReschedule: 공간의 빛이 바뀌면 그 공간 식물을 다시 센다 (SPEC.md 3.3)', () => {
+  const bright: EngineSpace = { lightGrade: 'high', spaceType: 'indoor_window' };
+
+  it('바뀐 식물만 돌려준다', () => {
+    const items = [
+      // 중광에서 강광이 되면 주기가 짧아진다
+      plant({ id: 'a', lastWateredAt: at(11, 10, 12), nextWaterAt: at(11, 17) }),
+      // 이미 밀린 식물은 그대로 둔다
+      plant({ id: 'b', lastWateredAt: at(11, 1, 12), nextWaterAt: at(11, 8) }),
+    ];
+
+    const changed = planSpaceReschedule(items, bright, on(date(11, 17), 'winter'));
+
+    expect(changed).toEqual([{ id: 'a', nextWaterAt: at(11, 19) }]);
+  });
+
+  it('식물이 없으면 빈 배열', () => {
+    expect(planSpaceReschedule([], bright, on(date(11, 17), 'winter'))).toEqual([]);
   });
 });

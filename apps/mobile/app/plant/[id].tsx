@@ -27,6 +27,7 @@ import { usePlantDetail } from '@/plants/use-plant-detail';
 import { findSeedSpecies } from '@/species/seed';
 import {
   AppText,
+  BackButton,
   Button,
   Card,
   Chevron,
@@ -57,27 +58,6 @@ function InfoRow({ label, value, onPress }: { label: string; value: string; onPr
         {value}
       </AppText>
       <Chevron />
-    </Pressable>
-  );
-}
-
-function BackButton({ onPress }: { onPress: () => void }) {
-  const colors = useColors();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={ko.common.goBack}
-      hitSlop={spacing.sm}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.back,
-        { backgroundColor: colors.surface, borderColor: colors.hair },
-        pressed && styles.pressed,
-      ]}>
-      <View style={styles.backIcon}>
-        <Chevron />
-      </View>
     </Pressable>
   );
 }
@@ -335,17 +315,6 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingHorizontal: spacing.xl - spacing.xs,
     paddingBottom: spacing.xl * 2,
-  },
-  back: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.control,
-    borderWidth: 1,
-  },
-  backIcon: {
-    transform: [{ rotate: '180deg' }],
   },
   photo: {
     width: '100%',

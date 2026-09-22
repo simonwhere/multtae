@@ -67,6 +67,23 @@ export function waterDateAsOf(
   return countWaterDate(plant, space, context);
 }
 
+/**
+ * 공간의 빛이 바뀌었을 때 그 공간 식물들의 다음 물주기 (SPEC 3.3 빛 등급 수정).
+ * 바뀐 식물만 돌려준다.
+ */
+export function planSpaceReschedule(
+  plants: readonly Plant[],
+  space: EngineSpace,
+  context: ScheduleContext,
+): { id: string; nextWaterAt: number }[] {
+  const changed: { id: string; nextWaterAt: number }[] = [];
+  for (const plant of plants) {
+    const plan = planReschedule(plant, space, context);
+    if (plan?.nextWaterAt != null) changed.push({ id: plant.id, nextWaterAt: plan.nextWaterAt });
+  }
+  return changed;
+}
+
 /** 저장된 다음 물주기를 고쳐야 하면 고칠 값, 아니면 null */
 export function planReschedule(
   plant: Plant,

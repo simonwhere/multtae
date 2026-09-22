@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -6,9 +7,10 @@ import { useGarden } from '@/plants/use-plants';
 import { SpaceCard } from '@/spaces/space-card';
 import { AppText, spacing, useColors } from '@/ui';
 
-// 공간 탭 (SPEC 3.3). 공간 상세와 계절 메모는 4-5 에서 채운다.
+// 공간 탭 (SPEC 3.3). 카드를 누르면 공간 상세로 간다.
 export default function SpacesScreen() {
   const colors = useColors();
+  const router = useRouter();
   const { garden } = useGarden();
 
   return (
@@ -27,6 +29,7 @@ export default function SpacesScreen() {
               key={space.id}
               space={space}
               plantCount={garden.plants.filter((item) => item.space.id === space.id).length}
+              onPress={() => router.push({ pathname: '/space/[id]', params: { id: space.id } })}
             />
           ))}
         </ScrollView>

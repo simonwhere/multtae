@@ -69,8 +69,9 @@ export default function RootLayout() {
         <Stack.Screen name="register/space" options={{ presentation: 'modal' }} />
         <Stack.Screen name="register/plant" options={{ presentation: 'modal' }} />
         <Stack.Screen name="plant/[id]" />
+        <Stack.Screen name="space/[id]" />
         {/* 시트는 내용 높이만큼만 올라온다. 그래서 시트 화면에는 flex: 1 과 ScrollView 를 쓰지 않는다 */}
-        {['sheet/watered', 'sheet/season', 'sheet/register'].map((name) => (
+        {['sheet/watered', 'sheet/season', 'sheet/register', 'sheet/space-edit'].map((name) => (
           <Stack.Screen key={name} name={name} options={sheetOptions} />
         ))}
         {/* 공간 이동은 목록이 길어질 수 있어 스크롤되는 모달로 띄운다 */}

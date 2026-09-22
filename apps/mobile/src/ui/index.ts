@@ -1,4 +1,5 @@
 export * from './app-text';
+export * from './back-button';
 export * from './button';
 export * from './card';
 export * from './chevron';
