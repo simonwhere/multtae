@@ -55,5 +55,6 @@ describe('readCap: 한도값은 서버에서 고친다 (SPEC.md 11.2)', () => {
   it('SPEC 의 기본 한도를 안다', () => {
     expect(DEFAULT_CAPS.identify).toBe(450);
     expect(DEFAULT_CAPS.diagnose).toBe(3);
+    expect(DEFAULT_CAPS.lightGrade).toBe(300);
   });
 });

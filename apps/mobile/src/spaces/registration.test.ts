@@ -14,9 +14,22 @@ import {
   toNewSpace,
 } from './registration';
 import type { SpaceDraft, SpaceDraftAction } from './registration';
+import type { LightReading } from './light-reading';
 
 const apply = (draft: SpaceDraft, ...actions: SpaceDraftAction[]) =>
   actions.reduce(reduceSpaceDraft, draft);
+
+/** 사진으로 읽은 빛 (SPEC 9.2) */
+const reading = (overrides: Partial<LightReading> = {}): LightReading => ({
+  grade: 'medium',
+  confidence: 0.8,
+  evidence: ['창이 사진 왼쪽에 크게 보임'],
+  windowVisible: true,
+  curtain: 'sheer',
+  distanceM: 1,
+  noteKo: '오전에만 직사광이 들어요',
+  ...overrides,
+});
 
 const empty = createSpaceDraft('space-1');
 /** 사진·방향·유형까지 고르고 빛 등급 단계에 온 초안 */
@@ -138,6 +151,60 @@ describe('빛 등급 (AI 없이 기본값 표)', () => {
   });
 });
 
+describe('사진으로 읽은 빛 (SPEC.md 9.2)', () => {
+  it('확신이 서면 읽은 등급을 쓴다', () => {
+    const read = apply(atLight, { type: 'lightRead', reading: reading({ grade: 'medium' }) });
+
+    expect(resolveLight(read)).toEqual({ lightGrade: 'medium', lightSource: 'ai' });
+  });
+
+  it('확신이 낮으면 기본값 표로 간다', () => {
+    const read = apply(atLight, {
+      type: 'lightRead',
+      reading: reading({ grade: 'very_low', confidence: 0.4 }),
+    });
+
+    expect(resolveLight(read)).toEqual({ lightGrade: 'high', lightSource: 'default' });
+  });
+
+  it('읽지 못했으면 기본값 표로 간다', () => {
+    expect(resolveLight(apply(atLight, { type: 'lightRead', reading: null }))).toEqual({
+      lightGrade: 'high',
+      lightSource: 'default',
+    });
+  });
+
+  it('사람이 고치면 읽은 값보다 먼저다', () => {
+    const edited = apply(
+      atLight,
+      { type: 'lightRead', reading: reading({ grade: 'medium' }) },
+      { type: 'lightGradeChosen', lightGrade: 'low' },
+    );
+
+    expect(resolveLight(edited)).toEqual({ lightGrade: 'low', lightSource: 'manual' });
+  });
+
+  it('읽은 등급을 다시 고르면 고치지 않은 것으로 본다', () => {
+    const edited = apply(
+      atLight,
+      { type: 'lightRead', reading: reading({ grade: 'medium' }) },
+      { type: 'lightGradeChosen', lightGrade: 'low' },
+      { type: 'lightGradeChosen', lightGrade: 'medium' },
+    );
+
+    expect(resolveLight(edited)).toEqual({ lightGrade: 'medium', lightSource: 'ai' });
+  });
+
+  it('사진이나 방향·유형이 바뀌면 읽은 값을 버린다', () => {
+    const read = apply(atLight, { type: 'lightRead', reading: reading() });
+
+    expect(apply(read, { type: 'photoPicked', photoPath: 'spaces/space-1-2.jpg' }).aiLight).toBeNull();
+    expect(apply(read, { type: 'directionChosen', direction: 'N' }).aiLight).toBeNull();
+    expect(apply(read, { type: 'typeChosen', spaceType: 'terrace' }).aiLight).toBeNull();
+    expect(apply(read, { type: 'photoPicked', photoPath: 'spaces/space-1.jpg' }).aiLight).not.toBeNull();
+  });
+});
+
 describe('이름 자동 제안', () => {
   it('방향과 유형으로 짓는다', () => {
     expect(suggestSpaceName('S', 'indoor_window', [])).toBe('남향 실내 창가');
@@ -192,7 +259,22 @@ describe('저장할 공간 만들기', () => {
       spaceType: 'indoor_window',
       lightGrade: 'high',
       lightSource: 'default',
+      aiEvidence: null,
       createdAt: 1_789_000_000_000,
+    });
+  });
+
+  it('확신이 낮아 쓰지 않은 판단도 함께 저장한다 (SPEC.md 3.3, 9.2)', () => {
+    const draft = apply(
+      atLight,
+      { type: 'lightRead', reading: reading({ grade: 'low', confidence: 0.2 }) },
+      { type: 'next' },
+    );
+
+    expect(toNewSpace(draft, [], 1)).toMatchObject({
+      lightGrade: 'high',
+      lightSource: 'default',
+      aiEvidence: { grade: 'low', confidence: 0.2 },
     });
   });
 
@@ -217,6 +299,16 @@ describe('임시 저장 복원 (SPEC 4: 중간 이탈 시 임시 저장)', () =>
     const draft = apply(atLight, { type: 'lightGradeChosen', lightGrade: 'medium' });
 
     expect(parseSpaceDraft(JSON.stringify(draft))).toEqual(draft);
+  });
+
+  it('읽어 둔 빛도 되살리고, 깨졌으면 없는 것으로 본다', () => {
+    const read = apply(atLight, { type: 'lightRead', reading: reading() });
+
+    expect(parseSpaceDraft(JSON.stringify(read))?.aiLight).toEqual(reading());
+    expect(parseSpaceDraft(JSON.stringify({ ...read, aiLight: { grade: 'sunny' } }))).toMatchObject({
+      aiLight: null,
+      step: 'light',
+    });
   });
 
   it('없거나 깨진 값은 버린다', () => {

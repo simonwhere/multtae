@@ -1,14 +1,17 @@
 /**
  * 공간 등록 플로우의 상태와 규칙 (SPEC.md 4.1). 화면과 무관한 순수 함수라 Node 에서 테스트한다.
- * 2-1 은 AI 없이 방향 × 유형 기본값 표로 빛 등급을 정한다. AI 연결은 4-1.
+ * 빛은 사진으로 읽은 결과를 먼저 쓰고, 없거나 확신이 낮으면 방향 × 유형 기본값 표로 간다 (9.2).
  */
 import type { NewSpace } from '../db/schema';
-import { defaultLightGrade } from '../engine/light';
+import { resolveLightGrade } from '../engine/light';
+import type { LightSource } from '../engine/light';
 import { DIRECTIONS, LIGHT_GRADES, SPACE_TYPES } from '../engine/types';
 import type { Direction, LightGrade, SpaceType } from '../engine/types';
 import { ko } from '../i18n/ko';
 import { uniqueName } from '../lib/unique-name';
 import { isNullOr, isOneOf, isString, parseJsonObject } from '../lib/validate';
+import { parseLightReading } from './light-reading';
+import type { LightReading } from './light-reading';
 
 export const SPACE_STEPS = ['photo', 'direction', 'type', 'light', 'name'] as const;
 export type SpaceStep = (typeof SPACE_STEPS)[number];
@@ -26,7 +29,9 @@ export interface SpaceDraft {
   photoPath: string | null;
   direction: Direction | null;
   spaceType: SpaceType | null;
-  /** 사용자가 고친 빛 등급. null 이면 기본값 표를 따른다 */
+  /** 사진으로 읽은 빛 (9.2). 아직 묻지 않았거나 읽지 못했으면 null */
+  aiLight: LightReading | null;
+  /** 사용자가 고친 빛 등급. null 이면 사진이나 기본값 표를 따른다 */
   manualLightGrade: LightGrade | null;
   /** 사용자가 고친 이름. null 이면 자동 제안을 쓴다 */
   name: string | null;
@@ -36,6 +41,8 @@ export type SpaceDraftAction =
   | { type: 'photoPicked'; photoPath: string }
   | { type: 'directionChosen'; direction: Direction }
   | { type: 'typeChosen'; spaceType: SpaceType }
+  /** 사진을 읽은 결과. 읽지 못했으면 null */
+  | { type: 'lightRead'; reading: LightReading | null }
   | { type: 'lightGradeChosen'; lightGrade: LightGrade }
   | { type: 'nameEdited'; name: string }
   | { type: 'next' }
@@ -48,6 +55,7 @@ export function createSpaceDraft(id: string): SpaceDraft {
     photoPath: null,
     direction: null,
     spaceType: null,
+    aiLight: null,
     manualLightGrade: null,
     name: null,
   };
@@ -86,24 +94,27 @@ export function reduceSpaceDraft(draft: SpaceDraft, action: SpaceDraftAction): S
 
   switch (action.type) {
     case 'photoPicked':
-      return { ...draft, photoPath: action.photoPath };
+      // 사진이 바뀌면 그 사진으로 읽은 빛도 버리고 다시 읽는다
+      return action.photoPath === draft.photoPath
+        ? draft
+        : { ...draft, photoPath: action.photoPath, aiLight: null };
     case 'directionChosen':
-      // 기본값이 달라지므로 고친 등급은 버린다
+      // 정해지는 등급이 달라지므로 읽은 값과 고친 등급을 버린다
       return action.direction === draft.direction
         ? draft
-        : { ...draft, direction: action.direction, manualLightGrade: null };
+        : { ...draft, direction: action.direction, aiLight: null, manualLightGrade: null };
     case 'typeChosen':
       return action.spaceType === draft.spaceType
         ? draft
-        : { ...draft, spaceType: action.spaceType, manualLightGrade: null };
+        : { ...draft, spaceType: action.spaceType, aiLight: null, manualLightGrade: null };
+    case 'lightRead':
+      return action.reading === draft.aiLight ? draft : { ...draft, aiLight: action.reading };
     case 'lightGradeChosen': {
-      const fallback =
-        draft.direction && draft.spaceType
-          ? defaultLightGrade(draft.direction, draft.spaceType)
-          : null;
+      // 고른 값이 가만히 두었을 때와 같으면 고치지 않은 것으로 본다
+      const automatic = resolveAutomaticLight(draft)?.lightGrade ?? null;
       return {
         ...draft,
-        manualLightGrade: action.lightGrade === fallback ? null : action.lightGrade,
+        manualLightGrade: action.lightGrade === automatic ? null : action.lightGrade,
       };
     }
     case 'nameEdited':
@@ -117,15 +128,31 @@ export function reduceSpaceDraft(draft: SpaceDraft, action: SpaceDraftAction): S
   }
 }
 
-/** 빛 등급과 그 출처. 방향이나 유형이 아직 없으면 null */
-export function resolveLight(
+/** 사람이 고치기 전의 빛 등급. 방향이나 유형이 아직 없으면 null */
+function resolveAutomaticLight(
   draft: SpaceDraft,
-): { lightGrade: LightGrade; lightSource: 'default' | 'manual' } | null {
+): { lightGrade: LightGrade; lightSource: LightSource } | null {
   if (!draft.direction || !draft.spaceType) return null;
 
-  return draft.manualLightGrade
-    ? { lightGrade: draft.manualLightGrade, lightSource: 'manual' }
-    : { lightGrade: defaultLightGrade(draft.direction, draft.spaceType), lightSource: 'default' };
+  return resolveLightGrade({
+    direction: draft.direction,
+    spaceType: draft.spaceType,
+    ai: draft.aiLight,
+  });
+}
+
+/** 저장될 빛 등급과 그 출처 (4.1, 9.2). 방향이나 유형이 아직 없으면 null */
+export function resolveLight(
+  draft: SpaceDraft,
+): { lightGrade: LightGrade; lightSource: LightSource } | null {
+  if (!draft.direction || !draft.spaceType) return null;
+
+  return resolveLightGrade({
+    direction: draft.direction,
+    spaceType: draft.spaceType,
+    ai: draft.aiLight,
+    manual: draft.manualLightGrade,
+  });
 }
 
 /** "남향 실내 창가" 처럼 짓고, 같은 이름이 있으면 번호를 붙인다 */
@@ -165,6 +192,8 @@ export function toNewSpace(
     spaceType: draft.spaceType,
     lightGrade: light.lightGrade,
     lightSource: light.lightSource,
+    // 확신이 낮아 쓰지 않은 판단도 남긴다. 공간 상세에서 참고 문구로 보여 준다 (3.3, 9.2)
+    aiEvidence: draft.aiLight,
     createdAt: now,
   };
 }
@@ -192,6 +221,8 @@ export function parseSpaceDraft(json: string | null): SpaceDraft | null {
     photoPath: raw.photoPath,
     direction: raw.direction,
     spaceType: raw.spaceType,
+    // 읽어 둔 빛이 깨졌으면 없는 것으로 본다. 화면이 다시 읽는다
+    aiLight: parseLightReading(raw.aiLight),
     manualLightGrade: raw.manualLightGrade,
     name: raw.name,
   };

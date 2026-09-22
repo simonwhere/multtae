@@ -14,5 +14,6 @@ insert into public.coefficients (key, value) values
   ('max_postpones', '3'::jsonb),
   ('season_bounds', '{"spring":{"month":3,"day":1},"monsoon":{"month":6,"day":21},"heat":{"month":7,"day":26},"autumn":{"month":9,"day":1},"winter":{"month":11,"day":16}}'::jsonb),
   ('diagnose_daily_limit', '3'::jsonb),
-  ('daily_cap_identify', '450'::jsonb)
+  ('daily_cap_identify', '450'::jsonb),
+  ('daily_cap_light_grade', '300'::jsonb)
 on conflict (key) do nothing;

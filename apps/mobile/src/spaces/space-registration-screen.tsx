@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import type { LightSource } from '@/engine/light';
 import { LIGHT_GRADES } from '@/engine/types';
 import type { Direction, SpaceType } from '@/engine/types';
 import { ko } from '@/i18n/ko';
@@ -22,6 +23,7 @@ import {
   useColors,
 } from '@/ui';
 
+import { shownEvidence } from './light-reading';
 import {
   canAdvance,
   MAX_SPACE_NAME_LENGTH,
@@ -143,10 +145,40 @@ function TypeStep({ draft, dispatch }: { draft: SpaceDraft; dispatch: Dispatch }
   );
 }
 
-function LightStep({ draft, dispatch }: { draft: SpaceDraft; dispatch: Dispatch }) {
+/** 밝기를 어떻게 가늠했는지 한 줄 (SPEC 4.1, 9.2) */
+function lightBasis(draft: SpaceDraft, lightSource: LightSource): string {
+  const t = ko.spaceRegister.light;
+  if (lightSource === 'manual') return t.basisManual;
+  if (lightSource === 'ai') return t.basisPhoto;
+  // 사진을 봤는데도 방향으로 갔다면 사진만으로는 또렷하지 않았다는 뜻이다
+  return draft.aiLight ? t.basisUnsure : t.basisDefault;
+}
+
+function LightStep({
+  draft,
+  reading,
+  dispatch,
+}: {
+  draft: SpaceDraft;
+  reading: boolean;
+  dispatch: Dispatch;
+}) {
   const [editing, setEditing] = useState(false);
+  const colors = useColors();
   const light = resolveLight(draft);
   if (!light) return null;
+
+  if (reading) {
+    return (
+      <View style={styles.reading}>
+        <ActivityIndicator color={colors.accent} />
+        <AppText variant="titleSm">{ko.spaceRegister.light.reading}</AppText>
+        <AppText variant="caption">{ko.spaceRegister.light.readingWait}</AppText>
+      </View>
+    );
+  }
+
+  const evidence = shownEvidence(draft.aiLight);
 
   return (
     <View style={styles.stack}>
@@ -155,12 +187,21 @@ function LightStep({ draft, dispatch }: { draft: SpaceDraft; dispatch: Dispatch 
           <AppText variant="titleLg">{ko.lightGrade[light.lightGrade]}</AppText>
           <LightGauge grade={light.lightGrade} />
         </View>
-        <AppText>
-          {light.lightSource === 'manual'
-            ? ko.spaceRegister.light.basisManual
-            : ko.spaceRegister.light.basisDefault}
-        </AppText>
+        <AppText>{lightBasis(draft, light.lightSource)}</AppText>
         <AppText>{ko.lightGradeHint[light.lightGrade]}</AppText>
+        {light.lightSource === 'ai' && draft.aiLight?.noteKo ? (
+          <AppText>{draft.aiLight.noteKo}</AppText>
+        ) : null}
+        {evidence.length > 0 ? (
+          <View style={styles.evidence}>
+            <AppText variant="caption">{ko.spaceRegister.light.evidence}</AppText>
+            {evidence.map((line) => (
+              <AppText key={line} variant="caption">
+                {line}
+              </AppText>
+            ))}
+          </View>
+        ) : null}
         <TextButton label={ko.common.edit} onPress={() => setEditing((value) => !value)} />
       </Card>
       {editing ? (
@@ -236,7 +277,7 @@ export function SpaceRegistrationScreen() {
       onClose={close}
       onBack={isFirst ? undefined : () => dispatch({ type: 'back' })}
       nextLabel={isLast ? ko.common.save : ko.common.next}
-      nextDisabled={!canAdvance(draft) || registration.busy}
+      nextDisabled={!canAdvance(draft) || registration.busy || registration.readingLight}
       onNext={() => void advance()}
       blockedMessage={registration.atLimit ? ko.today.spaceLimit : undefined}
       errorMessage={registration.saveFailed ? ko.spaceRegister.saveFailed : null}>
@@ -250,7 +291,9 @@ export function SpaceRegistrationScreen() {
       ) : null}
       {draft.step === 'direction' ? <DirectionStep draft={draft} dispatch={dispatch} /> : null}
       {draft.step === 'type' ? <TypeStep draft={draft} dispatch={dispatch} /> : null}
-      {draft.step === 'light' ? <LightStep draft={draft} dispatch={dispatch} /> : null}
+      {draft.step === 'light' ? (
+        <LightStep draft={draft} reading={registration.readingLight} dispatch={dispatch} />
+      ) : null}
       {draft.step === 'name' ? (
         <NameStep draft={draft} existingNames={registration.existingNames} dispatch={dispatch} />
       ) : null}
@@ -281,5 +324,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  evidence: {
+    gap: spacing.xs,
+  },
+  reading: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xl,
   },
 });

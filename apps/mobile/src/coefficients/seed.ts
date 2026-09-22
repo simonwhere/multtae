@@ -10,6 +10,7 @@ import type { CoefficientRow } from './parse';
 export const SERVER_LIMIT_ROWS: CoefficientRow[] = [
   { key: 'diagnose_daily_limit', value: 3 },
   { key: 'daily_cap_identify', value: 450 },
+  { key: 'daily_cap_light_grade', value: 300 },
 ];
 
 const quote = (text: string) => `'${text.replace(/'/g, "''")}'`;

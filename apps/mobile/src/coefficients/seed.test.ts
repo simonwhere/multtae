@@ -24,7 +24,7 @@ describe('supabase/seed/coefficients.sql', () => {
       .split('\n')
       .filter((line) => line.startsWith('  ('));
 
-    expect(lines).toHaveLength(14);
+    expect(lines).toHaveLength(15);
     for (const line of lines) {
       expect(line).toMatch(/^ {2}\('[a-z_]+', '[^']+'::jsonb\),?$/);
     }

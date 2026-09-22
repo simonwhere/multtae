@@ -458,8 +458,13 @@ export const ko = {
     },
     light: {
       title: '이 자리의 빛은 이 정도예요',
+      reading: '사진을 보는 중이에요',
+      readingWait: '몇 초면 끝나요',
+      basisPhoto: '사진을 보고 가늠한 밝기예요. 실제와 다르면 바꿔 주세요.',
       basisDefault: '창 방향과 자리로 가늠한 밝기예요. 실제와 다르면 바꿔 주세요.',
+      basisUnsure: '사진만으로는 또렷하지 않아 창 방향과 자리로 가늠했어요. 실제와 다르면 바꿔 주세요.',
       basisManual: '직접 고른 밝기예요',
+      evidence: '사진에서 본 것',
       choose: '이 자리의 밝기를 골라 주세요',
     },
     name: {

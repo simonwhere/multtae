@@ -9,6 +9,11 @@ export const DEFAULT_CAPS = {
   identify: 450,
   /** 기기당 하루 진단 횟수 */
   diagnose: 3,
+  /**
+   * 빛 판단은 비전 호출이라 비용이 든다. 공간은 사람마다 20개가 상한이고 등록할 때 한 번만 부르므로
+   * 하루 300번이면 넉넉하다. 넘으면 앱은 방향 × 유형 기본값 표로 간다 (4.1)
+   */
+  lightGrade: 300,
 } as const;
 
 interface RpcClient {
