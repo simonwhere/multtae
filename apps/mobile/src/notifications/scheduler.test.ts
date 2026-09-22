@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { getPlantWithSpace, insertPlant } from '../db/plants';
 import type { NewPlant, NewSpace } from '../db/schema';
 import { setSetting } from '../db/settings';
+import { listPlantWaterings } from '../db/watering';
 import { insertSpace } from '../db/spaces';
 import { createTestDb } from '../db/testing/test-db';
 import type { TestDb } from '../db/testing/test-db';
@@ -251,5 +252,74 @@ describe('coalesce: 겹친 요청을 하나로', () => {
     await expect(request()).rejects.toThrow('boom');
     await expect(request()).resolves.toBeUndefined();
     expect(runs).toBe(2);
+  });
+});
+
+describe('날씨 규칙 (SPEC.md 7.2, 12.1)', () => {
+  const terrace: NewSpace = { ...livingRoom, id: 'space-2', name: '테라스', spaceType: 'terrace' };
+  const weatherFor = (today: object, tomorrow: object = {}) => ({
+    region: '서울 강남구',
+    fetchedAt: at(9, 27, 5),
+    days: [
+      { date: '2026-09-27', tmin: 15, tmax: 25, pop: 10, pcp: 0, windMax: 3, condition: 'clear', ...today },
+      { date: '2026-09-28', tmin: 14, tmax: 24, pop: 10, pcp: 0, windMax: 3, condition: 'clear', ...tomorrow },
+    ],
+    dust: 'good',
+  });
+
+  beforeEach(async () => {
+    await insertSpace(db, terrace);
+    await setSetting(db, 'region_code', '서울 강남구');
+  });
+
+  it('비가 넉넉히 오는 날에는 테라스 식물 물주기를 비가 대신하고, 하루에 한 번만 남긴다', async () => {
+    await setSetting(db, 'weather_cache', JSON.stringify(weatherFor({ pop: 80, pcp: 12 })));
+    await insertPlant(
+      db,
+      monstera({ id: 'plant-2', spaceId: 'space-2', nickname: '로즈마리', groupCode: 'herb', lastWateredAt: at(9, 24, 12), nextWaterAt: at(9, 27) }),
+      [],
+    );
+
+    const first = await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 6)));
+    await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 9)));
+
+    expect(first.updatedPlants).toBe(1);
+    const { plant } = (await getPlantWithSpace(db, 'plant-2'))!;
+    expect(plant.lastWateredAt).toBe(at(9, 27, 12));
+    expect(plant.nextWaterAt).toBeGreaterThan(at(9, 27));
+
+    const logs = await listPlantWaterings(db, 'plant-2', 10);
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({ id: 'rain-plant-2-2026-09-27', source: 'rain', soilState: 'skipped' });
+  });
+
+  it('고른 지역의 날씨가 아니면 규칙을 쓰지 않는다', async () => {
+    await setSetting(db, 'region_code', '부산 중구');
+    await setSetting(db, 'weather_cache', JSON.stringify(weatherFor({ pop: 80, pcp: 12 })));
+    await insertPlant(db, monstera({ id: 'plant-2', spaceId: 'space-2', nextWaterAt: at(9, 27) }), []);
+
+    await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 6)));
+
+    expect(await listPlantWaterings(db, 'plant-2', 10)).toEqual([]);
+  });
+
+  it('내일 새벽 한파면 경고 알림을 한 번 정해 두고, 다시 짜도 같은 시각이다', async () => {
+    await setSetting(db, 'weather_cache', JSON.stringify(weatherFor({}, { tmin: -7 })));
+    await insertPlant(db, monstera({ id: 'plant-2', spaceId: 'space-2', nextWaterAt: at(10, 5) }), []);
+
+    const first = await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 18, 30)));
+    const again = await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 20)));
+    const after = await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 21)));
+
+    const alert = first.scheduled.find((item) => item.type === 'weather');
+    expect(alert).toMatchObject({
+      id: 'weather-20260928-0',
+      minuteOfDay: 18 * 60 + 31,
+      title: '한파 예보',
+      body: '내일 새벽 -7도, 바깥에 둔 식물 1개를 챙겨 주세요',
+    });
+    // 이미 울린 경고는 다시 짜지 않는다
+    expect(again.scheduled.some((item) => item.type === 'weather')).toBe(false);
+    expect(after.scheduled.some((item) => item.type === 'weather')).toBe(false);
   });
 });

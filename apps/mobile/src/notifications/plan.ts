@@ -8,7 +8,8 @@
 import { addDays, diffDays, startOfDay, toCalendarDate } from '../engine';
 import type { CalendarDate, Season } from '../engine';
 import { ko } from '../i18n/ko';
-import { shiftOutOfQuietHours } from './settings';
+import { dateKey } from '../weather/forecast';
+import { HEAT_MORNING_MINUTE, shiftOutOfQuietHours } from './settings';
 import type { NotificationSettings } from './settings';
 
 /** 예약해 두는 기간. iOS 예약 상한 64개 안에 들도록 14일 × 하루 4개로 잡았다 (12.3) */
@@ -24,7 +25,7 @@ const MS_PER_MINUTE = 60_000;
 const MORNING_SLOT = 0;
 const EVENING_SLOT = 1;
 
-export type NotificationType = 'water' | 'overdue' | 'season' | 'bonsai' | 'task';
+export type NotificationType = 'water' | 'overdue' | 'season' | 'bonsai' | 'task' | 'weather';
 /** 알림을 누르면 갈 곳 (12.1) */
 export type NotificationTarget = 'today';
 
@@ -48,6 +49,17 @@ export interface PlanPlant {
   hydro: boolean;
   /** 분재는 물 주기 대신 흙을 확인하라고 따로 알린다 (6.1) */
   bonsai: boolean;
+  /** 테라스·옥외나 발코니 확장에 있다. 폭염인 날 아침 알림을 당긴다 (7.2) */
+  openAir?: boolean;
+}
+
+/** 한파·서리 예보 알림 (12.1). 울릴 시각은 부르는 쪽이 정해 둔다(weatherAlertTime) */
+export interface PlanWeatherAlert {
+  /** 경고하는 새벽의 날짜 YYYY-MM-DD. 알림 id 에 쓴다 */
+  targetDate: string;
+  fireAt: number;
+  title: string;
+  body: string;
 }
 
 export interface SeasonNotice {
@@ -77,6 +89,9 @@ export interface PlanInput {
   /** 기기 시간대의 UTC 오프셋(분). 알림은 기기 시간대로 센다 (12.2) */
   utcOffsetMinutes: number;
   settings: NotificationSettings;
+  /** 최고 33도 이상인 날(YYYY-MM-DD). 바깥 자리 식물의 아침 알림을 07시로 당긴다 (7.2) */
+  heatDays?: readonly string[];
+  weatherAlert?: PlanWeatherAlert | null;
 }
 
 const pad = (value: number, length: number) => String(value).padStart(length, '0');
@@ -90,6 +105,11 @@ function names(plants: readonly PlanPlant[]): string {
     plants.slice(0, MAX_NAMES).map((plant) => plant.nickname),
     plants.length,
   );
+}
+
+/** 예정일에서 late 일 지난 날에 밀림 알림을 보내는가: +1일, 이후 3일마다 (12.1) */
+function isOverdueReminder(late: number): boolean {
+  return late >= OVERDUE_FIRST_DAY && (late - OVERDUE_FIRST_DAY) % OVERDUE_REPEAT_DAYS === 0;
 }
 
 /** 그날 아침 알림에 들어갈 줄들. 앞에 오는 줄의 종류가 알림의 종류가 된다 */
@@ -109,10 +129,7 @@ function morningLines(
   if (soil.length > 0) lines.push({ type: 'water', title: t.waterTitle, text: t.waterBody(names(soil)) });
   if (hydro.length > 0) lines.push({ type: 'water', title: t.waterTitle, text: t.hydroBody(names(hydro)) });
 
-  const overdue = input.plants.filter((plant) => {
-    const late = diffDays(plant.waterDate, day);
-    return late >= OVERDUE_FIRST_DAY && (late - OVERDUE_FIRST_DAY) % OVERDUE_REPEAT_DAYS === 0;
-  });
+  const overdue = input.plants.filter((plant) => isOverdueReminder(diffDays(plant.waterDate, day)));
   if (overdue.length > 0) {
     lines.push({
       type: 'overdue',
@@ -163,6 +180,66 @@ function bonsaiMinutes(season: Season, settings: NotificationSettings): [number,
   return [[settings.notifyMinute, MORNING_SLOT]];
 }
 
+/**
+ * 아침 알림 시각. 폭염인 날 바깥 자리 식물이 물 줄 때(밀린 것 포함)면 07시로 당긴다 (7.2).
+ * 설정 시각이 이미 그보다 이르면 그대로 둔다. 분재 알림과 물주기 알림을 따로 본다.
+ */
+function morningMinute(day: CalendarDate, input: PlanInput, bonsai: boolean, minute: number): number {
+  if (!input.heatDays?.includes(dateKey(day))) return minute;
+
+  const outdoorInMorning = input.plants.some((plant) => {
+    if (!plant.openAir || plant.bonsai !== bonsai) return false;
+    const late = diffDays(plant.waterDate, day);
+    // 그날 알림에 들어가는 식물만 본다: 물 줄 날이거나, 분재가 아니면서 밀림 알림이 가는 날
+    return late === 0 || (!bonsai && isOverdueReminder(late));
+  });
+  return outdoorInMorning ? Math.min(minute, HEAT_MORNING_MINUTE) : minute;
+}
+
+/** 날씨 경고는 06시 전에는 울리지 않는다 (12.1) */
+const WEATHER_EARLIEST_MINUTE = 6 * 60;
+
+/**
+ * 한파·서리 예보 알림을 울릴 시각 (12.1 "예보 수신 직후, 06:00 이후").
+ * 같은 새벽을 이미 알리기로 했으면 그 시각을 그대로 쓴다. 그래야 앱을 열 때마다 다시 울리지 않는다.
+ */
+export function weatherAlertTime(
+  targetDate: string,
+  stored: { targetDate: string; fireAt: number } | null,
+  context: { now: number; utcOffsetMinutes: number; settings: NotificationSettings },
+): number {
+  if (stored && stored.targetDate === targetDate) return stored.fireAt;
+
+  const { now, utcOffsetMinutes, settings } = context;
+  const today = toCalendarDate(now, utcOffsetMinutes);
+  const earliest = startOfDay(today, utcOffsetMinutes) + WEATHER_EARLIEST_MINUTE * MS_PER_MINUTE;
+  const at = Math.max(now + MS_PER_MINUTE, earliest);
+
+  const date = toCalendarDate(at, utcOffsetMinutes);
+  const minuteOfDay = Math.floor((at - startOfDay(date, utcOffsetMinutes)) / MS_PER_MINUTE);
+  const fire = shiftOutOfQuietHours(date, minuteOfDay, settings.quietHours);
+  return startOfDay(fire.date, utcOffsetMinutes) + fire.minuteOfDay * MS_PER_MINUTE;
+}
+
+function planWeatherAlert(input: PlanInput): PlannedNotification[] {
+  const alert = input.weatherAlert;
+  if (!alert || alert.fireAt <= input.now) return [];
+
+  const date = toCalendarDate(alert.fireAt, input.utcOffsetMinutes);
+  const [year, month, day] = alert.targetDate.split('-').map(Number);
+  return [
+    {
+      id: notificationId('weather', { year, month, day }, MORNING_SLOT),
+      type: 'weather',
+      date,
+      minuteOfDay: Math.round((alert.fireAt - startOfDay(date, input.utcOffsetMinutes)) / MS_PER_MINUTE),
+      title: alert.title,
+      body: alert.body,
+      target: 'today',
+    },
+  ];
+}
+
 export function planNotifications(input: PlanInput): PlannedNotification[] {
   // 식물이 없으면 계절이 바뀌어도 알릴 것이 없다
   if (input.plants.length === 0) return [];
@@ -175,7 +252,8 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
     const lines = morningLines(day, input);
     if (lines.length === 0) continue;
 
-    const fire = shiftOutOfQuietHours(day, input.settings.notifyMinute, input.settings.quietHours);
+    const minute = morningMinute(day, input, false, input.settings.notifyMinute);
+    const fire = shiftOutOfQuietHours(day, minute, input.settings.quietHours);
     const fireAt =
       startOfDay(fire.date, input.utcOffsetMinutes) + fire.minuteOfDay * MS_PER_MINUTE;
     if (fireAt <= input.now) continue;
@@ -192,7 +270,9 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
     });
   }
 
-  return [...planned, ...planBonsai(input), ...planTasks(input)].sort(byWhen);
+  return [...planned, ...planBonsai(input), ...planTasks(input), ...planWeatherAlert(input)].sort(
+    byWhen,
+  );
 }
 
 /** 이른 것부터. diffDays(from, to) 는 to 가 나중이면 양수라 순서를 뒤집어 쓴다 */
@@ -214,7 +294,9 @@ function planBonsai(input: PlanInput): PlannedNotification[] {
     if (due.length === 0) continue;
 
     for (const [minute, slot] of bonsaiMinutes(seasonOn(day, input), input.settings)) {
-      const fire = shiftOutOfQuietHours(day, minute, input.settings.quietHours);
+      // 폭염인 날 바깥 분재는 아침 확인도 07시로 당긴다 (7.2)
+      const pulled = slot === MORNING_SLOT ? morningMinute(day, input, true, minute) : minute;
+      const fire = shiftOutOfQuietHours(day, pulled, input.settings.quietHours);
       const fireAt = startOfDay(fire.date, input.utcOffsetMinutes) + fire.minuteOfDay * MS_PER_MINUTE;
       if (fireAt <= input.now) continue;
 

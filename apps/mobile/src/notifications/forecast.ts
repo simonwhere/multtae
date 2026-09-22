@@ -87,6 +87,7 @@ export function forecast(
       waterDate,
       hydro: plant.soilType === 'hydro',
       bonsai: plant.isBonsai,
+      openAir: space.spaceType === 'terrace' || space.spaceType === 'balcony_ext',
     };
   });
 

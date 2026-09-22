@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,11 +13,18 @@ import { PlantCard } from '@/plants/plant-card';
 import { SwipeRow } from '@/plants/swipe-row';
 import { classifyToday, planPostpone } from '@/plants/today';
 import { winterWarnings } from '@/plants/winter';
+import { cardText, winterCardText } from '@/weather/card-text';
+import { dismissCard, loadDismissed } from '@/weather/dismissed';
+import { dateKey, dayOf, isWeatherUsable } from '@/weather/forecast';
+import { weatherCards } from '@/weather/rules';
+import { useWeatherState } from '@/weather/store';
+import { WarningCard } from '@/weather/warning-card';
+import { WeatherIcon } from '@/weather/weather-icon';
 import type { TodayItem } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { useGarden } from '@/plants/use-plants';
-import { AppText, Button, motion, Notice, radius, spacing, Sprig, TabIcon, useColors } from '@/ui';
+import { AppText, Button, motion, radius, spacing, Sprig, TabIcon, useColors } from '@/ui';
 
 function SectionTitle({ title }: { title: string }) {
   return (
@@ -45,8 +52,7 @@ function CountChip({ label, count, dot }: { label: string; count: number; dot: s
   );
 }
 
-// 오늘 탭 (SPEC 3.2): 날짜와 계절 이름표, 개수, 밀림, 오늘, 다가옴, 오늘 물 준 식물.
-// 경고 카드와 날씨 아이콘은 5주차, 분재 흙 확인 카드는 4-2 에서 채운다.
+// 오늘 탭 (SPEC 3.2): 날짜와 계절 이름표, 날씨, 경고 카드, 개수, 밀림, 오늘, 다가옴, 오늘 물 준 식물.
 export default function TodayScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -72,6 +78,28 @@ export default function TodayScreen() {
   const sections = garden
     ? classifyToday(garden.plants, context.now, context.utcOffsetMinutes)
     : null;
+
+  // 날씨는 48시간 안에 받은 것만 쓴다 (7.1). 못 쓰면 계절 카드만 뜬다
+  const storedWeather = useWeatherState((state) => state.weather);
+  const weather = isWeatherUsable(storedWeather, context.now, context.utcOffsetMinutes)
+    ? storedWeather
+    : null;
+  const todayWeather = dayOf(weather, today);
+
+  // 닫은 카드는 그날 다시 띄우지 않는다 (3.2)
+  const todayKey = dateKey(today);
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadDismissed(db, todayKey).then(setDismissed);
+    }, [todayKey]),
+  );
+  const cards = garden
+    ? [
+        ...weatherCards(garden.plants, weather, context).map(cardText),
+        ...winterWarnings(garden.plants, context.season).map(winterCardText),
+      ].filter((card) => !dismissed.includes(card.key))
+    : [];
 
   const openWatered = (item: TodayItem) =>
     router.push({ pathname: '/sheet/watered', params: { plantId: item.plant.id } });
@@ -107,6 +135,22 @@ export default function TodayScreen() {
                 <View style={[styles.hole, { backgroundColor: colors.paper }]} />
                 <AppText variant="tag">{ko.seasonMode[context.season]}</AppText>
               </Pressable>
+              {/* 오늘 날씨 (3.2). 지역을 고르고 예보를 받았을 때만 */}
+              {todayWeather?.condition && todayWeather.tmax !== null ? (
+                <View
+                  accessible
+                  accessibilityLabel={ko.weather.summary(
+                    ko.weather.condition[todayWeather.condition],
+                    Math.round(todayWeather.tmax),
+                    Math.round(todayWeather.tmin ?? todayWeather.tmax),
+                  )}
+                  style={styles.weather}>
+                  <WeatherIcon condition={todayWeather.condition} color={colors.sub} />
+                  <AppText variant="label" color={colors.sub}>
+                    {ko.weather.high(Math.round(todayWeather.tmax))}
+                  </AppText>
+                </View>
+              ) : null}
             </View>
             <AppText
               variant="numeralLg"
@@ -130,15 +174,14 @@ export default function TodayScreen() {
 
         <NotificationBanner />
 
-        {/* 분재 월동 경고 (SPEC 6.3). 한파·서리 경고는 날씨가 붙는 5주차에 더한다 */}
-        {garden
-          ? winterWarnings(garden.plants, context.season).map((warning) => (
-              <Notice
-                key={warning.kind}
-                message={ko.today.winter[warning.kind](warning.nicknames.join(', '))}
-              />
-            ))
-          : null}
+        {/* 경고 카드: 날씨(7.2), 분재 월동(6.3), 난방 습도(7.3), 장마 시작(7.4) */}
+        {cards.map((card) => (
+          <WarningCard
+            key={card.key}
+            card={card}
+            onClose={() => void dismissCard(db, todayKey, card.key).then(setDismissed)}
+          />
+        ))}
 
         {sections === null || garden === null ? null : garden.spaces.length === 0 ? (
           // 공간을 먼저 등록하고 식물을 놓는다 (SPEC 1)
@@ -288,6 +331,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  weather: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   chips: {
     flexDirection: 'row',

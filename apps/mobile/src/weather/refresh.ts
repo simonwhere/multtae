@@ -6,7 +6,7 @@ import type { WeatherOutcome } from '../api/weather';
 import { getSetting, setSetting } from '../db/settings';
 import type { Database } from '../db/types';
 import { parseJsonObject } from '../lib/validate';
-import { needsRefresh, parseWeather } from './forecast';
+import { isWeatherUsable, needsRefresh, parseWeather } from './forecast';
 import type { Weather } from './forecast';
 import { findRegion } from './regions';
 
@@ -24,6 +24,24 @@ export type WeatherRefresh =
 
 export async function loadCachedWeather(db: Database): Promise<Weather | null> {
   return parseWeather(parseJsonObject(await getSetting(db, 'weather_cache')));
+}
+
+/**
+ * 날씨 규칙(7.2)에 쓸 날씨. 지금 고른 지역의 것이고, 48시간 안에 받았고, 기기가 한국 시간일 때만.
+ * 아니면 null 이고 날씨 규칙은 쉬고 계절 카드만 돈다.
+ */
+export async function loadUsableWeather(
+  db: Database,
+  now: number,
+  utcOffsetMinutes: number,
+): Promise<Weather | null> {
+  const [weather, regionId] = await Promise.all([
+    loadCachedWeather(db),
+    getSetting(db, 'region_code'),
+  ]);
+  return weather && weather.region === regionId && isWeatherUsable(weather, now, utcOffsetMinutes)
+    ? weather
+    : null;
 }
 
 export async function refreshWeather(

@@ -62,7 +62,7 @@ describe('forecast: 알림을 짜기 전에 식물별 물주기 날짜와 계절
     );
 
     expect(result).toEqual({
-      plants: [{ nickname: '몬스테라', waterDate: date(9, 27), hydro: false, bonsai: false }],
+      plants: [{ nickname: '몬스테라', waterDate: date(9, 27), hydro: false, bonsai: false, openAir: false }],
       seasonChanges: [],
       season: 'autumn',
     });
@@ -79,9 +79,9 @@ describe('forecast: 알림을 짜기 전에 식물별 물주기 날짜와 계절
 
     expect(result.plants).toEqual([
       // 겨울 11일: 11월 10일 + 11일
-      { nickname: '몬스테라', waterDate: date(11, 21), hydro: false, bonsai: false },
+      { nickname: '몬스테라', waterDate: date(11, 21), hydro: false, bonsai: false, openAir: false },
       // 전환 전에 예정된 식물은 그대로
-      { nickname: '벤자민', waterDate: date(11, 14), hydro: false, bonsai: false },
+      { nickname: '벤자민', waterDate: date(11, 14), hydro: false, bonsai: false, openAir: false },
     ]);
     expect(result.seasonChanges).toEqual([{ season: 'winter', date: date(11, 16), trend: 'longer' }]);
   });

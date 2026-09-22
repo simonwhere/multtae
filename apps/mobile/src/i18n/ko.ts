@@ -109,6 +109,8 @@ export const ko = {
     title: '기록',
     empty: '아직 기록이 없어요. 물을 주면 여기에 남아요.',
     watered: '물 줌',
+    /** 비가 넉넉히 와서 물주기를 건너뛴 날 (SPEC 7.2) */
+    rain: '비가 대신 줬어요',
     /** 키는 LoggedSoilState */
     soilState: {
       dry: '바싹 말랐어요',
@@ -121,6 +123,45 @@ export const ko = {
     title: '공간',
     empty: '아직 등록한 공간이 없어요',
     plantCount: (count: number) => `식물 ${count}개`,
+  },
+  /** 오늘 탭 날씨 (SPEC 3.2, 7.2) */
+  weather: {
+    condition: {
+      clear: '맑음',
+      cloudy: '구름 많음',
+      overcast: '흐림',
+      rain: '비',
+      snow: '눈',
+    },
+    high: (celsius: number) => `${celsius}°`,
+    summary: (condition: string, high: number, low: number) =>
+      `오늘 ${condition}, 최고 ${high}도, 최저 ${low}도`,
+  },
+  /** 오늘 탭 경고 카드 (SPEC 3.2, 6.3, 7.2~7.4). 닫으면 그날은 다시 뜨지 않는다 */
+  cards: {
+    close: '닫기',
+    closeLabel: (title: string) => `${title} 카드 닫기`,
+    more: (shown: string, rest: number) => `${shown} 외 ${rest}개`,
+    heatTitle: '폭염',
+    heat: (names: string) => `${names} 흙이 빨리 말라요. 저녁에 흙을 한 번 더 만져 보세요.`,
+    coldTitle: '한파 예보',
+    cold: (when: 'today' | 'tomorrow', low: number, names: string) =>
+      `${when === 'today' ? '오늘' : '내일'} 새벽 ${low}도까지 내려가요. ${names} 화분을 챙겨 주세요.`,
+    coldBonsai: '분재 화분은 얼 수 있어요. 발코니 안쪽이나 스티로폼 상자로 보호해 주세요.',
+    coldBalcony: '확장 발코니도 새벽에는 5도 아래로 떨어질 수 있어요.',
+    frostTitle: '서리 예보',
+    frost: (when: 'today' | 'tomorrow', low: number, names: string) =>
+      `${when === 'today' ? '오늘' : '내일'} 새벽 ${low}도예요. 서리에 ${names} 새순이 상할 수 있어요.`,
+    windTitle: '강풍',
+    wind: (names: string) => `${names} 화분이 넘어지지 않게 벽 쪽 낮은 곳으로 옮겨 주세요.`,
+    windSmall: (names: string) => `${names}처럼 작은 화분은 특히 잘 넘어져요.`,
+    dustTitle: '미세먼지 나쁨',
+    dust: '창을 열기 어려운 날이에요. 잎에 물을 뿌려 습도를 채워 주세요.',
+    humidityTitle: '난방 중 습도',
+    humidity: '난방으로 실내 습도가 30% 아래로 떨어질 수 있어요. 잎 끝이 마르면 가습기를 켜거나 물을 뿌려 주세요.',
+    monsoonTitle: '장마 시작',
+    monsoon: '장마 동안은 흙이 마른 걸 확인하고 주세요. 받침에 고인 물은 바로 버려 주세요.',
+    winterTitle: '겨울나기',
   },
   /** 설정 (SPEC 3.6) */
   settings: {
@@ -325,6 +366,10 @@ export const ko = {
     },
     /** 다른 알림에 한 줄로 합칠 때 */
     seasonLine: (mode: string, trend: string) => `오늘부터 ${mode} 모드, ${trend}`,
+    /** 한파·서리 예보 알림 (12.1) */
+    weatherTitle: { cold: '한파 예보', frost: '서리 예보' },
+    weatherBody: (low: number, count: number) =>
+      `내일 새벽 ${low}도, 바깥에 둔 식물 ${count}개를 챙겨 주세요`,
     /** 알림 권한이 꺼져 있을 때 오늘 탭 상단 배너 (12.2) */
     offTitle: '알림이 꺼져 있어요',
     offBody: '설정에서 알림을 켜면 물 줄 날을 알려 드려요.',

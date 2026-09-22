@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CalendarDate } from '../engine';
-import { planNotifications, SCHEDULE_DAYS } from './plan';
+import { planNotifications, SCHEDULE_DAYS, weatherAlertTime } from './plan';
 import type { PlanInput, PlanPlant } from './plan';
 import {
   DEFAULT_BONSAI_EVENING_MINUTE,
@@ -432,5 +432,135 @@ describe('분재 작업 알림 (SPEC.md 6.2, 12.1)', () => {
     });
 
     expect(planned.some((n) => n.type === 'task')).toBe(false);
+  });
+});
+
+describe('날씨 규칙과 알림 (SPEC.md 7.2, 12.1)', () => {
+  const outdoor = (nickname: string, waterDate: CalendarDate, isBonsai = false): PlanPlant => ({
+    nickname,
+    waterDate,
+    hydro: false,
+    bonsai: isBonsai,
+    openAir: true,
+  });
+
+  it('폭염인 날 바깥 자리 식물이 물 줄 때면 아침 알림을 07시로 당긴다', () => {
+    const planned = plan({
+      now: at(9, 27, 6),
+      plants: [outdoor('로즈마리', date(9, 27)), soil('몬스테라', date(9, 29))],
+      heatDays: ['2026-09-27', '2026-09-28', '2026-09-29'],
+    });
+
+    expect(planned.slice(0, 3).map((item) => [item.id, item.minuteOfDay])).toEqual([
+      ['water-20260927-0', 420],
+      // 다음 날 바깥 식물의 밀림 알림도 당긴다
+      ['overdue-20260928-0', 420],
+      // 9/29 는 실내 식물만 알리는 날이라 그대로 8시
+      ['water-20260929-0', 480],
+    ]);
+  });
+
+  it('폭염이 아닌 날이나 이미 07시보다 이른 설정은 그대로', () => {
+    const plants = [outdoor('로즈마리', date(9, 28))];
+
+    expect(plan({ plants, heatDays: [] })[0]?.minuteOfDay).toBe(480);
+    expect(
+      plan({
+        plants,
+        heatDays: ['2026-09-28'],
+        settings: {
+          notifyMinute: 6 * 60,
+          bonsaiEveningMinute: DEFAULT_BONSAI_EVENING_MINUTE,
+          bonsaiWinterMinute: DEFAULT_BONSAI_WINTER_MINUTE,
+          quietHours: null,
+        },
+      })[0]?.minuteOfDay,
+    ).toBe(360);
+  });
+
+  it('바깥 분재의 아침 확인도 07시로 당기고, 저녁 확인은 그대로', () => {
+    const planned = plan({
+      season: 'heat',
+      plants: [outdoor('곰솔', date(9, 28), true)],
+      heatDays: ['2026-09-28'],
+    });
+
+    expect(
+      planned.filter((item) => item.type === 'bonsai').map((item) => [item.id, item.minuteOfDay]),
+    ).toEqual([
+      ['bonsai-20260928-0', 420],
+      ['bonsai-20260928-1', DEFAULT_BONSAI_EVENING_MINUTE],
+    ]);
+  });
+
+  it('한파 예보 알림을 정해 둔 시각에 울린다', () => {
+    const planned = plan({
+      plants: [soil('몬스테라', date(10, 20))],
+      weatherAlert: {
+        targetDate: '2026-09-28',
+        fireAt: at(9, 27, 18),
+        title: '한파 예보',
+        body: '내일 새벽 -7도, 바깥에 둔 식물 2개를 챙겨 주세요',
+      },
+    });
+
+    expect(planned).toContainEqual({
+      id: 'weather-20260928-0',
+      type: 'weather',
+      date: date(9, 27),
+      minuteOfDay: 18 * 60,
+      title: '한파 예보',
+      body: '내일 새벽 -7도, 바깥에 둔 식물 2개를 챙겨 주세요',
+      target: 'today',
+    });
+  });
+
+  it('이미 지난 경고는 다시 울리지 않는다', () => {
+    const planned = plan({
+      plants: [soil('몬스테라', date(10, 20))],
+      weatherAlert: { targetDate: '2026-09-27', fireAt: at(9, 26, 18), title: '한파 예보', body: '' },
+    });
+
+    expect(planned.some((item) => item.type === 'weather')).toBe(false);
+  });
+});
+
+describe('weatherAlertTime: 예보를 받은 직후, 06시 이후 (SPEC.md 12.1)', () => {
+  const settings = {
+    notifyMinute: DEFAULT_NOTIFY_MINUTE,
+    bonsaiEveningMinute: DEFAULT_BONSAI_EVENING_MINUTE,
+    bonsaiWinterMinute: DEFAULT_BONSAI_WINTER_MINUTE,
+    quietHours: null,
+  };
+
+  it('처음 보는 경고는 1분 뒤에 울린다', () => {
+    expect(weatherAlertTime('2026-09-28', null, { now: at(9, 27, 18, 30), utcOffsetMinutes: KST, settings })).toBe(
+      at(9, 27, 18, 31),
+    );
+  });
+
+  it('새벽에 받았으면 06시까지 기다린다', () => {
+    expect(weatherAlertTime('2026-09-28', null, { now: at(9, 27, 3), utcOffsetMinutes: KST, settings })).toBe(
+      at(9, 27, 6),
+    );
+  });
+
+  it('같은 새벽을 이미 알리기로 했으면 그 시각 그대로. 앱을 열 때마다 다시 울리지 않는다', () => {
+    const stored = { targetDate: '2026-09-28', fireAt: at(9, 27, 18, 31) };
+
+    expect(weatherAlertTime('2026-09-28', stored, { now: at(9, 27, 21), utcOffsetMinutes: KST, settings })).toBe(
+      at(9, 27, 18, 31),
+    );
+    expect(weatherAlertTime('2026-09-29', stored, { now: at(9, 28, 9), utcOffsetMinutes: KST, settings })).toBe(
+      at(9, 28, 9, 1),
+    );
+  });
+
+  it('방해금지 구간이면 끝나는 시각으로', () => {
+    const quiet = { ...settings, quietHours: { start: 22 * 60, end: 7 * 60 } };
+
+    expect(weatherAlertTime('2026-09-28', null, { now: at(9, 27, 23), utcOffsetMinutes: KST, settings: quiet })).toBe(
+      at(9, 28, 7),
+    );
   });
 });

@@ -13,6 +13,8 @@ export const DEFAULT_NOTIFY_MINUTE = 8 * MINUTES_PER_HOUR;
 export const DEFAULT_BONSAI_EVENING_MINUTE = 19 * MINUTES_PER_HOUR;
 /** 겨울 분재 알림 시각. 오전 중 기온이 올라야 화분 속 물이 얼지 않는다 (SPEC 6.3) */
 export const DEFAULT_BONSAI_WINTER_MINUTE = 11 * MINUTES_PER_HOUR;
+/** 폭염인 날 바깥 자리 식물의 아침 알림 시각 (SPEC 7.2) */
+export const HEAT_MORNING_MINUTE = 7 * MINUTES_PER_HOUR;
 
 /** 방해금지 구간. 하루 중 몇 분째인지로 적고, 시작이 끝보다 늦으면 자정을 넘는 구간이다 */
 export interface QuietHours {

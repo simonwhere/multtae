@@ -49,7 +49,7 @@ export default function RecordsScreen() {
               </View>
               <AppText variant="caption">
                 {[
-                  ko.records.watered,
+                  log.source === 'rain' ? ko.records.rain : ko.records.watered,
                   ko.records.soilState[log.soilState],
                   log.leafDroop ? ko.wateredSheet.leafDroop : '',
                 ]

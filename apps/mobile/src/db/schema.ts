@@ -53,6 +53,10 @@ export const SETTING_KEYS = [
   'coefficients_cache',
   // 마지막으로 받은 날씨 (SPEC 7.1). 못 받으면 이 값을 쓰고, 48시간이 넘으면 날씨를 끈다
   'weather_cache',
+  // 한파·서리 예보 알림을 울리기로 한 새벽과 시각 (SPEC 12.1). 같은 새벽을 두 번 알리지 않는다
+  'weather_alert',
+  // 오늘 닫은 경고 카드 (SPEC 3.2 "닫기 가능, 당일만 표시")
+  'dismissed_cards',
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 

@@ -7,15 +7,22 @@
  */
 import { listPlantsWithSpace, updatePlant } from '../db/plants';
 import { listPlantTasks } from '../db/tasks';
-import { getSetting } from '../db/settings';
+import { getSetting, setSetting } from '../db/settings';
 import type { Database } from '../db/types';
+import { recordWatering } from '../db/watering';
 import { getSeasonAt, toCalendarDate } from '../engine';
 import type { Coefficients } from '../engine';
+import { ko } from '../i18n/ko';
+import { parseJsonObject } from '../lib/validate';
 import { planReschedule } from '../plants/schedule';
+import { dateKey } from '../weather/forecast';
+import { loadUsableWeather } from '../weather/refresh';
+import { heatDays, planRainWatering, rainWatered, weatherAlert } from '../weather/rules';
 import { forecast } from './forecast';
-import { planNotifications } from './plan';
-import type { PlannedNotification } from './plan';
+import { planNotifications, weatherAlertTime } from './plan';
+import type { PlannedNotification, PlanWeatherAlert } from './plan';
 import { parseNotificationSettings } from './settings';
+import type { NotificationSettings } from './settings';
 
 export interface Notifier {
   /** 알림을 띄울 수 있는가. 권한이 없으면 예약을 건너뛴다 (12.2 권한 없음) */
@@ -54,9 +61,24 @@ export async function rescheduleAll(
     utcOffsetMinutes,
   };
 
-  // 1. 계절·계수·공간이 바뀌었으면 다음 물주기를 다시 센다 (시나리오 C). 알림 권한과 무관하다
   const items = await listPlantsWithSpace(db);
   let updatedPlants = 0;
+
+  // 0. 비가 넉넉히 오는 날에는 테라스 식물 물주기를 비가 대신한다 (7.2). 기록 id 를 식물·날짜로
+  //    정해 두어 하루에 몇 번 불려도 한 번만 남는다
+  const weather = await loadUsableWeather(db, now, utcOffsetMinutes);
+  for (const item of rainWatered(items, weather, clock)) {
+    const plan = planRainWatering(item.plant, item.space, {
+      ...context,
+      now,
+      logId: `rain-${item.plant.id}-${dateKey(context.today)}`,
+    });
+    await recordWatering(db, item.plant.id, plan.plantPatch, plan.log);
+    item.plant = { ...item.plant, ...plan.plantPatch };
+    updatedPlants += 1;
+  }
+
+  // 1. 계절·계수·공간이 바뀌었으면 다음 물주기를 다시 센다 (시나리오 C). 알림 권한과 무관하다
   for (const item of items) {
     const patch = planReschedule(item.plant, item.space, context);
     if (!patch) continue;
@@ -89,6 +111,8 @@ export async function rescheduleAll(
     now,
     utcOffsetMinutes,
     settings,
+    heatDays: heatDays(items, weather),
+    weatherAlert: await alertFor(db, items, weather, { ...clock, season: context.season, settings }),
   });
 
   // 3. 계획에서 빠진 예약을 지우고, 계획한 알림을 예약한다
@@ -100,6 +124,34 @@ export async function rescheduleAll(
     await notifier.schedule(notification);
   }
   return { updatedPlants, scheduled };
+}
+
+/** 한파·서리 예보 알림 (12.1). 같은 새벽은 처음 정한 시각에 한 번만 울린다 */
+async function alertFor(
+  db: Database,
+  items: Parameters<typeof weatherAlert>[0],
+  weather: Parameters<typeof weatherAlert>[1],
+  context: RescheduleClock & { season: ReturnType<typeof getSeasonAt>; settings: NotificationSettings },
+): Promise<PlanWeatherAlert | null> {
+  const alert = weatherAlert(items, weather, context);
+  if (!alert) return null;
+
+  const raw = parseJsonObject(await getSetting(db, 'weather_alert'));
+  const stored =
+    typeof raw?.targetDate === 'string' && typeof raw.fireAt === 'number'
+      ? { targetDate: raw.targetDate, fireAt: raw.fireAt }
+      : null;
+  const fireAt = weatherAlertTime(alert.targetDate, stored, context);
+  if (stored?.targetDate !== alert.targetDate) {
+    await setSetting(db, 'weather_alert', JSON.stringify({ targetDate: alert.targetDate, fireAt }));
+  }
+
+  return {
+    targetDate: alert.targetDate,
+    fireAt,
+    title: ko.notifications.weatherTitle[alert.kind],
+    body: ko.notifications.weatherBody(alert.low, alert.count),
+  };
 }
 
 /**
