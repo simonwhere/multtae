@@ -46,3 +46,18 @@ export async function getEvent(db: Database, eventId: string): Promise<EventWith
     .where(eq(events.id, eventId));
   return rows[0] ?? null;
 }
+
+/** 이벤트의 payload 를 고친다 (진단 결과에 재확인 날짜와 물주기 답을 남길 때) */
+export async function updateEventPayload(db: Database, eventId: string, payload: unknown): Promise<void> {
+  await db.update(events).set({ payload }).where(eq(events.id, eventId));
+}
+
+/** 진단 이벤트 전부, 최근 것부터. 재확인 알림을 짤 때 payload 를 읽는다 (12.1 재확인) */
+export async function listDiagnoses(db: Database): Promise<EventWithPlant[]> {
+  return db
+    .select({ event: events, nickname: plants.nickname })
+    .from(events)
+    .innerJoin(plants, eq(events.plantId, plants.id))
+    .where(eq(events.type, 'diagnose'))
+    .orderBy(desc(events.occurredAt));
+}

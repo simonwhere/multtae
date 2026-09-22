@@ -25,9 +25,16 @@ const MS_PER_MINUTE = 60_000;
 const MORNING_SLOT = 0;
 const EVENING_SLOT = 1;
 
-export type NotificationType = 'water' | 'overdue' | 'season' | 'bonsai' | 'task' | 'weather';
-/** 알림을 누르면 갈 곳 (12.1) */
-export type NotificationTarget = 'today';
+export type NotificationType =
+  | 'water'
+  | 'overdue'
+  | 'season'
+  | 'bonsai'
+  | 'task'
+  | 'weather'
+  | 'recheck';
+/** 알림을 누르면 갈 곳 (12.1). 재확인은 진단 결과로 간다 */
+export type NotificationTarget = 'today' | 'diagnosis';
 
 export interface PlannedNotification {
   /** `${type}-${yyyymmdd}-${slot}`. 같은 id 로 다시 예약하면 덮어써서 중복이 생기지 않는다 (12.3) */
@@ -39,6 +46,8 @@ export interface PlannedNotification {
   title: string;
   body: string;
   target: NotificationTarget;
+  /** target 이 diagnosis 일 때 열 진단 */
+  eventId?: string;
 }
 
 export interface PlanPlant {
@@ -64,6 +73,16 @@ export interface PlanRepot {
   known: boolean;
   /** 알릴 날(그달 1일) */
   date: CalendarDate;
+}
+
+/** 진단 뒤 다시 볼 날 (8.1, 12.1 재확인) */
+export interface PlanRecheck {
+  eventId: string;
+  nickname: string;
+  /** 알릴 날 */
+  date: CalendarDate;
+  /** 진단한 지 며칠 지났는지 */
+  days: number;
 }
 
 /** 한파·서리 예보 알림 (12.1). 울릴 시각은 부르는 쪽이 정해 둔다(weatherAlertTime) */
@@ -97,6 +116,8 @@ export interface PlanInput {
   tasks?: readonly PlanTask[];
   /** 분갈이 검토. 없으면 빈 배열 */
   repots?: readonly PlanRepot[];
+  /** 진단 재확인. 없으면 빈 배열 */
+  rechecks?: readonly PlanRecheck[];
   seasonChanges: readonly SeasonNotice[];
   /** 오늘의 계절. 전환일 뒤의 날짜는 seasonChanges 로 본다 */
   season: Season;
@@ -297,9 +318,13 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
     });
   }
 
-  return [...planned, ...planBonsai(input), ...planTasks(input), ...planWeatherAlert(input)].sort(
-    byWhen,
-  );
+  return [
+    ...planned,
+    ...planBonsai(input),
+    ...planTasks(input),
+    ...planWeatherAlert(input),
+    ...planRechecks(input),
+  ].sort(byWhen);
 }
 
 /** 이른 것부터. diffDays(from, to) 는 to 가 나중이면 양수라 순서를 뒤집어 쓴다 */
@@ -395,6 +420,49 @@ function planTasks(input: PlanInput): PlannedNotification[] {
       title: starting.length > 0 ? ko.notifications.taskTitle : ko.notifications.repotTitle,
       body: lines.join('\n'),
       target: 'today',
+    });
+  }
+
+  return planned;
+}
+
+/**
+ * 진단 재확인 (8.1, 12.1). 그날 알림 시각에 울리고, 하나면 누르면 그 진단 결과로 간다.
+ * 같은 날 여럿이면 한 알림으로 묶고 오늘 탭으로 간다.
+ */
+function planRechecks(input: PlanInput): PlannedNotification[] {
+  const rechecks = input.rechecks ?? [];
+  if (rechecks.length === 0) return [];
+
+  const today = toCalendarDate(input.now, input.utcOffsetMinutes);
+  const planned: PlannedNotification[] = [];
+
+  for (let offset = 0; offset < SCHEDULE_DAYS; offset += 1) {
+    const day = addDays(today, offset);
+    const due = rechecks.filter((recheck) => diffDays(recheck.date, day) === 0);
+    if (due.length === 0) continue;
+
+    const fire = shiftOutOfQuietHours(day, input.settings.notifyMinute, input.settings.quietHours);
+    const fireAt = startOfDay(fire.date, input.utcOffsetMinutes) + fire.minuteOfDay * MS_PER_MINUTE;
+    if (fireAt <= input.now) continue;
+
+    const single = due.length === 1 ? due[0] : null;
+    planned.push({
+      id: notificationId('recheck', day, MORNING_SLOT),
+      type: 'recheck',
+      date: fire.date,
+      minuteOfDay: fire.minuteOfDay,
+      title: ko.notifications.recheckTitle,
+      body: single
+        ? ko.notifications.recheckOne(single.nickname, single.days)
+        : ko.notifications.recheckMany(
+            ko.notifications.names(
+              due.slice(0, MAX_NAMES).map((recheck) => recheck.nickname),
+              due.length,
+            ),
+          ),
+      target: single ? 'diagnosis' : 'today',
+      ...(single ? { eventId: single.eventId } : {}),
     });
   }
 

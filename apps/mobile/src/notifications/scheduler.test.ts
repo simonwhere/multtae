@@ -382,3 +382,33 @@ describe('비료와 분갈이 알림 (SPEC.md 8.2, 8.3)', () => {
     });
   });
 });
+
+describe('진단 재확인 알림 (SPEC.md 8.1, 12.1)', () => {
+  it('알림을 받기로 한 진단은 그날 아침에 알린다', async () => {
+    await insertPlant(db, monstera({ nextWaterAt: at(10, 20) }), []);
+    await insertEvent(db, {
+      id: 'diag-1',
+      plantId: 'plant-1',
+      type: 'diagnose',
+      occurredAt: at(9, 27, 9),
+      payload: {
+        findings: [],
+        cause: '괜찮아요',
+        actions: ['지켜봐 주세요'],
+        wateringHint: 'none',
+        recheckDays: 5,
+        severity: 'low',
+        recheckDate: '2026-10-02',
+        hintAnswer: null,
+      },
+    });
+
+    const { scheduled } = await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 10)));
+
+    expect(scheduled.find((item) => item.type === 'recheck')).toMatchObject({
+      id: 'recheck-20261002-0',
+      body: '몬스테라 진단한 지 5일 지났어요',
+      eventId: 'diag-1',
+    });
+  });
+});

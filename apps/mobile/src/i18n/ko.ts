@@ -226,6 +226,19 @@ export const ko = {
     cause: '이렇게 본 까닭',
     actions: '지금 할 일',
     recheck: (days: number) => `${days}일 뒤에 다시 봐 주세요`,
+    recheckOn: (days: number) => `${days}일 뒤에 알려 주세요`,
+    recheckSet: (date: string) => `${date}에 알려 드릴게요`,
+    recheckOff: '알림 끄기',
+    recheckPast: (date: string) => `${date}에 다시 보기로 했어요`,
+    /** 물주기 판단 반영 (8.1 엔진 연동). 한 번 답하면 다시 묻지 않는다 */
+    hintOver: '물을 너무 자주 준 것 같아요. 앞으로 물 주는 간격을 조금 늘릴까요?',
+    hintUnder: '물이 모자랐던 것 같아요. 앞으로 조금 더 자주 알려 드릴까요?',
+    hintApplyOver: '간격 늘리기',
+    hintApplyUnder: '더 자주 알리기',
+    hintKeep: '그대로 두기',
+    hintAppliedOver: '물 주는 간격을 조금 늘렸어요',
+    hintAppliedUnder: '조금 더 자주 알려 드릴게요',
+    hintDeclined: '물 주는 날은 그대로 두었어요',
     remaining: (count: number) => (count > 0 ? `오늘 ${count}번 더 진단할 수 있어요` : '오늘 진단은 다 썼어요'),
     disclaimer: 'AI 추정이며 정확하지 않을 수 있어요',
     photo: '진단한 사진',
@@ -425,6 +438,10 @@ export const ko = {
     /** 비료는 물주기 알림에 한 줄로 덧붙인다 (8.2, 12.1) */
     waterFertBody: (names: string) => `${names} 물 줄 때, 비료도 함께`,
     fertLine: (names: string) => `${names} 비료도 함께`,
+    /** 진단 재확인 (8.1, 12.1) */
+    recheckTitle: '다시 확인해 주세요',
+    recheckOne: (name: string, days: number) => `${name} 진단한 지 ${days}일 지났어요`,
+    recheckMany: (names: string) => `${names} 상태를 다시 봐 주세요`,
     /** 분갈이 검토 (8.3, 12.1). 적기 월 1일 아침 */
     repotTitle: '분갈이 검토',
     repotBody: (name: string, months: number, known: boolean) =>

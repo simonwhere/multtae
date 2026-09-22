@@ -5,7 +5,7 @@
  * 기존 예약을 전부 취소하고 시작하지 않는다. iOS 의 전체 취소는 비동기라 바로 뒤에 넣은 예약까지 지울 수 있고,
  * 그러면 가장 가까운 알림이 빠진다. 대신 계획에 없는 id 만 지우고 나머지는 같은 id 로 덮어쓴다. 결과는 같다.
  */
-import { latestEventAt } from '../db/events';
+import { latestEventAt, listDiagnoses } from '../db/events';
 import { listPlantsWithSpace, updatePlant } from '../db/plants';
 import type { PlantWithSpace } from '../db/plants';
 import type { SpeciesCacheRow } from '../db/schema';
@@ -14,7 +14,8 @@ import { listPlantTasks } from '../db/tasks';
 import { getSetting, setSetting } from '../db/settings';
 import type { Database } from '../db/types';
 import { recordWatering } from '../db/watering';
-import { addDays, getSeason, getSeasonAt, toCalendarDate } from '../engine';
+import { parseDiagnosis } from '../diagnose/diagnosis';
+import { addDays, diffDays, getSeason, getSeasonAt, toCalendarDate } from '../engine';
 import type { CalendarDate, Coefficients } from '../engine';
 import { ko } from '../i18n/ko';
 import { parseJsonObject } from '../lib/validate';
@@ -25,7 +26,7 @@ import { loadUsableWeather } from '../weather/refresh';
 import { heatDays, planRainWatering, rainWatered, weatherAlert } from '../weather/rules';
 import { forecast } from './forecast';
 import { planNotifications, SCHEDULE_DAYS, weatherAlertTime } from './plan';
-import type { PlannedNotification, PlanRepot, PlanWeatherAlert } from './plan';
+import type { PlannedNotification, PlanRecheck, PlanRepot, PlanWeatherAlert } from './plan';
 import { parseNotificationSettings } from './settings';
 import type { NotificationSettings } from './settings';
 
@@ -132,6 +133,7 @@ export async function rescheduleAll(
     plants,
     tasks,
     repots: repotsAhead(items, feeding, context.today),
+    rechecks: await rechecksAhead(db, context.today, utcOffsetMinutes),
     now,
     utcOffsetMinutes,
     settings,
@@ -209,6 +211,30 @@ function repotsAhead(
     }
   }
   return repots;
+}
+
+/** 알림을 받기로 한 진단 재확인 가운데 오늘 이후의 것 (8.1, 12.1) */
+async function rechecksAhead(
+  db: Database,
+  today: CalendarDate,
+  utcOffsetMinutes: number,
+): Promise<PlanRecheck[]> {
+  const rechecks: PlanRecheck[] = [];
+  for (const { event, nickname } of await listDiagnoses(db)) {
+    const recheckDate = parseDiagnosis(event.payload)?.recheckDate;
+    if (!recheckDate) continue;
+
+    const [year, month, day] = recheckDate.split('-').map(Number) as [number, number, number];
+    const date = { year, month, day };
+    if (diffDays(today, date) < 0) continue;
+    rechecks.push({
+      eventId: event.id,
+      nickname,
+      date,
+      days: diffDays(toCalendarDate(event.occurredAt, utcOffsetMinutes), date),
+    });
+  }
+  return rechecks;
 }
 
 /** 한파·서리 예보 알림 (12.1). 같은 새벽은 처음 정한 시각에 한 번만 울린다 */

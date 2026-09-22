@@ -21,6 +21,8 @@ const parsed = {
   wateringHint: 'over',
   recheckDays: 5,
   severity: 'medium',
+  recheckDate: null,
+  hintAnswer: null,
 };
 
 describe('parseDiagnosis (SPEC.md 9.3)', () => {
@@ -47,5 +49,21 @@ describe('likelihoodOf: 확신도를 말로', () => {
     expect(likelihoodOf(0.59)).toBe('medium');
     expect(likelihoodOf(0.3)).toBe('medium');
     expect(likelihoodOf(0.29)).toBe('low');
+  });
+});
+
+describe('저장해 둔 답 (SPEC.md 8.1)', () => {
+  it('다시 볼 날과 물주기 판단에 답한 것을 읽는다', () => {
+    expect(parseDiagnosis({ ...parsed, recheckDate: '2026-09-29', hintAnswer: 'applied' })).toMatchObject({
+      recheckDate: '2026-09-29',
+      hintAnswer: 'applied',
+    });
+  });
+
+  it('모양이 틀리면 없는 것으로 본다', () => {
+    expect(parseDiagnosis({ ...parsed, recheckDate: '9/29', hintAnswer: 'maybe' })).toMatchObject({
+      recheckDate: null,
+      hintAnswer: null,
+    });
   });
 });

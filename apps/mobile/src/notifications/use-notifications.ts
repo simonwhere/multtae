@@ -28,11 +28,17 @@ export function useNotifications(ready: boolean): void {
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active') refresh();
     });
-    // 2-4 의 알림은 모두 오늘 탭으로 간다 (12.1). 열려 있던 시트와 등록 화면은 닫는다
+    // 알림은 오늘 탭으로, 진단 재확인은 그 진단 결과로 간다 (12.1). 열려 있던 시트와 등록 화면은 닫는다
     const response = Notifications.addNotificationResponseReceivedListener((event) => {
-      if (event.notification.request.content.data?.target !== 'today') return;
+      const data = event.notification.request.content.data as
+        | { target?: unknown; eventId?: unknown }
+        | undefined;
+      if (data?.target !== 'today' && data?.target !== 'diagnosis') return;
       if (router.canDismiss()) router.dismissAll();
       router.navigate('/');
+      if (data.target === 'diagnosis' && typeof data.eventId === 'string') {
+        router.push({ pathname: '/diagnosis/[eventId]', params: { eventId: data.eventId } });
+      }
     });
 
     return () => {

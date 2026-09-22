@@ -4,7 +4,7 @@
  * 사용자가 직접 바꾼 것이므로 밀렸거나 미룬 식물도 바로 다시 센다.
  */
 import type { NewPlantEvent, Plant, Space, WateringLog } from '../db/schema';
-import { applyRepot, startOfDay, toCalendarDate } from '../engine';
+import { applyFeedback, applyRepot, startOfDay, toCalendarDate } from '../engine';
 import type { Coefficients, EngineSpace, PotSize, Season, SoilType } from '../engine';
 import { MAX_NICKNAME_LENGTH } from './registration';
 import { countWaterDate } from './schedule';
@@ -147,4 +147,33 @@ export function feedbackStreak(
 
   if (answers.length < needed || (first !== 'wet' && first !== 'dry')) return null;
   return answers.every((answer) => answer === first) ? first : null;
+}
+
+/** 진단이 물주기에 대해 말한 것 (9.3 watering_hint) */
+export type WateringHint = 'over' | 'under' | 'none';
+
+/** 진단의 물주기 판단을 물어볼 수 있는가. 자동으로 세는 식물만 배우므로 직접 정했거나 수경이면 묻지 않는다 */
+export function canApplyWateringHint(plant: Pick<Plant, 'manualInterval' | 'soilType'>, hint: WateringHint): boolean {
+  return hint !== 'none' && plant.manualInterval === null && plant.soilType !== 'hydro';
+}
+
+/**
+ * 진단의 물주기 판단을 반영한다 (8.1 엔진 연동). 너무 자주 줬으면 U ×1.15, 드물게 줬으면 ×0.85 로
+ * 물 줄 때 흙 상태에 답한 것과 같게 배우고, 바로 다시 센다. 물어볼 수 없는 식물이면 null
+ */
+export function planWateringHint(
+  plant: Plant,
+  space: EngineSpace,
+  hint: WateringHint,
+  context: CareContext,
+): Pick<Plant, 'learnFactor' | 'nextWaterAt'> | null {
+  if (!canApplyWateringHint(plant, hint)) return null;
+
+  const learnFactor = applyFeedback(
+    plant.learnFactor,
+    hint === 'over' ? 'wet' : 'dry',
+    false,
+    context.coefficients,
+  );
+  return { learnFactor, nextWaterAt: recount({ ...plant, learnFactor }, space, context) };
 }

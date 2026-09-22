@@ -66,10 +66,10 @@ export const expoNotifier: Notifier = {
   scheduledIds: async () =>
     (await Notifications.getAllScheduledNotificationsAsync()).map((request) => request.identifier),
   cancel: (id) => Notifications.cancelScheduledNotificationAsync(id),
-  schedule: async ({ id, title, body, target, date, minuteOfDay }: PlannedNotification) => {
+  schedule: async ({ id, title, body, target, eventId, date, minuteOfDay }: PlannedNotification) => {
     await Notifications.scheduleNotificationAsync({
       identifier: id,
-      content: { title, body, sound: 'default', data: { target } },
+      content: { title, body, sound: 'default', data: { target, eventId } },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         // 기기 시간대의 그 날짜 그 시각 (12.2 시간대)

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Plant, Space } from '../db/schema';
 import { DEFAULT_COEFFICIENTS } from '../engine';
 import {
+  canApplyWateringHint,
   feedbackStreak,
   MAX_MANUAL_DAYS,
   needsSeasonQuestion,
@@ -11,6 +12,7 @@ import {
   planMove,
   planRename,
   planRepot,
+  planWateringHint,
 } from './care';
 
 const C = DEFAULT_COEFFICIENTS;
@@ -204,5 +206,26 @@ describe('feedbackStreak: 같은 흙 상태가 세 번 이어지면 알린다 (S
   it('주기를 직접 정했거나 수경이면 알리지 않는다', () => {
     expect(feedbackStreak(plant({ manualInterval: 10 }), logs('wet', 'wet', 'wet'), C)).toBeNull();
     expect(feedbackStreak(plant({ soilType: 'hydro' }), logs('wet', 'wet', 'wet'), C)).toBeNull();
+  });
+});
+
+describe('planWateringHint: 진단의 물주기 판단 반영 (SPEC.md 8.1)', () => {
+  const window = space({});
+
+  it('너무 자주 줬으면 간격을 늘리고, 드물게 줬으면 줄인다', () => {
+    const over = planWateringHint(plant({ learnFactor: 1 }), window, 'over', context);
+    const under = planWateringHint(plant({ learnFactor: 1 }), window, 'under', context);
+
+    expect(over?.learnFactor).toBeCloseTo(1.15, 10);
+    expect(under?.learnFactor).toBeCloseTo(0.85, 10);
+    expect(over?.nextWaterAt ?? 0).toBeGreaterThan(under?.nextWaterAt ?? 0);
+  });
+
+  it('직접 정한 주기나 수경, 판단이 없으면 묻지 않는다', () => {
+    expect(canApplyWateringHint(plant({ manualInterval: 5 }), 'over')).toBe(false);
+    expect(canApplyWateringHint(plant({ soilType: 'hydro' }), 'over')).toBe(false);
+    expect(canApplyWateringHint(plant({}), 'none')).toBe(false);
+    expect(canApplyWateringHint(plant({}), 'under')).toBe(true);
+    expect(planWateringHint(plant({ manualInterval: 5 }), window, 'over', context)).toBeNull();
   });
 });

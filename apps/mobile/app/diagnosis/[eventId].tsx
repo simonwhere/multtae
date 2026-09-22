@@ -1,19 +1,37 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { db } from '@/db/client';
-import { getEvent } from '@/db/events';
+import { getEvent, updateEventPayload } from '@/db/events';
 import type { EventWithPlant } from '@/db/events';
+import { getPlantWithSpace, updatePlant } from '@/db/plants';
+import type { PlantWithSpace } from '@/db/plants';
 import { likelihoodOf, parseDiagnosis } from '@/diagnose/diagnosis';
-import { toCalendarDate } from '@/engine';
+import type { Diagnosis } from '@/diagnose/diagnosis';
+import { addDays, diffDays, toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
+import { rescheduleSoon } from '@/notifications';
 import { photoUri } from '@/photos/photo-store';
+import { canApplyWateringHint, planWateringHint } from '@/plants/care';
 import { formatMonthDay } from '@/plants/format';
+import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
-import { AppText, BackButton, Card, Notice, radius, spacing, Tag, useColors } from '@/ui';
+import { dateKey } from '@/weather/forecast';
+import {
+  AppText,
+  BackButton,
+  Button,
+  Card,
+  Notice,
+  radius,
+  spacing,
+  Tag,
+  TextButton,
+  useColors,
+} from '@/ui';
 
 // 진단 결과 (SPEC 8.1, 9.3): 의심되는 것(가능성), 까닭, 지금 할 일 3개, 다시 볼 날, 면책 문구.
 // 심각하면 위에 "빨리 손써 주세요"를 둔다. 기록 탭에서 다시 열 수 있다.
@@ -22,10 +40,17 @@ export default function DiagnosisScreen() {
   const router = useRouter();
   const { eventId, remaining } = useLocalSearchParams<{ eventId: string; remaining?: string }>();
   const [record, setRecord] = useState<EventWithPlant | 'missing' | null>(null);
+  const [target, setTarget] = useState<PlantWithSpace | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    void getEvent(db, eventId).then((found) => setRecord(found ?? 'missing'));
+  const load = useCallback(() => {
+    void getEvent(db, eventId).then(async (found) => {
+      setRecord(found ?? 'missing');
+      if (found) setTarget(await getPlantWithSpace(db, found.event.plantId));
+    });
   }, [eventId]);
+
+  useEffect(load, [load]);
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const diagnosis = record && record !== 'missing' ? parseDiagnosis(record.event.payload) : null;
@@ -47,8 +72,48 @@ export default function DiagnosisScreen() {
   }
 
   const { event, nickname } = record;
-  const { utcOffsetMinutes } = nowContext();
+  const context = nowContext();
+  const { utcOffsetMinutes } = context;
   const left = remaining === undefined ? null : Number(remaining);
+  const diagnosedOn = toCalendarDate(event.occurredAt, utcOffsetMinutes);
+  const today = toCalendarDate(context.now, utcOffsetMinutes);
+  const recheckOn = addDays(diagnosedOn, diagnosis.recheckDays);
+  const stored = diagnosis.recheckDate;
+  const storedDate = stored
+    ? (() => {
+        const [year, month, day] = stored.split('-').map(Number) as [number, number, number];
+        return { year, month, day };
+      })()
+    : null;
+
+  /** 결과에 남긴 답을 고쳐 쓰고 알림을 다시 짠다 */
+  async function save(next: Diagnosis) {
+    setBusy(true);
+    try {
+      await updateEventPayload(db, event.id, next);
+      rescheduleSoon();
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function answerHint(apply: boolean) {
+    if (!target || !diagnosis) return;
+    setBusy(true);
+    try {
+      if (apply) {
+        const patch = planWateringHint(target.plant, target.space, diagnosis.wateringHint, context);
+        if (patch) await updatePlant(db, target.plant.id, patch);
+        usePlantUi.getState().bumpGarden();
+      }
+      await save({ ...diagnosis, hintAnswer: apply ? 'applied' : 'declined' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const askHint = target !== null && canApplyWateringHint(target.plant, diagnosis.wateringHint);
 
   return (
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.paper }]}>
@@ -137,6 +202,60 @@ export default function DiagnosisScreen() {
           </AppText>
         </View>
 
+        {/* 다시 볼 날 알림 (8.1, 12.1 재확인) */}
+        {storedDate === null ? (
+          diffDays(today, recheckOn) >= 0 ? (
+            <Button
+              label={t.recheckOn(diagnosis.recheckDays)}
+              variant="secondary"
+              disabled={busy}
+              onPress={() => void save({ ...diagnosis, recheckDate: dateKey(recheckOn) })}
+            />
+          ) : null
+        ) : diffDays(today, storedDate) >= 0 ? (
+          <View style={styles.recheck}>
+            <AppText style={styles.fill}>{t.recheckSet(formatMonthDay(storedDate))}</AppText>
+            <TextButton
+              label={t.recheckOff}
+              disabled={busy}
+              onPress={() => void save({ ...diagnosis, recheckDate: null })}
+            />
+          </View>
+        ) : (
+          <AppText variant="caption">{t.recheckPast(formatMonthDay(storedDate))}</AppText>
+        )}
+
+        {/* 물주기 판단 반영 (8.1 엔진 연동). 한 번 답하면 다시 묻지 않는다 */}
+        {askHint && diagnosis.hintAnswer === null ? (
+          <Card tone="highlight" style={styles.stack}>
+            <AppText>{diagnosis.wateringHint === 'over' ? t.hintOver : t.hintUnder}</AppText>
+            <View style={styles.actions}>
+              <Button
+                label={diagnosis.wateringHint === 'over' ? t.hintApplyOver : t.hintApplyUnder}
+                disabled={busy}
+                onPress={() => void answerHint(true)}
+                style={styles.fill}
+              />
+              <Button
+                label={t.hintKeep}
+                variant="surface"
+                disabled={busy}
+                onPress={() => void answerHint(false)}
+                style={styles.fill}
+              />
+            </View>
+          </Card>
+        ) : null}
+        {diagnosis.hintAnswer ? (
+          <AppText variant="caption">
+            {diagnosis.hintAnswer === 'declined'
+              ? t.hintDeclined
+              : diagnosis.wateringHint === 'over'
+                ? t.hintAppliedOver
+                : t.hintAppliedUnder}
+          </AppText>
+        ) : null}
+
         {left !== null && Number.isFinite(left) ? (
           <AppText variant="caption">{t.remaining(left)}</AppText>
         ) : null}
@@ -195,6 +314,18 @@ const styles = StyleSheet.create({
   },
   number: {
     width: 20,
+  },
+  recheck: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  stack: {
+    gap: spacing.md,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   fill: {
     flex: 1,

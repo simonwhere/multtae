@@ -615,3 +615,39 @@ describe('비료와 분갈이 (SPEC.md 8.2, 8.3, 12.1)', () => {
     });
   });
 });
+
+describe('진단 재확인 (SPEC.md 8.1, 12.1)', () => {
+  it('그날 알림 시각에 울리고, 누르면 그 진단 결과로 간다', () => {
+    const planned = plan({
+      plants: [soil('몬스테라', date(10, 20))],
+      rechecks: [{ eventId: 'event-1', nickname: '몬스테라', date: date(10, 2), days: 5 }],
+    });
+
+    expect(planned).toContainEqual({
+      id: 'recheck-20261002-0',
+      type: 'recheck',
+      date: date(10, 2),
+      minuteOfDay: DEFAULT_NOTIFY_MINUTE,
+      title: '다시 확인해 주세요',
+      body: '몬스테라 진단한 지 5일 지났어요',
+      target: 'diagnosis',
+      eventId: 'event-1',
+    });
+  });
+
+  it('같은 날 여럿이면 한 알림으로 묶고 오늘 탭으로 간다', () => {
+    const planned = plan({
+      plants: [soil('몬스테라', date(10, 20))],
+      rechecks: [
+        { eventId: 'e1', nickname: '몬스테라', date: date(10, 2), days: 5 },
+        { eventId: 'e2', nickname: '금귤', date: date(10, 2), days: 7 },
+      ],
+    });
+
+    expect(planned.find((item) => item.type === 'recheck')).toMatchObject({
+      body: '몬스테라, 금귤 2개 상태를 다시 봐 주세요',
+      target: 'today',
+    });
+    expect(planned.find((item) => item.type === 'recheck')?.eventId).toBeUndefined();
+  });
+});

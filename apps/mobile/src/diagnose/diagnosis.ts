@@ -6,6 +6,8 @@ import { isOneOf, isString } from '../lib/validate';
 export const WATERING_HINTS = ['over', 'under', 'none'] as const;
 export const SEVERITIES = ['low', 'medium', 'high'] as const;
 
+export const HINT_ANSWERS = ['applied', 'declined'] as const;
+
 export interface Diagnosis {
   findings: { name: string; confidence: number }[];
   cause: string;
@@ -13,6 +15,10 @@ export interface Diagnosis {
   wateringHint: (typeof WATERING_HINTS)[number];
   recheckDays: number;
   severity: (typeof SEVERITIES)[number];
+  /** 다시 볼 날 알림을 받기로 한 날짜(YYYY-MM-DD). 받지 않으면 null (8.1, 12.1 재확인) */
+  recheckDate: string | null;
+  /** 물주기 판단을 반영했는지. 한 번 답하면 다시 묻지 않는다 (8.1 엔진 연동) */
+  hintAnswer: (typeof HINT_ANSWERS)[number] | null;
 }
 
 const isRatio = (value: unknown): value is number =>
@@ -51,6 +57,9 @@ export function parseDiagnosis(value: unknown): Diagnosis | null {
     wateringHint: hint,
     recheckDays: recheck,
     severity: raw.severity,
+    recheckDate:
+      isString(raw.recheckDate) && /^\d{4}-\d{2}-\d{2}$/.test(raw.recheckDate) ? raw.recheckDate : null,
+    hintAnswer: isOneOf(HINT_ANSWERS, raw.hintAnswer) ? raw.hintAnswer : null,
   };
 }
 
