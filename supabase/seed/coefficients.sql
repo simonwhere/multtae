@@ -16,5 +16,6 @@ insert into public.coefficients (key, value) values
   ('diagnose_daily_limit', '3'::jsonb),
   ('daily_cap_identify', '450'::jsonb),
   ('daily_cap_light_grade', '300'::jsonb),
+  ('daily_cap_diagnose', '200'::jsonb),
   ('weather_cache_hours', '3'::jsonb)
 on conflict (key) do nothing;

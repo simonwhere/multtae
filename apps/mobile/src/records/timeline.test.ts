@@ -107,6 +107,9 @@ describe('entryText: 한 줄 글 (SPEC.md 8.4)', () => {
     );
     expect(entryText(eventEntry('repot', null), spaces)).toBe('분갈이했어요');
     expect(entryText(eventEntry('diagnose', null), spaces)).toBe('상태 진단');
+    expect(
+      entryText(eventEntry('diagnose', { findings: [{ name: '과습', confidence: 0.6 }] }), spaces),
+    ).toBe('상태 진단, 과습');
     expect(entryText(eventEntry('task', { labelKo: '순따기' }), spaces)).toBe('순따기 마침');
     expect(entryText(eventEntry('task', {}), spaces)).toBe('분재 작업 마침');
     expect(entryText(eventEntry('note', { kind: 'water_cloudy' }), spaces)).toBe('물이 탁했어요');

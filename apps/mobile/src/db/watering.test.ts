@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { insertEvent } from './events';
 import { deletePlant, getPlantWithSpace, insertPlant, updatePlant } from './plants';
 import type { NewPlant, NewSpace } from './schema';
 import { insertSpace } from './spaces';
@@ -134,9 +135,18 @@ describe('deletePlant: 식물 삭제 (3.4 편집)', () => {
       },
     );
 
+    // 진단 사진은 이벤트에 붙어 있다 (8.1)
+    await insertEvent(db, {
+      id: 'event-1',
+      plantId: 'plant-2',
+      type: 'diagnose',
+      occurredAt: 21_000,
+      photoPath: 'plants/diagnose.jpg',
+    });
+
     const paths = await deletePlant(db, 'plant-2');
 
-    expect(paths.sort()).toEqual(['plants/cover.jpg', 'plants/leaf.jpg']);
+    expect(paths.sort()).toEqual(['plants/cover.jpg', 'plants/diagnose.jpg', 'plants/leaf.jpg']);
     expect(await getPlantWithSpace(db, 'plant-2')).toBeNull();
     expect(await listPlantWaterings(db, 'plant-2', 5)).toEqual([]);
     // 다른 식물은 그대로다

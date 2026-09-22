@@ -14,6 +14,8 @@ export const DEFAULT_CAPS = {
    * 하루 300번이면 넉넉하다. 넘으면 앱은 방향 × 유형 기본값 표로 간다 (4.1)
    */
   lightGrade: 300,
+  /** 진단 전체의 하루 상한. 기기당 3회와 별개로 비용이 튀지 않게 막는다 (13.3) */
+  diagnoseTotal: 200,
 } as const;
 
 interface RpcClient {

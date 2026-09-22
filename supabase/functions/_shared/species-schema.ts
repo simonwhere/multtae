@@ -4,7 +4,7 @@
  */
 import { z } from 'zod';
 
-const GROUP_CODES = [
+export const GROUP_CODES = [
   'succulent',
   'tropical',
   'temperate',

@@ -233,6 +233,18 @@ export default function PlantDetailScreen() {
 
         <CareCard species={care} />
 
+        {/* 상태 진단 (8.1). 기기당 하루 3회 */}
+        <View style={styles.section}>
+          <Button
+            label={ko.diagnose.open}
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/diagnose/[id]', params: { id: plant.id } })}
+          />
+          <AppText variant="caption" style={styles.sectionTitle}>
+            {ko.diagnose.daily}
+          </AppText>
+        </View>
+
         <View style={styles.section}>
           <AppText variant="label" style={styles.sectionTitle}>
             {t.info}

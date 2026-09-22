@@ -1,6 +1,6 @@
 import { asc, count, eq } from 'drizzle-orm';
 
-import { photos, plants, spaces } from './schema';
+import { events, photos, plants, spaces } from './schema';
 import type { NewPhoto, NewPlant, Plant, Space } from './schema';
 import type { Database } from './types';
 
@@ -58,7 +58,7 @@ export async function insertPlant(
 }
 
 /**
- * 식물을 지운다. 물주기 기록·이벤트·사진 행은 외래 키가 함께 지운다.
+ * 식물을 지운다. 물주기 기록·이벤트·사진 행은 외래 키가 함께 지운다. 이벤트에 붙은 사진(진단)도 돌려준다.
  * 사진 파일은 DB 밖에 있으므로 지워야 할 경로를 돌려주고, 파일은 호출한 쪽이 지운다.
  */
 export async function deletePlant(db: Database, plantId: string): Promise<string[]> {
@@ -69,7 +69,13 @@ export async function deletePlant(db: Database, plantId: string): Promise<string
   if (target.length === 0) return [];
 
   const rows = await db.select({ path: photos.path }).from(photos).where(eq(photos.plantId, plantId));
+  // 진단 사진처럼 이벤트에 붙은 사진도 함께 지운다
+  const eventRows = await db
+    .select({ path: events.photoPath })
+    .from(events)
+    .where(eq(events.plantId, plantId));
   const paths = new Set(rows.map((row) => row.path));
+  for (const { path } of eventRows) if (path) paths.add(path);
   if (target[0].coverPhotoPath) paths.add(target[0].coverPhotoPath);
 
   await db.delete(plants).where(eq(plants.id, plantId));

@@ -56,5 +56,6 @@ describe('readCap: 한도값은 서버에서 고친다 (SPEC.md 11.2)', () => {
     expect(DEFAULT_CAPS.identify).toBe(450);
     expect(DEFAULT_CAPS.diagnose).toBe(3);
     expect(DEFAULT_CAPS.lightGrade).toBe(300);
+    expect(DEFAULT_CAPS.diagnoseTotal).toBe(200);
   });
 });

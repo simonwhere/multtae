@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ko } from '@/i18n/ko';
@@ -9,12 +9,13 @@ import { plantStats } from '@/records/stats';
 import { buildTimeline, dayTitle, entryText } from '@/records/timeline';
 import { useRecords } from '@/records/use-records';
 import type { Records } from '@/records/use-records';
-import { AppText, Card, Chip, spacing, useColors } from '@/ui';
+import { AppText, Card, Chevron, Chip, spacing, useColors } from '@/ui';
 
 type RecordsView = 'date' | 'plant';
 
 function Timeline({ records, plantId }: { records: Records; plantId: string | null }) {
   const colors = useColors();
+  const router = useRouter();
   const { utcOffsetMinutes } = nowContext(records.loadedAt);
   const days = buildTimeline(records.waterings, records.events, utcOffsetMinutes, plantId);
   const spaceNames = new Map(records.spaces.map((space) => [space.id, space.name]));
@@ -38,7 +39,14 @@ function Timeline({ records, plantId }: { records: Records; plantId: string | nu
             {day.entries.map((entry, index) => (
               <View key={entry.id}>
                 {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.hair }]} /> : null}
-                <View style={styles.row}>
+                <Pressable
+                  // 진단은 눌러서 결과를 다시 본다 (8.1)
+                  disabled={!(entry.kind === 'event' && entry.type === 'diagnose')}
+                  accessibilityRole={entry.kind === 'event' && entry.type === 'diagnose' ? 'button' : undefined}
+                  onPress={() =>
+                    router.push({ pathname: '/diagnosis/[eventId]', params: { eventId: entry.id } })
+                  }
+                  style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
                   {/* 한 식물만 볼 때는 이름을 되풀이하지 않는다 */}
                   {plantId ? null : (
                     <AppText variant="titleSm" numberOfLines={1} style={styles.name}>
@@ -48,7 +56,8 @@ function Timeline({ records, plantId }: { records: Records; plantId: string | nu
                   <AppText variant={plantId ? 'body' : 'caption'} style={styles.fill}>
                     {entryText(entry, spaceNames)}
                   </AppText>
-                </View>
+                  {entry.kind === 'event' && entry.type === 'diagnose' ? <Chevron /> : null}
+                </Pressable>
               </View>
             ))}
           </Card>
@@ -203,6 +212,9 @@ const styles = StyleSheet.create({
   },
   fill: {
     flex: 1,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

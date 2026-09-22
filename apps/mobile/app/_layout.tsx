@@ -73,6 +73,9 @@ export default function RootLayout() {
         <Stack.Screen name="plant/[id]" />
         <Stack.Screen name="space/[id]" />
         <Stack.Screen name="settings" />
+        {/* 상태 진단은 사진을 고르는 모달, 결과는 기록 탭에서도 여는 화면이다 (8.1) */}
+        <Stack.Screen name="diagnose/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="diagnosis/[eventId]" />
         {/* 지역 목록은 길어서 스크롤되는 모달로 띄운다 */}
         <Stack.Screen name="sheet/region" options={{ presentation: 'modal' }} />
         {/* 시트는 내용 높이만큼만 올라온다. 그래서 시트 화면에는 flex: 1 과 ScrollView 를 쓰지 않는다 */}

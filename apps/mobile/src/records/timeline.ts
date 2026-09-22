@@ -105,8 +105,12 @@ export function entryText(entry: TimelineEntry, spaceNames: ReadonlyMap<string, 
         ? t.repot(ko.potSize[pot], ko.soilType[soil])
         : ko.plantEdit.repot.title;
     }
-    case 'diagnose':
-      return t.diagnose;
+    case 'diagnose': {
+      // 가장 의심되는 것 하나를 붙인다 (8.1 기록)
+      const findings = field(entry.payload, 'findings');
+      const first = Array.isArray(findings) ? field(findings[0], 'name') : undefined;
+      return typeof first === 'string' && first !== '' ? t.diagnoseFinding(first) : t.diagnose;
+    }
     case 'task': {
       const label = field(entry.payload, 'labelKo');
       return typeof label === 'string' && label !== '' ? t.task(label) : t.taskUnknown;

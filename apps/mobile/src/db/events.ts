@@ -37,3 +37,12 @@ export async function latestEventAt(
     .limit(1);
   return rows[0]?.at ?? null;
 }
+
+export async function getEvent(db: Database, eventId: string): Promise<EventWithPlant | null> {
+  const rows = await db
+    .select({ event: events, nickname: plants.nickname })
+    .from(events)
+    .innerJoin(plants, eq(events.plantId, plants.id))
+    .where(eq(events.id, eventId));
+  return rows[0] ?? null;
+}
