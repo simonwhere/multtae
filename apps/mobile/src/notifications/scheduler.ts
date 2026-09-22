@@ -5,22 +5,27 @@
  * 기존 예약을 전부 취소하고 시작하지 않는다. iOS 의 전체 취소는 비동기라 바로 뒤에 넣은 예약까지 지울 수 있고,
  * 그러면 가장 가까운 알림이 빠진다. 대신 계획에 없는 id 만 지우고 나머지는 같은 id 로 덮어쓴다. 결과는 같다.
  */
+import { latestEventAt } from '../db/events';
 import { listPlantsWithSpace, updatePlant } from '../db/plants';
+import type { PlantWithSpace } from '../db/plants';
+import type { SpeciesCacheRow } from '../db/schema';
+import { getCachedSpecies } from '../db/species-cache';
 import { listPlantTasks } from '../db/tasks';
 import { getSetting, setSetting } from '../db/settings';
 import type { Database } from '../db/types';
 import { recordWatering } from '../db/watering';
-import { getSeasonAt, toCalendarDate } from '../engine';
-import type { Coefficients } from '../engine';
+import { addDays, getSeason, getSeasonAt, toCalendarDate } from '../engine';
+import type { CalendarDate, Coefficients } from '../engine';
 import { ko } from '../i18n/ko';
 import { parseJsonObject } from '../lib/validate';
+import { fertilizerRule, isFertilizerDue, repotHint } from '../plants/feeding';
 import { planReschedule } from '../plants/schedule';
 import { dateKey } from '../weather/forecast';
 import { loadUsableWeather } from '../weather/refresh';
 import { heatDays, planRainWatering, rainWatered, weatherAlert } from '../weather/rules';
 import { forecast } from './forecast';
-import { planNotifications, weatherAlertTime } from './plan';
-import type { PlannedNotification, PlanWeatherAlert } from './plan';
+import { planNotifications, SCHEDULE_DAYS, weatherAlertTime } from './plan';
+import type { PlannedNotification, PlanRepot, PlanWeatherAlert } from './plan';
 import { parseNotificationSettings } from './settings';
 import type { NotificationSettings } from './settings';
 
@@ -105,9 +110,28 @@ export async function rescheduleAll(
     }
   }
 
+  // 비료는 물 줄 날에 함께, 분갈이는 적기 월 1일에 (8.2, 8.3)
+  const feeding = await loadFeeding(db, items, utcOffsetMinutes);
+  const ahead = forecast(items, clock);
+  const plants = ahead.plants.map((planned, index) => {
+    const item = items[index]!;
+    const info = feeding.get(item.plant.id)!;
+    return {
+      ...planned,
+      fertilize: isFertilizerDue(
+        fertilizerRule(item.plant, info.species),
+        { lastFertilized: info.lastFertilized, lastRepot: info.lastRepot },
+        planned.waterDate,
+        getSeason(planned.waterDate, coefficients.seasonBounds),
+      ),
+    };
+  });
+
   const scheduled = planNotifications({
-    ...forecast(items, clock),
+    ...ahead,
+    plants,
     tasks,
+    repots: repotsAhead(items, feeding, context.today),
     now,
     utcOffsetMinutes,
     settings,
@@ -124,6 +148,67 @@ export async function rescheduleAll(
     await notifier.schedule(notification);
   }
   return { updatedPlants, scheduled };
+}
+
+interface Feeding {
+  species: SpeciesCacheRow | null;
+  lastFertilized: CalendarDate | null;
+  lastRepot: CalendarDate | null;
+  /** 분갈이를 센 기준일. 마지막 분갈이를 모르면 등록일 */
+  since: CalendarDate;
+}
+
+/** 식물마다 종 DB 의 비료·분갈이 규칙과 마지막 비료·분갈이 날 */
+async function loadFeeding(
+  db: Database,
+  items: readonly PlantWithSpace[],
+  utcOffsetMinutes: number,
+): Promise<Map<string, Feeding>> {
+  const feeding = new Map<string, Feeding>();
+  for (const { plant } of items) {
+    const [species, fertilizedAt] = await Promise.all([
+      plant.scientificName ? getCachedSpecies(db, plant.scientificName) : Promise.resolve(null),
+      latestEventAt(db, plant.id, 'fertilize'),
+    ]);
+    const lastRepot = plant.lastRepotAt === null ? null : toCalendarDate(plant.lastRepotAt, utcOffsetMinutes);
+    const registered = toCalendarDate(plant.createdAt, utcOffsetMinutes);
+    feeding.set(plant.id, {
+      species,
+      // 비료를 준 기록이 없으면 등록일부터 센다. 새로 들인 식물에 바로 비료를 권하지 않는다
+      lastFertilized:
+        fertilizedAt === null ? registered : toCalendarDate(fertilizedAt, utcOffsetMinutes),
+      lastRepot,
+      since: lastRepot ?? registered,
+    });
+  }
+  return feeding;
+}
+
+/** 14일 안에 오는 1일마다 분갈이를 검토할 식물 (8.3) */
+function repotsAhead(
+  items: readonly PlantWithSpace[],
+  feeding: ReadonlyMap<string, Feeding>,
+  today: CalendarDate,
+): PlanRepot[] {
+  const repots: PlanRepot[] = [];
+  for (let offset = 0; offset < SCHEDULE_DAYS; offset += 1) {
+    const day = addDays(today, offset);
+    if (day.day !== 1) continue;
+
+    for (const { plant } of items) {
+      const info = feeding.get(plant.id)!;
+      const hint = repotHint(
+        plant,
+        info.species,
+        { since: info.since, known: info.lastRepot !== null, recent: [] },
+        day,
+      );
+      if (hint?.reason === 'interval') {
+        repots.push({ nickname: plant.nickname, months: hint.months, known: hint.known, date: day });
+      }
+    }
+  }
+  return repots;
 }
 
 /** 한파·서리 예보 알림 (12.1). 같은 새벽은 처음 정한 시각에 한 번만 울린다 */

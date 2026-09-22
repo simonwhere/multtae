@@ -2,7 +2,9 @@
  * 경고 카드 문구 (SPEC 3.2). 규칙이 고른 카드를 제목과 본문으로 바꾼다. 화면과 떼어 테스트한다.
  * 경고(한파·서리·폭염·강풍·겨울나기)는 자줏빛 면, 안내(미세먼지·습도·장마)는 연두 면에 그린다.
  */
+import type { Plant } from '../db/schema';
 import { ko } from '../i18n/ko';
+import type { RepotHint } from '../plants/feeding';
 import type { WinterWarning } from '../plants/winter';
 import type { WeatherCard } from './rules';
 
@@ -74,4 +76,18 @@ export function winterCardText(warning: WinterWarning): CardText {
     body: ko.today.winter[warning.kind](listNames(warning.nicknames)),
     tone: 'warning',
   };
+}
+
+/** 분갈이 검토 카드 (8.3). 주기가 된 식물과 뿌리가 찼을 수 있는 식물을 각각 한 장으로 묶는다 */
+export function repotCardTexts(hints: readonly { plant: Pick<Plant, 'nickname'>; hint: RepotHint }[]): CardText[] {
+  const due = hints.filter(({ hint }) => hint.reason === 'interval').map(({ plant }) => plant.nickname);
+  const roots = hints.filter(({ hint }) => hint.reason === 'roots').map(({ plant }) => plant.nickname);
+  return [
+    ...(due.length > 0
+      ? [{ key: 'repot', title: ko.cards.repotTitle, body: ko.cards.repot(listNames(due)), tone: 'tip' as const }]
+      : []),
+    ...(roots.length > 0
+      ? [{ key: 'roots', title: ko.cards.rootsTitle, body: ko.cards.roots(listNames(roots)), tone: 'tip' as const }]
+      : []),
+  ];
 }

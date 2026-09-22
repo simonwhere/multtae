@@ -12,13 +12,14 @@ import { applyFeedback, SOIL_STATES } from '@/engine';
 import type { SoilState } from '@/engine';
 import { ko } from '@/i18n/ko';
 import { rescheduleSoon } from '@/notifications';
+import { isFertilizerDueToday } from '@/plants/feeding-db';
 import { planPostpone, planWatering } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { AppText, Button, ChoiceCard, Notice, spacing } from '@/ui';
 
 // 물 줬어요 시트 (SPEC 3.2): 흙 상태 3택(건너뛸 수 있다) + 잎이 처졌어요 + 완료.
-// 수경은 흙 상태 대신 "물이 탁했어요" 하나만 묻는다 (5.5).
+// 수경은 흙 상태 대신 "물이 탁했어요" 하나만 묻는다 (5.5). 비료 차례인 날에는 "비료도 줬어요"를 묻는다 (8.2).
 export default function WateredSheet() {
   const router = useRouter();
   const { plantId } = useLocalSearchParams<{ plantId: string }>();
@@ -26,11 +27,17 @@ export default function WateredSheet() {
   const [target, setTarget] = useState<PlantWithSpace | null>(null);
   const [soilState, setSoilState] = useState<SoilState | null>(null);
   const [checked, setChecked] = useState(false);
+  /** 오늘 비료 차례면 true. 사용자가 고르면 fertilized 로 기록한다 (SPEC 8.2) */
+  const [fertilizerDue, setFertilizerDue] = useState(false);
+  const [fertilized, setFertilized] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    void getPlantWithSpace(db, plantId).then(setTarget);
+    void getPlantWithSpace(db, plantId).then(async (item) => {
+      setTarget(item);
+      if (item) setFertilizerDue(await isFertilizerDueToday(db, item.plant, nowContext()));
+    });
   }, [plantId]);
 
   if (!target) {
@@ -71,6 +78,14 @@ export default function WateredSheet() {
         { ...nowContext(), logId: randomUUID() },
       );
       await recordWatering(db, plant.id, plan.plantPatch, plan.log);
+      if (fertilizerDue && fertilized) {
+        await insertEvent(db, {
+          id: randomUUID(),
+          plantId: plant.id,
+          type: 'fertilize',
+          occurredAt: plan.log.wateredAt,
+        });
+      }
       if (hydro && checked) {
         await insertEvent(db, {
           id: randomUUID(),
@@ -89,6 +104,15 @@ export default function WateredSheet() {
     }
   }
 
+  const fertilizerChoice = (
+    <ChoiceCard
+      label={ko.wateredSheet.fertilize}
+      hint={ko.wateredSheet.fertilizeHint}
+      selected={fertilized}
+      onPress={() => setFertilized((value) => !value)}
+    />
+  );
+
   return (
     <View style={styles.sheet}>
       <AppText variant="titleSm" accessibilityRole="header">
@@ -98,6 +122,8 @@ export default function WateredSheet() {
             ? ko.wateredSheet.bonsaiTitle(plant.nickname)
             : ko.wateredSheet.title(plant.nickname)}
       </AppText>
+
+      {fertilizerDue && bonsai ? fertilizerChoice : null}
 
       {bonsai ? (
         <View style={styles.stack}>
@@ -137,6 +163,9 @@ export default function WateredSheet() {
           onPress={() => setChecked((value) => !value)}
         />
       )}
+
+      {/* 분재는 말랐어요를 누르면 바로 끝나므로 비료는 그 위에서 묻는다 */}
+      {fertilizerDue && !bonsai ? fertilizerChoice : null}
 
       {failed ? <Notice message={ko.wateredSheet.failed} /> : null}
       {bonsai ? null : (

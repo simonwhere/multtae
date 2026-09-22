@@ -13,7 +13,10 @@ import { PlantCard } from '@/plants/plant-card';
 import { SwipeRow } from '@/plants/swipe-row';
 import { classifyToday, planPostpone } from '@/plants/today';
 import { winterWarnings } from '@/plants/winter';
-import { cardText, winterCardText } from '@/weather/card-text';
+import { repotHints } from '@/plants/feeding-db';
+import type { RepotHint } from '@/plants/feeding';
+import type { Plant } from '@/db/schema';
+import { cardText, repotCardTexts, winterCardText } from '@/weather/card-text';
 import { dismissCard, loadDismissed } from '@/weather/dismissed';
 import { dateKey, dayOf, isWeatherUsable } from '@/weather/forecast';
 import { weatherCards } from '@/weather/rules';
@@ -94,10 +97,19 @@ export default function TodayScreen() {
       void loadDismissed(db, todayKey).then(setDismissed);
     }, [todayKey]),
   );
+  // 분갈이 검토 (8.3). 종 정보와 최근 흙 상태를 읽어야 해서 따로 불러온다
+  const [repots, setRepots] = useState<{ plant: Plant; hint: RepotHint }[]>([]);
+  useEffect(() => {
+    if (!garden) return;
+    const { now, utcOffsetMinutes } = nowContext(garden.loadedAt);
+    void repotHints(db, garden.plants, { now, utcOffsetMinutes }).then(setRepots);
+  }, [garden]);
+
   const cards = garden
     ? [
         ...weatherCards(garden.plants, weather, context).map(cardText),
         ...winterWarnings(garden.plants, context.season).map(winterCardText),
+        ...repotCardTexts(repots),
       ].filter((card) => !dismissed.includes(card.key))
     : [];
 
@@ -174,7 +186,7 @@ export default function TodayScreen() {
 
         <NotificationBanner />
 
-        {/* 경고 카드: 날씨(7.2), 분재 월동(6.3), 난방 습도(7.3), 장마 시작(7.4) */}
+        {/* 경고 카드: 날씨(7.2), 분재 월동(6.3), 난방 습도(7.3), 장마 시작(7.4), 분갈이 검토(8.3) */}
         {cards.map((card) => (
           <WarningCard
             key={card.key}

@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { getPlantWithSpace, insertPlant } from '../db/plants';
 import type { NewPlant, NewSpace } from '../db/schema';
 import { setSetting } from '../db/settings';
+import { insertEvent } from '../db/events';
+import { cacheSpecies } from '../db/species-cache';
 import { listPlantWaterings } from '../db/watering';
 import { insertSpace } from '../db/spaces';
 import { createTestDb } from '../db/testing/test-db';
@@ -41,7 +43,8 @@ const monstera = (patch: Partial<NewPlant>): NewPlant => ({
   soilType: 'potting',
   lastWateredAt: at(11, 10, 12),
   nextWaterAt: at(11, 17),
-  createdAt: 1,
+  // 비료 간격은 등록일부터 센다. 이 파일의 알림 테스트에 비료 줄이 끼지 않게 최근으로 둔다
+  createdAt: at(9, 20),
   ...patch,
 });
 
@@ -321,5 +324,61 @@ describe('날씨 규칙 (SPEC.md 7.2, 12.1)', () => {
     // 이미 울린 경고는 다시 짜지 않는다
     expect(again.scheduled.some((item) => item.type === 'weather')).toBe(false);
     expect(after.scheduled.some((item) => item.type === 'weather')).toBe(false);
+  });
+});
+
+describe('비료와 분갈이 알림 (SPEC.md 8.2, 8.3)', () => {
+  it('비료 간격이 찬 식물은 물 줄 날 알림에 "비료도 함께"', async () => {
+    await insertPlant(
+      db,
+      monstera({ createdAt: at(8, 1), lastWateredAt: at(9, 20, 12), nextWaterAt: at(9, 27) }),
+      [],
+    );
+
+    const { scheduled } = await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 7)));
+
+    expect(scheduled[0]).toMatchObject({ id: 'water-20260927-0', body: '몬스테라 물 줄 때, 비료도 함께' });
+  });
+
+  it('비료를 준 기록이 있으면 그날부터 센다', async () => {
+    await insertPlant(
+      db,
+      monstera({ createdAt: at(8, 1), lastWateredAt: at(9, 20, 12), nextWaterAt: at(9, 27) }),
+      [],
+    );
+    await insertEvent(db, { id: 'f1', plantId: 'plant-1', type: 'fertilize', occurredAt: at(9, 10, 12) });
+
+    const { scheduled } = await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 7)));
+
+    expect(scheduled[0]?.body).toBe('몬스테라 물 줄 때');
+  });
+
+  it('권장 주기가 지난 식물은 적기 월 1일에 분갈이 검토를 알린다', async () => {
+    await insertPlant(
+      db,
+      monstera({
+        createdAt: at(1, 1),
+        lastRepotAt: Date.UTC(2024, 9, 5, 3),
+        lastWateredAt: at(9, 20, 12),
+        nextWaterAt: at(10, 20),
+      }),
+      [],
+    );
+    // 몬스테라 종 정보: 적기 10월
+    await cacheSpecies(db, {
+      scientificName: 'Monstera deliciosa',
+      groupCode: 'tropical',
+      repotMonths: 18,
+      repotSeason: [10],
+      source: 'seed',
+      fetchedAt: 1,
+    });
+
+    const { scheduled } = await rescheduleAll(db, fakeNotifier().notifier, clock(at(9, 27, 7)));
+
+    expect(scheduled.find((item) => item.id === 'task-20261001-0')).toMatchObject({
+      title: '분갈이 검토',
+      body: '몬스테라 마지막 분갈이 23개월 지났어요',
+    });
   });
 });

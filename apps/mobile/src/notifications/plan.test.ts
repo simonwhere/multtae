@@ -564,3 +564,54 @@ describe('weatherAlertTime: 예보를 받은 직후, 06시 이후 (SPEC.md 12.1)
     );
   });
 });
+
+describe('비료와 분갈이 (SPEC.md 8.2, 8.3, 12.1)', () => {
+  const fed = (nickname: string, waterDate: CalendarDate): PlanPlant => ({
+    ...soil(nickname, waterDate),
+    fertilize: true,
+  });
+
+  it('물 줄 식물이 모두 비료 차례면 한 줄로 "비료도 함께"', () => {
+    expect(plan({ plants: [fed('몬스테라', date(9, 28))] })[0]?.body).toBe(
+      '몬스테라 물 줄 때, 비료도 함께',
+    );
+  });
+
+  it('일부만 비료 차례면 따로 한 줄', () => {
+    const planned = plan({ plants: [fed('몬스테라', date(9, 28)), soil('벤자민', date(9, 28))] });
+
+    expect(planned[0]?.body).toBe('몬스테라, 벤자민 2개 물 줄 때\n몬스테라 비료도 함께');
+  });
+
+  it('분재 아침 확인에도 비료 줄을 덧붙인다', () => {
+    const planned = plan({ plants: [{ ...bonsai('곰솔', date(9, 28)), fertilize: true }] });
+
+    expect(planned.find((item) => item.type === 'bonsai')?.body).toBe(
+      '곰솔 흙이 말랐는지 봐 주세요\n곰솔 비료도 함께',
+    );
+  });
+
+  it('분갈이 검토는 그달 1일 아침에. 작업이 있으면 같은 알림에 한 줄로', () => {
+    const repot = { nickname: '에케베리아', months: 24, known: true, date: date(10, 1) };
+
+    expect(plan({ plants: [soil('몬스테라', date(10, 20))], repots: [repot] })).toContainEqual({
+      id: 'task-20261001-0',
+      type: 'task',
+      date: date(10, 1),
+      minuteOfDay: DEFAULT_NOTIFY_MINUTE,
+      title: '분갈이 검토',
+      body: '에케베리아 마지막 분갈이 2년 지났어요',
+      target: 'today',
+    });
+
+    const merged = plan({
+      plants: [soil('몬스테라', date(10, 20))],
+      tasks: [{ nickname: '곰솔', labelKo: '철사걸이', monthStart: 10 }],
+      repots: [{ ...repot, months: 19, known: true }, { nickname: '스킨답서스', months: 18, known: false, date: date(10, 1) }],
+    }).find((item) => item.id === 'task-20261001-0');
+    expect(merged).toMatchObject({
+      title: '이번 달 할 일',
+      body: '곰솔 철사걸이 할 때예요\n에케베리아 마지막 분갈이 19개월 지났어요\n스킨답서스 분갈이할 때가 됐어요',
+    });
+  });
+});

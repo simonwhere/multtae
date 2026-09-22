@@ -99,6 +99,9 @@ export const ko = {
     bonsaiMoist: '아직 촉촉해요',
     bonsaiMoistHint: '오늘은 건너뛰고 내일 다시 봐요',
     waterCloudy: '물이 탁했어요',
+    /** 비료 차례인 날 (SPEC 8.2) */
+    fertilize: '비료도 줬어요',
+    fertilizeHint: '오늘은 비료도 함께 주는 날이에요',
     failed: '기록하지 못했어요. 다시 시도해 주세요.',
   },
   registerSheet: {
@@ -185,6 +188,11 @@ export const ko = {
     monsoonTitle: '장마 시작',
     monsoon: '장마 동안은 흙이 마른 걸 확인하고 주세요. 받침에 고인 물은 바로 버려 주세요.',
     winterTitle: '겨울나기',
+    /** 분갈이 검토 (8.3) */
+    repotTitle: '분갈이 검토',
+    repot: (names: string) => `${names} 분갈이할 때가 됐어요. 지금이 옮겨 심기 좋은 때예요.`,
+    rootsTitle: '뿌리 확인',
+    roots: (names: string) => `${names} 흙이 자꾸 바싹 말라요. 뿌리가 화분에 꽉 찼을 수 있어요.`,
   },
   /** 설정 (SPEC 3.6) */
   settings: {
@@ -377,6 +385,17 @@ export const ko = {
     /** 분재 작업 알림 (SPEC 12.1). 시작 월 1일 아침 */
     taskTitle: '이번 달 할 일',
     taskBody: (names: string) => `${names} 할 때예요`,
+    /** 비료는 물주기 알림에 한 줄로 덧붙인다 (8.2, 12.1) */
+    waterFertBody: (names: string) => `${names} 물 줄 때, 비료도 함께`,
+    fertLine: (names: string) => `${names} 비료도 함께`,
+    /** 분갈이 검토 (8.3, 12.1). 적기 월 1일 아침 */
+    repotTitle: '분갈이 검토',
+    repotBody: (name: string, months: number, known: boolean) =>
+      !known
+        ? `${name} 분갈이할 때가 됐어요`
+        : months % 12 === 0
+          ? `${name} 마지막 분갈이 ${months / 12}년 지났어요`
+          : `${name} 마지막 분갈이 ${months}개월 지났어요`,
     overdueTitle: '물주기가 밀렸어요',
     overdueOne: (name: string, days: number) => `${name} ${days}일 지났어요`,
     overdueMany: (names: string) => `${names} 물 줄 날이 지났어요`,

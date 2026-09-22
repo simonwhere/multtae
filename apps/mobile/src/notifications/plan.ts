@@ -51,6 +51,19 @@ export interface PlanPlant {
   bonsai: boolean;
   /** 테라스·옥외나 발코니 확장에 있다. 폭염인 날 아침 알림을 당긴다 (7.2) */
   openAir?: boolean;
+  /** 물 줄 날에 비료도 함께 줄 때다 (8.2) */
+  fertilize?: boolean;
+}
+
+/** 분갈이 검토 (8.3). 적기 월 1일 아침에 알린다 */
+export interface PlanRepot {
+  nickname: string;
+  /** 마지막 분갈이(모르면 등록일)에서 지난 달 수 */
+  months: number;
+  /** 마지막 분갈이를 안다 */
+  known: boolean;
+  /** 알릴 날(그달 1일) */
+  date: CalendarDate;
 }
 
 /** 한파·서리 예보 알림 (12.1). 울릴 시각은 부르는 쪽이 정해 둔다(weatherAlertTime) */
@@ -82,6 +95,8 @@ export interface PlanInput {
   plants: readonly PlanPlant[];
   /** 분재 작업. 없으면 빈 배열 */
   tasks?: readonly PlanTask[];
+  /** 분갈이 검토. 없으면 빈 배열 */
+  repots?: readonly PlanRepot[];
   seasonChanges: readonly SeasonNotice[];
   /** 오늘의 계절. 전환일 뒤의 날짜는 seasonChanges 로 본다 */
   season: Season;
@@ -126,8 +141,20 @@ function morningLines(
   );
   const soil = due.filter((plant) => !plant.hydro);
   const hydro = due.filter((plant) => plant.hydro);
-  if (soil.length > 0) lines.push({ type: 'water', title: t.waterTitle, text: t.waterBody(names(soil)) });
+  // 비료는 물 줄 때 함께 준다 (8.2). 물 줄 식물이 모두 비료 차례면 한 줄로, 아니면 따로 한 줄
+  const fertilize = due.filter((plant) => plant.fertilize);
+  const allFertilize = fertilize.length > 0 && fertilize.length === soil.length && hydro.length === 0;
+  if (soil.length > 0) {
+    lines.push({
+      type: 'water',
+      title: t.waterTitle,
+      text: allFertilize ? t.waterFertBody(names(soil)) : t.waterBody(names(soil)),
+    });
+  }
   if (hydro.length > 0) lines.push({ type: 'water', title: t.waterTitle, text: t.hydroBody(names(hydro)) });
+  if (fertilize.length > 0 && !allFertilize) {
+    lines.push({ type: 'water', title: t.waterTitle, text: t.fertLine(names(fertilize)) });
+  }
 
   const overdue = input.plants.filter((plant) => isOverdueReminder(diffDays(plant.waterDate, day)));
   if (overdue.length > 0) {
@@ -300,13 +327,18 @@ function planBonsai(input: PlanInput): PlannedNotification[] {
       const fireAt = startOfDay(fire.date, input.utcOffsetMinutes) + fire.minuteOfDay * MS_PER_MINUTE;
       if (fireAt <= input.now) continue;
 
+      // 분재도 비료 차례면 아침 알림에 한 줄 덧붙인다 (8.2)
+      const fertilize = slot === MORNING_SLOT ? due.filter((plant) => plant.fertilize) : [];
       planned.push({
         id: notificationId('bonsai', day, slot),
         type: 'bonsai',
         date: fire.date,
         minuteOfDay: fire.minuteOfDay,
         title: ko.notifications.bonsaiTitle,
-        body: ko.notifications.bonsaiBody(names(due)),
+        body: [
+          ko.notifications.bonsaiBody(names(due)),
+          ...(fertilize.length > 0 ? [ko.notifications.fertLine(names(fertilize))] : []),
+        ].join('\n'),
         target: 'today',
       });
     }
@@ -315,10 +347,14 @@ function planBonsai(input: PlanInput): PlannedNotification[] {
   return planned;
 }
 
-/** 분재 작업 알림 (SPEC 6.2). 시작 월 1일 아침에 그달 작업을 한 번에 알린다 */
+/**
+ * 달마다 할 일 (SPEC 6.2 분재 작업, 8.3 분갈이). 그달 1일 아침에 한 번에 알린다 (12.2 작업·분갈이는 한 알림).
+ * 작업이 있으면 제목은 "이번 달 할 일", 분갈이만 있으면 "분갈이 검토"다.
+ */
 function planTasks(input: PlanInput): PlannedNotification[] {
   const tasks = input.tasks ?? [];
-  if (tasks.length === 0) return [];
+  const repots = input.repots ?? [];
+  if (tasks.length === 0 && repots.length === 0) return [];
 
   const today = toCalendarDate(input.now, input.utcOffsetMinutes);
   const planned: PlannedNotification[] = [];
@@ -328,24 +364,36 @@ function planTasks(input: PlanInput): PlannedNotification[] {
     if (day.day !== 1) continue;
 
     const starting = tasks.filter((task) => task.monthStart === day.month);
-    if (starting.length === 0) continue;
+    const repotting = repots.filter((repot) => diffDays(repot.date, day) === 0);
+    if (starting.length === 0 && repotting.length === 0) continue;
 
     const fire = shiftOutOfQuietHours(day, input.settings.notifyMinute, input.settings.quietHours);
     const fireAt = startOfDay(fire.date, input.utcOffsetMinutes) + fire.minuteOfDay * MS_PER_MINUTE;
     if (fireAt <= input.now) continue;
+
+    const lines = [
+      ...(starting.length > 0
+        ? [
+            ko.notifications.taskBody(
+              starting
+                .slice(0, MAX_NAMES)
+                .map((task) => `${task.nickname} ${task.labelKo}`)
+                .join(', '),
+            ),
+          ]
+        : []),
+      ...repotting
+        .slice(0, MAX_NAMES)
+        .map((repot) => ko.notifications.repotBody(repot.nickname, repot.months, repot.known)),
+    ];
 
     planned.push({
       id: notificationId('task', day, MORNING_SLOT),
       type: 'task',
       date: fire.date,
       minuteOfDay: fire.minuteOfDay,
-      title: ko.notifications.taskTitle,
-      body: ko.notifications.taskBody(
-        starting
-          .slice(0, MAX_NAMES)
-          .map((task) => `${task.nickname} ${task.labelKo}`)
-          .join(', '),
-      ),
+      title: starting.length > 0 ? ko.notifications.taskTitle : ko.notifications.repotTitle,
+      body: lines.join('\n'),
       target: 'today',
     });
   }

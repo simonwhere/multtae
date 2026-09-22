@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { cardText, listNames, winterCardText } from './card-text';
+import { cardText, listNames, repotCardTexts, winterCardText } from './card-text';
 
 describe('경고 카드 문구 (SPEC.md 3.2, 6.3, 7.2)', () => {
   it('식물 이름은 세 개까지 적고 나머지는 외 N개', () => {
@@ -65,5 +65,31 @@ describe('경고 카드 문구 (SPEC.md 3.2, 6.3, 7.2)', () => {
       expect(card.body).not.toContain('!');
       expect(card.body).toMatch(/요\.$/);
     }
+  });
+});
+
+describe('분갈이 검토 카드 (SPEC.md 8.3)', () => {
+  it('주기가 된 식물과 뿌리가 찼을 수 있는 식물을 따로 묶는다', () => {
+    const cards = repotCardTexts([
+      { plant: { nickname: '몬스테라' }, hint: { reason: 'interval', months: 20, known: true, season: [3, 4] } },
+      { plant: { nickname: '스킨답서스' }, hint: { reason: 'interval', months: 18, known: false, season: [3, 4] } },
+      { plant: { nickname: '율마' }, hint: { reason: 'roots' } },
+    ]);
+
+    expect(cards).toEqual([
+      {
+        key: 'repot',
+        title: '분갈이 검토',
+        body: '몬스테라, 스킨답서스 분갈이할 때가 됐어요. 지금이 옮겨 심기 좋은 때예요.',
+        tone: 'tip',
+      },
+      {
+        key: 'roots',
+        title: '뿌리 확인',
+        body: '율마 흙이 자꾸 바싹 말라요. 뿌리가 화분에 꽉 찼을 수 있어요.',
+        tone: 'tip',
+      },
+    ]);
+    expect(repotCardTexts([])).toEqual([]);
   });
 });
