@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { listRecentEvents } from './events';
 import { insertPlant } from './plants';
 import type { NewPlant, NewSpace } from './schema';
 import { insertSpace } from './spaces';
@@ -56,11 +57,18 @@ describe('분재 작업 (SPEC.md 6.2)', () => {
       { id: 't1', plantId: 'plant-1', taskCode: 'pinch', monthStart: 5, monthEnd: 6, labelKo: '순따기' },
     ]);
 
-    await markTaskDone(db, 't1', 2026);
-    expect((await listPlantTasks(db, 'plant-1'))[0]?.doneYear).toBe(2026);
+    const [task] = await listPlantTasks(db, 'plant-1');
+    await markTaskDone(db, task!, 2026, 5_000);
+    const [done] = await listPlantTasks(db, 'plant-1');
+    expect(done?.doneYear).toBe(2026);
+    // 기록 탭에 작업 이벤트로 남는다 (SPEC 8.4)
+    expect(await listRecentEvents(db, 10)).toMatchObject([
+      { event: { id: 'task-t1-2026', type: 'task', occurredAt: 5_000, payload: { labelKo: '순따기' } } },
+    ]);
 
-    await markTaskDone(db, 't1', null);
+    await markTaskDone(db, done!, null, 6_000);
     expect((await listPlantTasks(db, 'plant-1'))[0]?.doneYear).toBeNull();
+    expect(await listRecentEvents(db, 10)).toEqual([]);
   });
 
   it('같은 id 를 두 번 넣어도 늘지 않는다', async () => {

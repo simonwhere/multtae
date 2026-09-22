@@ -3,6 +3,7 @@ export * from './back-button';
 export * from './button';
 export * from './card';
 export * from './chevron';
+export * from './chip';
 export * from './choice-card';
 export * from './day-gauge';
 export * from './fab';

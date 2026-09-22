@@ -225,7 +225,7 @@ export default function PlantDetailScreen() {
           tasks={tasks}
           today={today}
           onToggle={(task, done) => {
-            void markTaskDone(db, task.id, done ? today.year : null).then(() =>
+            void markTaskDone(db, task, done ? today.year : null, Date.now()).then(() =>
               usePlantUi.getState().bumpGarden(),
             );
           }}

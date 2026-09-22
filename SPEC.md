@@ -688,6 +688,7 @@ flowchart LR
 | source | text | user / rain / skipped |
 | interval_calc | real | 당시 계산 주기 (통계용) |
 | factor_snapshot | text | JSON, 당시 6개 계수 값 |
+| due_at | integer | 물 주기 전의 예정일(next_water_at). 물 준 날이 이보다 늦으면 밀림으로 센다. "내일로" 미룬 날짜가 들어 있어 미룬 것은 밀림이 아니다 (3.5 통계) |
 
 **events**: id, plant_id, type (fertilize / repot / diagnose / task / move / note), occurred_at, payload(JSON), photo_path.
 

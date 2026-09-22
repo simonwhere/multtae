@@ -108,9 +108,32 @@ export const ko = {
   records: {
     title: '기록',
     empty: '아직 기록이 없어요. 물을 주면 여기에 남아요.',
+    emptyFiltered: '이 식물의 기록이 아직 없어요',
     watered: '물 줌',
     /** 비가 넉넉히 와서 물주기를 건너뛴 날 (SPEC 7.2) */
     rain: '비가 대신 줬어요',
+    /** 기록 탭 위의 두 보기 (SPEC 3.5) */
+    byDate: '날짜별',
+    byPlant: '식물별',
+    all: '전체',
+    day: (month: number, day: number, weekday: string) => `${month}월 ${day}일 ${weekday}`,
+    /** 이벤트 한 줄 (SPEC 8.4) */
+    fertilize: '비료 줌',
+    repot: (pot: string, soil: string) => `분갈이, ${pot} 화분에 ${soil}`,
+    diagnose: '상태 진단',
+    task: (label: string) => `${label} 마침`,
+    taskUnknown: '분재 작업 마침',
+    move: (placeWithTo: string) => `${placeWithTo} 옮김`,
+    moveUnknown: '다른 공간으로 옮김',
+    waterCloudy: '물이 탁했어요',
+    note: '메모',
+    /** 식물별 통계 (SPEC 3.5) */
+    average: (days: number) => `평균 ${days}일마다 물을 줬어요`,
+    averageEmpty: '물을 두 번 주면 평균 간격을 보여 드려요',
+    current: (days: number) => `지금은 ${days}일마다 알려 드려요`,
+    overdueNone: '최근 30일 동안 밀린 적 없어요',
+    overdue: (count: number) => `최근 30일 동안 ${count}번 밀렸어요`,
+    waterings: (count: number) => `물 준 기록 ${count}번`,
     /** 키는 LoggedSoilState */
     soilState: {
       dry: '바싹 말랐어요',

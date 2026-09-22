@@ -170,6 +170,8 @@ export function planWatering(
       source: 'user',
       intervalCalc: result.interval,
       factorSnapshot: result.mode === 'computed' ? result.factors : null,
+      // 물 주기 전의 예정일. 이보다 늦게 줬으면 밀렸던 것이다 (3.5 통계)
+      dueAt: plant.nextWaterAt,
     },
     result,
   };

@@ -141,6 +141,11 @@ export const wateringLogs = sqliteTable(
     intervalCalc: real('interval_calc'),
     /** 당시 계수 값 */
     factorSnapshot: text('factor_snapshot', { mode: 'json' }).$type<IntervalFactors>(),
+    /**
+     * 물을 준 때의 예정일(next_water_at). 물 준 날이 이보다 늦으면 밀렸던 것이다 (SPEC 3.5 통계).
+     * "내일로" 미룬 날짜가 들어 있어 미룬 것은 밀림으로 세지 않는다. 0004 전의 기록은 null
+     */
+    dueAt: integer('due_at'),
   },
   (table) => [index('watering_logs_plant_watered_idx').on(table.plantId, table.wateredAt)],
 );

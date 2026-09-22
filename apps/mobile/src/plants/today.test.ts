@@ -149,6 +149,13 @@ describe('planWatering: 물 줬어요 (SPEC.md 3.2, 5.4, 5.5)', () => {
     expect(log.factorSnapshot).toMatchObject({ base: 7, season: 1.0, learn: 1.15 });
   });
 
+  it('물 주기 전의 예정일을 남긴다. 밀림 통계에 쓴다 (SPEC.md 3.5)', () => {
+    const due = plant({}).nextWaterAt;
+
+    expect(water(plant({}), 'ok').log.dueAt).toBe(due);
+    expect(water(plant({ nextWaterAt: null }), 'ok').log.dueAt).toBeNull();
+  });
+
   it('적당했음과 건너뜀은 U 를 그대로 둔다', () => {
     expect(water(plant({ learnFactor: 1.2 }), 'ok').plantPatch.learnFactor).toBe(1.2);
     expect(water(plant({ learnFactor: 1.2 }), 'skipped').plantPatch.learnFactor).toBe(1.2);

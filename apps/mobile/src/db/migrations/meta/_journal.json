@@ -29,6 +29,13 @@
       "when": 1789984642519,
       "tag": "0003_plant_base_interval",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790080570665,
+      "tag": "0004_watering_due_at",
+      "breakpoints": true
     }
   ]
 }

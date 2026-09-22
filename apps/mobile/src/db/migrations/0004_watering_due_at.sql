@@ -1,0 +1,1 @@
+ALTER TABLE `watering_logs` ADD `due_at` integer;
