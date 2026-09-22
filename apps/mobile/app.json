@@ -47,7 +47,9 @@
           "photosPermission": "앨범에서 고른 식물과 공간 사진으로 종류와 빛을 판단합니다",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-background-task",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

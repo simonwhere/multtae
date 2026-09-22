@@ -1,6 +1,6 @@
 /**
- * 앱에서 rescheduleAll 을 부르는 곳 (SPEC.md 12.3 트리거): 앱 진입, 물주기 기록, 내일로, 식물 등록.
- * 백그라운드 fetch 는 개발 빌드와 실기기가 있어야 해서 아직 없다.
+ * 앱에서 rescheduleAll 을 부르는 곳 (SPEC.md 12.3 트리거): 앱 진입, 물주기 기록, 내일로, 식물·공간 편집,
+ * 새 날씨, 백그라운드 작업(weather/background.ts).
  */
 import { db } from '@/db/client';
 import { usePlantUi } from '@/plants/ui-store';
@@ -16,6 +16,15 @@ const requestReschedule = coalesce(async () => {
   // 계절이 바뀌어 다음 물주기를 고쳐 썼으면 열려 있는 화면이 다시 읽게 한다
   if (result.updatedPlants > 0) usePlantUi.getState().bumpGarden();
 });
+
+/** 알림을 다시 예약하고 끝날 때까지 기다린다. 백그라운드 작업처럼 끝을 알려야 하는 곳에서 쓴다 */
+export async function rescheduleNow(): Promise<void> {
+  try {
+    await requestReschedule();
+  } catch (error) {
+    if (__DEV__) console.warn('rescheduleAll', error);
+  }
+}
 
 /** 알림을 다시 예약한다. 실패해도 앱 기능은 그대로여야 하므로 기다리지도 던지지도 않는다 */
 export function rescheduleSoon(): void {

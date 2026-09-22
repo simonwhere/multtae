@@ -41,6 +41,13 @@ export function parseTimeOfDay(value: string | null): number | null {
   return hour * MINUTES_PER_HOUR + minute;
 }
 
+/** 하루 중 몇 분째를 settings 에 넣는 "HH:MM" 으로 */
+export function formatTimeOfDay(minuteOfDay: number): string {
+  const minutes = ((Math.round(minuteOfDay) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${pad(Math.floor(minutes / MINUTES_PER_HOUR))}:${pad(minutes % MINUTES_PER_HOUR)}`;
+}
+
 /** settings 에서 읽은 값을 알림 설정으로. 없거나 깨진 값은 기본값으로 둔다 */
 export function parseNotificationSettings(raw: {
   notifyTime: string | null;

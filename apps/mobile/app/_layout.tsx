@@ -12,6 +12,7 @@ import { db } from '@/db/client';
 import migrations from '@/db/migrations/migrations';
 import { ko } from '@/i18n/ko';
 import { useNotifications } from '@/notifications';
+import { useWeather } from '@/weather/use-weather';
 import { AppText, radius, spacing, useColors } from '@/ui';
 import { fontAssets } from '@/ui/fonts';
 
@@ -37,6 +38,7 @@ export default function RootLayout() {
 
   // 알림은 DB 와 계수를 읽어서 짠다. 둘 다 준비된 뒤에 시작한다
   useNotifications(migrated && coefficientsLoaded);
+  useWeather(migrated && coefficientsLoaded);
 
   if (!ready) {
     return null;
@@ -70,8 +72,11 @@ export default function RootLayout() {
         <Stack.Screen name="register/plant" options={{ presentation: 'modal' }} />
         <Stack.Screen name="plant/[id]" />
         <Stack.Screen name="space/[id]" />
+        <Stack.Screen name="settings" />
+        {/* 지역 목록은 길어서 스크롤되는 모달로 띄운다 */}
+        <Stack.Screen name="sheet/region" options={{ presentation: 'modal' }} />
         {/* 시트는 내용 높이만큼만 올라온다. 그래서 시트 화면에는 flex: 1 과 ScrollView 를 쓰지 않는다 */}
-        {['sheet/watered', 'sheet/season', 'sheet/register', 'sheet/space-edit'].map((name) => (
+        {['sheet/watered', 'sheet/season', 'sheet/register', 'sheet/space-edit', 'sheet/time'].map((name) => (
           <Stack.Screen key={name} name={name} options={sheetOptions} />
         ))}
         {/* 공간 이동은 목록이 길어질 수 있어 스크롤되는 모달로 띄운다 */}

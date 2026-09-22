@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { CalendarDate } from '../engine';
 import {
   DEFAULT_NOTIFY_MINUTE,
+  formatTimeOfDay,
   parseNotificationSettings,
   parseTimeOfDay,
   shiftOutOfQuietHours,
@@ -23,6 +24,22 @@ describe('parseTimeOfDay: settings 의 "HH:MM"', () => {
     for (const bad of [null, '', '8', '24:00', '08:60', '-1:00', '08:0', 'ab:cd', '08:00:00']) {
       expect(parseTimeOfDay(bad)).toBeNull();
     }
+  });
+});
+
+describe('formatTimeOfDay: 설정 화면에서 고른 시각을 "HH:MM" 으로', () => {
+  it('두 자리로 채우고 parseTimeOfDay 와 왕복한다', () => {
+    expect(formatTimeOfDay(hm(8))).toBe('08:00');
+    expect(formatTimeOfDay(hm(7, 5))).toBe('07:05');
+    expect(formatTimeOfDay(hm(23, 59))).toBe('23:59');
+    for (const minute of [0, 1, 450, 1439]) {
+      expect(parseTimeOfDay(formatTimeOfDay(minute))).toBe(minute);
+    }
+  });
+
+  it('하루를 넘거나 음수면 하루 안으로 돌린다', () => {
+    expect(formatTimeOfDay(hm(24, 30))).toBe('00:30');
+    expect(formatTimeOfDay(-30)).toBe('23:30');
   });
 });
 

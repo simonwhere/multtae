@@ -17,7 +17,7 @@ import type { TodayItem } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { useGarden } from '@/plants/use-plants';
-import { AppText, Button, motion, Notice, radius, spacing, Sprig, useColors } from '@/ui';
+import { AppText, Button, motion, Notice, radius, spacing, Sprig, TabIcon, useColors } from '@/ui';
 
 function SectionTitle({ title }: { title: string }) {
   return (
@@ -115,7 +115,17 @@ export default function TodayScreen() {
               {formatDottedDate(today)}
             </AppText>
           </View>
-          <Sprig />
+          <View style={styles.corner}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={ko.settings.open}
+              hitSlop={spacing.sm}
+              onPress={() => router.push('/settings')}
+              style={({ pressed }) => [styles.settings, pressed && styles.pressed]}>
+              <TabIcon name="settings" color={colors.sub} />
+            </Pressable>
+            <Sprig />
+          </View>
         </View>
 
         <NotificationBanner />
@@ -242,6 +252,23 @@ const styles = StyleSheet.create({
   },
   headerText: {
     gap: spacing.sm,
+  },
+  // 오른쪽 위는 설정, 아래는 잔가지
+  corner: {
+    alignSelf: 'stretch',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  settings: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -spacing.sm,
+    marginTop: -spacing.sm,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   headerTop: {
     flexDirection: 'row',

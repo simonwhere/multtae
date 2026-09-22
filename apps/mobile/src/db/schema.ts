@@ -51,6 +51,8 @@ export const SETTING_KEYS = [
   'draft_plant',
   // 마지막으로 받은 서버 계수 (SPEC 11.2). 서버에 닿지 않을 때 이 값으로 돈다
   'coefficients_cache',
+  // 마지막으로 받은 날씨 (SPEC 7.1). 못 받으면 이 값을 쓰고, 48시간이 넘으면 날씨를 끈다
+  'weather_cache',
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 
