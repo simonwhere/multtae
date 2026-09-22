@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   dateKey,
   dayOf,
+  temperatureSummary,
   isWeatherUsable,
   needsRefresh,
   parseWeather,
@@ -90,5 +91,32 @@ describe('needsRefresh: 서버에 다시 물어볼 때', () => {
 
   it('받은 시각이 미래로 적혀 있으면 믿지 않는다', () => {
     expect(needsRefresh({ ...weather, fetchedAt: now + HOUR }, '서울 강남구', now)).toBe(true);
+  });
+});
+
+describe('temperatureSummary: 설정 화면의 기온 한 줄', () => {
+  it('오늘 예보가 있으면 오늘', () => {
+    expect(temperatureSummary(weather, { year: 2026, month: 9, day: 22 })).toEqual({
+      when: 'today',
+      low: 14,
+      high: 25,
+      pop: 30,
+    });
+  });
+
+  it('밤 11시가 넘어 오늘 칸이 없으면 내일', () => {
+    const lateNight = { ...weather, days: weather.days.slice(1) };
+
+    expect(temperatureSummary(lateNight, { year: 2026, month: 9, day: 22 })).toEqual({
+      when: 'tomorrow',
+      low: 12,
+      high: 22,
+      pop: 80,
+    });
+  });
+
+  it('둘 다 없으면 null', () => {
+    expect(temperatureSummary(weather, { year: 2026, month: 10, day: 1 })).toBeNull();
+    expect(temperatureSummary(null, { year: 2026, month: 9, day: 22 })).toBeNull();
   });
 });

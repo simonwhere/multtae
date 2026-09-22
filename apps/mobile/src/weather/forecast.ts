@@ -2,6 +2,7 @@
  * 앱이 받은 날씨 (SPEC.md 7.1). 서버 응답과 settings.weather_cache 에 저장한 값을 같은 함수로 읽는다.
  * 저장된 값은 앱을 고치는 사이에 모양이 어긋날 수 있어 늘 확인하고 쓴다.
  */
+import { addDays } from '../engine';
 import type { CalendarDate } from '../engine';
 import { isOneOf } from '../lib/validate';
 
@@ -112,4 +113,24 @@ export function needsRefresh(weather: Weather | null, regionId: string, now: num
     now - weather.fetchedAt >= WEATHER_REFRESH_HOURS * MS_PER_HOUR ||
     weather.fetchedAt > now
   );
+}
+
+/**
+ * 설정 화면에 적을 기온 한 줄. 밤 11시가 넘으면 기상청 최신 발표에 오늘 칸이 없어서 내일 것을 쓴다.
+ * 둘 다 없으면 null
+ */
+export function temperatureSummary(
+  weather: Weather | null,
+  today: CalendarDate,
+): { when: 'today' | 'tomorrow'; low: number; high: number; pop: number } | null {
+  for (const [when, date] of [
+    ['today', today],
+    ['tomorrow', addDays(today, 1)],
+  ] as const) {
+    const day = dayOf(weather, date);
+    if (day && day.tmin !== null && day.tmax !== null) {
+      return { when, low: Math.round(day.tmin), high: Math.round(day.tmax), pop: day.pop };
+    }
+  }
+  return null;
 }

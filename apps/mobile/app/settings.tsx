@@ -11,7 +11,7 @@ import { ko } from '@/i18n/ko';
 import { formatTimeOfDay, parseNotificationSettings } from '@/notifications/settings';
 import type { NotificationSettings } from '@/notifications/settings';
 import { nowContext } from '@/plants/use-now';
-import { dayOf, isWeatherUsable } from '@/weather/forecast';
+import { isWeatherUsable, temperatureSummary } from '@/weather/forecast';
 import { findRegion } from '@/weather/regions';
 import { useWeatherState } from '@/weather/store';
 import { AppText, BackButton, Card, Chevron, spacing, useColors } from '@/ui';
@@ -82,12 +82,14 @@ export default function SettingsScreen() {
 
   const context = nowContext();
   const usable = isWeatherUsable(weather, context.now, context.utcOffsetMinutes) && weather.region === region?.id;
-  const today = usable ? dayOf(weather, toCalendarDate(context.now, context.utcOffsetMinutes)) : null;
+  const summary = usable
+    ? temperatureSummary(weather, toCalendarDate(context.now, context.utcOffsetMinutes))
+    : null;
   const weatherLine =
     region === null
       ? t.regionHint
-      : today && today.tmin !== null && today.tmax !== null
-        ? t.today(Math.round(today.tmin), Math.round(today.tmax), today.pop)
+      : summary
+        ? t[summary.when](summary.low, summary.high, summary.pop)
         : t.weatherOff;
 
   return (

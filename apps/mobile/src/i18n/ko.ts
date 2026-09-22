@@ -211,6 +211,7 @@ export const ko = {
     regionNone: '고르지 않음',
     regionHint: '고른 지역의 기상청 예보로 비 오는 날과 더위, 추위를 챙겨요. 위치 권한은 쓰지 않아요.',
     today: (low: number, high: number, pop: number) => `오늘 ${low}~${high}도, 비 올 확률 ${pop}%`,
+    tomorrow: (low: number, high: number, pop: number) => `내일 ${low}~${high}도, 비 올 확률 ${pop}%`,
     weatherOff: '지금은 날씨를 받지 못하고 있어요. 물주기 알림은 그대로 와요.',
     info: '정보',
     version: '버전',
