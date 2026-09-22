@@ -6,11 +6,13 @@ import type { Coefficients } from '../engine';
 import { toServerRows } from './parse';
 import type { CoefficientRow } from './parse';
 
-/** 앱은 읽지 않고 Edge Function 이 읽는 한도값 (SPEC 8.3, 9.1) */
+/** 앱은 읽지 않고 Edge Function 이 읽는 값 (SPEC 8.3, 9.1, 13.3) */
 export const SERVER_LIMIT_ROWS: CoefficientRow[] = [
   { key: 'diagnose_daily_limit', value: 3 },
   { key: 'daily_cap_identify', value: 450 },
   { key: 'daily_cap_light_grade', value: 300 },
+  /** 날씨 캐시 시간. 기상청 하루 한도에 가까워지면 6 으로 늘린다 (SPEC 13.3) */
+  { key: 'weather_cache_hours', value: 3 },
 ];
 
 const quote = (text: string) => `'${text.replace(/'/g, "''")}'`;
