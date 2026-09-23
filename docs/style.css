@@ -1,0 +1,168 @@
+/* 물때 안내 페이지. 색과 서체 느낌은 앱과 같게 (SPEC.md 14.2) */
+:root {
+  --ink: #1f2b25;
+  --sub: #5a675f;
+  --paper: #f4f6f2;
+  --surface: #ffffff;
+  --hair: #e0e7de;
+  --accent: #2f5f49;
+  --highlight: #e4edd3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e7eee8;
+    --sub: #a5b5aa;
+    --paper: #141a16;
+    --surface: #1d2621;
+    --hair: #2e3a33;
+    --accent: #8fc7a5;
+    --highlight: #2b3c2f;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 32px 20px 96px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard',
+    'Malgun Gothic', sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+header img {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+header a {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+h1 {
+  font-size: 30px;
+  line-height: 1.35;
+  margin: 0 0 8px;
+}
+
+h2 {
+  font-size: 19px;
+  margin: 40px 0 8px;
+}
+
+p,
+li {
+  color: var(--ink);
+}
+
+.lead,
+.date {
+  color: var(--sub);
+}
+
+.date {
+  font-size: 14px;
+  margin-top: 0;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+li {
+  margin: 6px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--hair);
+  vertical-align: top;
+}
+
+tr:last-child th,
+tr:last-child td {
+  border-bottom: none;
+}
+
+th {
+  width: 34%;
+  font-weight: 600;
+  color: var(--sub);
+}
+
+a {
+  color: var(--accent);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin: 16px 0;
+}
+
+.card.highlight {
+  background: var(--highlight);
+  border-color: transparent;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.links a {
+  display: inline-block;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--paper);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+footer {
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hair);
+  color: var(--sub);
+  font-size: 14px;
+}
