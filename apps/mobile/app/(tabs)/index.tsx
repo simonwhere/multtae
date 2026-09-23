@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { db } from '@/db/client';
@@ -23,7 +23,7 @@ import { weatherCards } from '@/weather/rules';
 import { useWeatherState } from '@/weather/store';
 import { WarningCard } from '@/weather/warning-card';
 import { WeatherIcon } from '@/weather/weather-icon';
-import type { TodayItem } from '@/plants/today';
+import type { TodayItem, TodaySections } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { useGarden } from '@/plants/use-plants';
@@ -53,6 +53,34 @@ function CountChip({ label, count, dot }: { label: string; count: number; dot: s
       <AppText variant="numeralSm">{count}</AppText>
     </View>
   );
+}
+
+/** 목록 한 줄. 식물이 많아도 보이는 만큼만 그리려고 구역 제목과 카드를 한 줄로 편다 (SPEC 15 성능) */
+type Row =
+  | { kind: 'title'; key: string; title: string }
+  | { kind: 'allClear'; key: string }
+  | { kind: 'overdue' | 'due' | 'upcoming' | 'done'; key: string; item: TodayItem };
+
+function rowsOf(sections: TodaySections): Row[] {
+  const rows: Row[] = [];
+  const section = (
+    kind: 'overdue' | 'due' | 'upcoming' | 'done',
+    title: string,
+    items: TodayItem[],
+  ) => {
+    if (items.length === 0) return;
+    rows.push({ kind: 'title', key: `title-${kind}`, title });
+    for (const item of items) rows.push({ kind, key: item.plant.id, item });
+  };
+
+  section('overdue', ko.today.overdue, sections.overdue);
+  section('due', ko.today.due, sections.due);
+  if (sections.overdue.length + sections.due.length === 0) {
+    rows.push({ kind: 'allClear', key: 'all-clear' });
+  }
+  section('upcoming', ko.today.upcoming, sections.upcoming);
+  section('done', ko.today.done, sections.done);
+  return rows;
 }
 
 // 오늘 탭 (SPEC 3.2): 날짜와 계절 이름표, 날씨, 경고 카드, 개수, 밀림, 오늘, 다가옴, 오늘 물 준 식물.
@@ -127,9 +155,11 @@ export default function TodayScreen() {
     reload();
   }
 
-  return (
-    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.paper }]}>
-      <ScrollView contentContainerStyle={styles.list}>
+  const rows = useMemo(() => (sections ? rowsOf(sections) : []), [sections]);
+  const empty = garden !== null && (garden.spaces.length === 0 || garden.plants.length === 0);
+
+  const header = (
+    <View style={styles.listHeader}>
         {/* 14.5: 이름표처럼 요일과 계절, 큰 날짜, 구석의 잔가지 */}
         <View style={styles.header}>
           <View style={styles.headerText}>
@@ -194,111 +224,123 @@ export default function TodayScreen() {
             onClose={() => void dismissCard(db, todayKey, card.key).then(setDismissed)}
           />
         ))}
+      {sections === null || garden === null ? null : garden.spaces.length === 0 ? (
+        // 공간을 먼저 등록하고 식물을 놓는다 (SPEC 1)
+        <View style={styles.empty}>
+          <AppText>{ko.today.empty}</AppText>
+          <Button label={ko.today.registerSpace} onPress={() => router.push('/register/space')} />
+        </View>
+      ) : garden.plants.length === 0 ? (
+        <View style={styles.empty}>
+          <AppText>{ko.today.noPlants}</AppText>
+          <Button label={ko.today.registerPlant} onPress={() => router.push('/register/plant')} />
+        </View>
+      ) : (
+        <View style={styles.chips}>
+          <CountChip label={ko.today.overdue} count={sections.overdue.length} dot={colors.berry} />
+          <CountChip label={ko.today.title} count={sections.due.length} dot={colors.accent} />
+          <CountChip label={ko.today.upcoming} count={sections.upcoming.length} dot={colors.sprig} />
+        </View>
+      )}
+    </View>
+  );
 
-        {sections === null || garden === null ? null : garden.spaces.length === 0 ? (
-          // 공간을 먼저 등록하고 식물을 놓는다 (SPEC 1)
-          <View style={styles.empty}>
-            <AppText>{ko.today.empty}</AppText>
-            <Button label={ko.today.registerSpace} onPress={() => router.push('/register/space')} />
-          </View>
-        ) : garden.plants.length === 0 ? (
-          <View style={styles.empty}>
-            <AppText>{ko.today.noPlants}</AppText>
-            <Button label={ko.today.registerPlant} onPress={() => router.push('/register/plant')} />
-          </View>
-        ) : (
-          <>
-            <View style={styles.chips}>
-              <CountChip label={ko.today.overdue} count={sections.overdue.length} dot={colors.berry} />
-              <CountChip label={ko.today.title} count={sections.due.length} dot={colors.accent} />
-              <CountChip label={ko.today.upcoming} count={sections.upcoming.length} dot={colors.sprig} />
-            </View>
+  function renderRow(row: Row) {
+    if (row.kind === 'title') return <SectionTitle title={row.title} />;
+    if (row.kind === 'allClear') return <AppText style={styles.allClear}>{ko.today.allClear}</AppText>;
 
-            {sections.overdue.length > 0 ? <SectionTitle title={ko.today.overdue} /> : null}
-            {sections.overdue.map((item) => (
-              // 밀린 식물은 카드를 눌러도 물 줬어요 시트로 간다. "내일로"는 없다 (SPEC 3.2)
-              <PlantCard key={item.plant.id} {...item} onPress={() => openWatered(item)}>
-                <Button label={ko.action.watered} onPress={() => openWatered(item)} />
-              </PlantCard>
-            ))}
-
-            {sections.due.length > 0 ? <SectionTitle title={ko.today.due} /> : null}
-            {sections.due.map((item) => {
-              const postponable = canPostpone(item.plant.postponeCount, context.coefficients);
-              return (
-                <SwipeRow
-                  key={item.plant.id}
-                  onWatered={() => openWatered(item)}
-                  onPostpone={postponable ? () => void postpone(item) : undefined}>
-                  <PlantCard {...item} highlighted>
-                    <View style={styles.actions}>
-                      <Button
-                        label={ko.action.watered}
-                        onPress={() => openWatered(item)}
-                        style={styles.fill}
-                      />
-                      <Button
-                        label={ko.action.postpone}
-                        variant="surface"
-                        disabled={!postponable}
-                        onPress={() => void postpone(item)}
-                        style={styles.fill}
-                      />
-                    </View>
-                    {postponable ? null : (
-                      <AppText variant="caption">{ko.today.postponeLimit}</AppText>
-                    )}
-                  </PlantCard>
-                </SwipeRow>
-              );
-            })}
-
-            {sections.overdue.length + sections.due.length === 0 ? (
-              <AppText style={styles.allClear}>{ko.today.allClear}</AppText>
-            ) : null}
-
-            {sections.upcoming.length > 0 ? <SectionTitle title={ko.today.upcoming} /> : null}
-            {sections.upcoming.map((item) => (
-              <PlantCard key={item.plant.id} {...item} onPress={() => openDetail(item)} />
-            ))}
-
-            {sections.done.length > 0 ? <SectionTitle title={ko.today.done} /> : null}
-            {sections.done.map((item) => (
-              <PlantCard
-                key={item.plant.id}
-                {...item}
-                done
-                justWatered={item.plant.id === justWateredId}
-                note={
-                  item.plant.nextWaterAt
-                    ? ko.today.nextWater(
-                        formatMonthDay(
-                          toCalendarDate(item.plant.nextWaterAt, context.utcOffsetMinutes),
-                        ),
-                      )
-                    : undefined
-                }
-                onPress={() => openDetail(item)}
+    const item = row.item;
+    if (row.kind === 'overdue') {
+      // 밀린 식물은 카드를 눌러도 물 줬어요 시트로 간다. "내일로"는 없다 (SPEC 3.2)
+      return (
+        <PlantCard {...item} onPress={() => openWatered(item)}>
+          <Button label={ko.action.watered} onPress={() => openWatered(item)} />
+        </PlantCard>
+      );
+    }
+    if (row.kind === 'due') {
+      const postponable = canPostpone(item.plant.postponeCount, context.coefficients);
+      return (
+        <SwipeRow
+          onWatered={() => openWatered(item)}
+          onPostpone={postponable ? () => void postpone(item) : undefined}>
+          <PlantCard {...item} highlighted>
+            <View style={styles.actions}>
+              <Button
+                label={ko.action.watered}
+                onPress={() => openWatered(item)}
+                style={styles.fill}
               />
-            ))}
-          </>
-        )}
-      </ScrollView>
+              <Button
+                label={ko.action.postpone}
+                variant="surface"
+                disabled={!postponable}
+                onPress={() => void postpone(item)}
+                style={styles.fill}
+              />
+            </View>
+            {postponable ? null : <AppText variant="caption">{ko.today.postponeLimit}</AppText>}
+          </PlantCard>
+        </SwipeRow>
+      );
+    }
+    if (row.kind === 'upcoming') {
+      return <PlantCard {...item} onPress={() => openDetail(item)} />;
+    }
+    return (
+      <PlantCard
+        {...item}
+        done
+        justWatered={item.plant.id === justWateredId}
+        note={
+          item.plant.nextWaterAt
+            ? ko.today.nextWater(
+                formatMonthDay(toCalendarDate(item.plant.nextWaterAt, context.utcOffsetMinutes)),
+              )
+            : undefined
+        }
+        onPress={() => openDetail(item)}
+      />
+    );
+  }
+
+  return (
+    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.paper }]}>
+      <FlatList
+        data={rows}
+        keyExtractor={(row) => row.key}
+        renderItem={({ item: row }) => renderRow(row)}
+        ListHeaderComponent={header}
+        ItemSeparatorComponent={Gap}
+        contentContainerStyle={[styles.list, empty && styles.listGrow]}
+        initialNumToRender={6}
+      />
     </SafeAreaView>
   );
 }
+
+const Gap = () => <View style={styles.gap} />;
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
   list: {
-    flexGrow: 1,
-    gap: spacing.sm + 2,
     paddingHorizontal: spacing.xl - spacing.xs,
     paddingTop: spacing.md,
     // 우하단 + 버튼에 마지막 카드가 가리지 않게
     paddingBottom: spacing.xl * 4,
+  },
+  listGrow: {
+    flexGrow: 1,
+  },
+  // 헤더 안에서는 예전처럼 사이를 띄운다
+  listHeader: {
+    gap: spacing.sm + 2,
+    paddingBottom: spacing.sm + 2,
+  },
+  gap: {
+    height: spacing.sm + 2,
   },
   header: {
     flexDirection: 'row',

@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback } from 'react';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ko } from '@/i18n/ko';
-import { PlantCard } from '@/plants/plant-card';
-import { classifyPlant } from '@/plants/today';
+import { PlantRow } from '@/plants/plant-row';
+import type { PlantWithSpace } from '@/db/plants';
 import { nowContext } from '@/plants/use-now';
 import { useGarden } from '@/plants/use-plants';
 import { AppText, spacing, useColors } from '@/ui';
@@ -16,6 +17,11 @@ export default function PlantsScreen() {
   const { garden } = useGarden();
   const context = nowContext(garden?.loadedAt);
 
+  const open = useCallback(
+    (id: string) => router.push({ pathname: '/plant/[id]', params: { id } }),
+    [router],
+  );
+
   return (
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.paper }]}>
       <AppText variant="titleLg" accessibilityRole="header">
@@ -26,20 +32,29 @@ export default function PlantsScreen() {
           <AppText>{ko.plantsTab.empty}</AppText>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.list}>
-          {garden.plants.map((item) => (
-            <PlantCard
-              key={item.plant.id}
-              {...item}
-              soil={classifyPlant(item.plant, context.now, context.utcOffsetMinutes)}
-              onPress={() => router.push({ pathname: '/plant/[id]', params: { id: item.plant.id } })}
+        // 식물이 많아도 보이는 만큼만 그린다 (SPEC 15 성능)
+        <FlatList
+          data={garden.plants}
+          keyExtractor={keyOf}
+          renderItem={({ item }) => (
+            <PlantRow
+              item={item}
+              now={context.now}
+              utcOffsetMinutes={context.utcOffsetMinutes}
+              onPress={open}
             />
-          ))}
-        </ScrollView>
+          )}
+          ItemSeparatorComponent={Gap}
+          contentContainerStyle={styles.list}
+          initialNumToRender={6}
+        />
       )}
     </SafeAreaView>
   );
 }
+
+const keyOf = (item: PlantWithSpace) => item.plant.id;
+const Gap = () => <View style={styles.gap} />;
 
 const styles = StyleSheet.create({
   screen: {
@@ -53,8 +68,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   list: {
-    gap: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl * 4,
+  },
+  gap: {
+    height: spacing.md,
   },
 });

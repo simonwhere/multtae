@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo } from 'react';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ko } from '@/i18n/ko';
@@ -13,6 +14,15 @@ export default function SpacesScreen() {
   const router = useRouter();
   const { garden } = useGarden();
 
+  // 공간마다 식물을 세느라 목록을 되풀이해 훑지 않게 한 번에 센다 (SPEC 15 성능)
+  const counts = useMemo(() => {
+    const bySpace = new Map<string, number>();
+    for (const { space } of garden?.plants ?? []) {
+      bySpace.set(space.id, (bySpace.get(space.id) ?? 0) + 1);
+    }
+    return bySpace;
+  }, [garden]);
+
   return (
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.paper }]}>
       <AppText variant="titleLg" accessibilityRole="header">
@@ -23,20 +33,25 @@ export default function SpacesScreen() {
           <AppText>{ko.spacesTab.empty}</AppText>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.list}>
-          {garden.spaces.map((space) => (
+        <FlatList
+          data={garden.spaces}
+          keyExtractor={(space) => space.id}
+          ItemSeparatorComponent={Gap}
+          contentContainerStyle={styles.list}
+          renderItem={({ item: space }) => (
             <SpaceCard
-              key={space.id}
               space={space}
-              plantCount={garden.plants.filter((item) => item.space.id === space.id).length}
+              plantCount={counts.get(space.id) ?? 0}
               onPress={() => router.push({ pathname: '/space/[id]', params: { id: space.id } })}
             />
-          ))}
-        </ScrollView>
+          )}
+        />
       )}
     </SafeAreaView>
   );
 }
+
+const Gap = () => <View style={styles.gap} />;
 
 const styles = StyleSheet.create({
   screen: {
@@ -50,8 +65,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   list: {
-    gap: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl * 4,
+  },
+  gap: {
+    height: spacing.md,
   },
 });

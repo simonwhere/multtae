@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { WateringLog } from '@/db/schema';
 import { ko } from '@/i18n/ko';
 import { nowContext } from '@/plants/use-now';
 import { plantStats } from '@/records/stats';
@@ -13,7 +14,15 @@ import { AppText, Card, Chevron, Chip, spacing, useColors } from '@/ui';
 
 type RecordsView = 'date' | 'plant';
 
-function Timeline({ records, plantId }: { records: Records; plantId: string | null }) {
+function Timeline({
+  records,
+  plantId,
+  header,
+}: {
+  records: Records;
+  plantId: string | null;
+  header: React.ReactElement | null;
+}) {
   const colors = useColors();
   const router = useRouter();
   const { utcOffsetMinutes } = nowContext(records.loadedAt);
@@ -22,16 +31,26 @@ function Timeline({ records, plantId }: { records: Records; plantId: string | nu
 
   if (days.length === 0) {
     return (
-      <View style={styles.empty}>
-        <AppText>{plantId ? ko.records.emptyFiltered : ko.records.empty}</AppText>
+      <View style={styles.list}>
+        {header}
+        <View style={styles.empty}>
+          <AppText>{plantId ? ko.records.emptyFiltered : ko.records.empty}</AppText>
+        </View>
       </View>
     );
   }
 
+  // 기록이 쌓여도 보이는 만큼만 그린다 (SPEC 15 성능)
   return (
-    <>
-      {days.map((day) => (
-        <View key={dayTitle(day.date)} style={styles.day}>
+    <FlatList
+      data={days}
+      keyExtractor={(day) => dayTitle(day.date)}
+      ListHeaderComponent={header}
+      ItemSeparatorComponent={Gap}
+      contentContainerStyle={styles.list}
+      initialNumToRender={6}
+      renderItem={({ item: day }) => (
+        <View style={styles.day}>
           <AppText variant="label" accessibilityRole="header" style={styles.dayTitle}>
             {dayTitle(day.date)}
           </AppText>
@@ -62,8 +81,8 @@ function Timeline({ records, plantId }: { records: Records; plantId: string | nu
             ))}
           </Card>
         </View>
-      ))}
-    </>
+      )}
+    />
   );
 }
 
@@ -80,17 +99,26 @@ function Stats({ records }: { records: Records }) {
     );
   }
 
+  // 식물마다 기록을 훑지 않게 한 번에 묶는다 (SPEC 15 성능)
+  const logsByPlant = new Map<string, WateringLog[]>();
+  for (const { log } of records.waterings) {
+    const logs = logsByPlant.get(log.plantId);
+    if (logs) logs.push(log);
+    else logsByPlant.set(log.plantId, [log]);
+  }
+
   return (
-    <>
-      {records.plants.map(({ plant, space }) => {
-        const logs = records.waterings
-          .filter(({ log }) => log.plantId === plant.id)
-          .map(({ log }) => log);
-        const stats = plantStats(plant, space, logs, context);
+    <FlatList
+      data={records.plants}
+      keyExtractor={({ plant }) => plant.id}
+      ItemSeparatorComponent={Gap}
+      contentContainerStyle={styles.list}
+      initialNumToRender={6}
+      renderItem={({ item: { plant, space } }) => {
+        const stats = plantStats(plant, space, logsByPlant.get(plant.id) ?? [], context);
 
         return (
           <Card
-            key={plant.id}
             // 카드를 누를 수 있어 안의 글자는 읽히지 않는다. 요약을 라벨에 담는다 (SPEC 15)
             accessibilityLabel={[
               plant.nickname,
@@ -115,10 +143,12 @@ function Stats({ records }: { records: Records }) {
             </AppText>
           </Card>
         );
-      })}
-    </>
+      }}
+    />
   );
 }
+
+const Gap = () => <View style={styles.gap} />;
 
 // 기록 탭 (SPEC 3.5): 날짜별 타임라인(식물로 거르기)과 식물별 통계. 사진 타임랩스는 2차.
 export default function RecordsScreen() {
@@ -142,29 +172,32 @@ export default function RecordsScreen() {
         <Chip label={ko.records.byPlant} selected={view === 'plant'} onPress={() => setView('plant')} />
       </View>
 
-      {records === null ? null : (
-        <ScrollView contentContainerStyle={styles.list}>
-          {view === 'date' ? (
-            <>
-              {records.plants.length > 1 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-                  <Chip label={ko.records.all} selected={selected === null} onPress={() => setPlantId(null)} />
-                  {records.plants.map(({ plant }) => (
-                    <Chip
-                      key={plant.id}
-                      label={plant.nickname}
-                      selected={selected === plant.id}
-                      onPress={() => setPlantId(plant.id)}
-                    />
-                  ))}
-                </ScrollView>
-              ) : null}
-              <Timeline records={records} plantId={selected} />
-            </>
-          ) : (
-            <Stats records={records} />
-          )}
-        </ScrollView>
+      {records === null ? null : view === 'date' ? (
+        <Timeline
+          records={records}
+          plantId={selected}
+          header={
+            records.plants.length > 1 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filters}
+                style={styles.filterRow}>
+                <Chip label={ko.records.all} selected={selected === null} onPress={() => setPlantId(null)} />
+                {records.plants.map(({ plant }) => (
+                  <Chip
+                    key={plant.id}
+                    label={plant.nickname}
+                    selected={selected === plant.id}
+                    onPress={() => setPlantId(plant.id)}
+                  />
+                ))}
+              </ScrollView>
+            ) : null
+          }
+        />
+      ) : (
+        <Stats records={records} />
       )}
     </SafeAreaView>
   );
@@ -185,7 +218,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   list: {
-    gap: spacing.md,
     paddingHorizontal: spacing.xl - spacing.xs,
     paddingTop: spacing.lg,
     // 우하단 + 버튼에 마지막 카드가 가리지 않게
@@ -193,6 +225,12 @@ const styles = StyleSheet.create({
   },
   filters: {
     gap: spacing.sm,
+  },
+  filterRow: {
+    marginBottom: spacing.md,
+  },
+  gap: {
+    height: spacing.md,
   },
   empty: {
     alignItems: 'center',

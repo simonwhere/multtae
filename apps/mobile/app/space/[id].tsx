@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { gradeLight } from '@/api/light-grade';
@@ -161,7 +161,14 @@ export default function SpaceDetailScreen() {
         <BackButton onPress={close} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <FlatList
+        data={plants}
+        keyExtractor={(plant) => plant.id}
+        numColumns={2}
+        columnWrapperStyle={styles.grid}
+        contentContainerStyle={styles.content}
+        ListHeaderComponent={
+          <View style={styles.block}>
         <View style={styles.names}>
           <AppText variant="titleLg" accessibilityRole="header">
             {space.name}
@@ -237,43 +244,39 @@ export default function SpaceDetailScreen() {
             <AppText>{memo}</AppText>
           </Card>
         ) : null}
-
-        <View style={styles.section}>
-          <AppText variant="label" style={styles.sectionTitle}>
-            {t.plants}
-          </AppText>
-          {plants.length === 0 ? (
-            <AppText>{t.noPlants}</AppText>
-          ) : (
-            <View style={styles.grid}>
-              {plants.map((plant) => (
-                <Card
-                  key={plant.id}
-                  accessibilityLabel={plant.nickname}
-                  onPress={() => router.push({ pathname: '/plant/[id]', params: { id: plant.id } })}
-                  style={styles.tile}>
-                  {plant.coverPhotoPath ? (
-                    <Image
-                      accessibilityIgnoresInvertColors
-                      contentFit="cover"
-                      source={{ uri: photoUri(plant.coverPhotoPath) }}
-                      style={[styles.tilePhoto, { backgroundColor: colors.block }]}
-                    />
-                  ) : (
-                    <View style={[styles.tilePhoto, { backgroundColor: colors.block }]} />
-                  )}
-                  <AppText variant="titleSm" numberOfLines={1}>
-                    {plant.nickname}
-                  </AppText>
-                  <View style={styles.due}>
-                    <DueTag soil={classifyPlant(plant, context.now, context.utcOffsetMinutes)} />
-                  </View>
-                </Card>
-              ))}
+            <AppText variant="label" style={styles.sectionTitle}>
+              {t.plants}
+            </AppText>
+            {plants.length === 0 ? <AppText>{t.noPlants}</AppText> : null}
+          </View>
+        }
+        // 식물이 많아도 보이는 만큼만 그린다 (SPEC 15 성능)
+        renderItem={({ item: plant }) => (
+          <Card
+            key={plant.id}
+            accessibilityLabel={plant.nickname}
+            onPress={() => router.push({ pathname: '/plant/[id]', params: { id: plant.id } })}
+            style={styles.tile}>
+            {plant.coverPhotoPath ? (
+              <Image
+                accessibilityIgnoresInvertColors
+                contentFit="cover"
+                source={{ uri: photoUri(plant.coverPhotoPath) }}
+                style={[styles.tilePhoto, { backgroundColor: colors.block }]}
+              />
+            ) : (
+              <View style={[styles.tilePhoto, { backgroundColor: colors.block }]} />
+            )}
+            <AppText variant="titleSm" numberOfLines={1}>
+              {plant.nickname}
+            </AppText>
+            <View style={styles.due}>
+              <DueTag soil={classifyPlant(plant, context.now, context.utcOffsetMinutes)} />
             </View>
-          )}
-        </View>
-
+          </Card>
+        )}
+        ListFooterComponent={
+          <View style={styles.block}>
         <View style={styles.section}>
           <Card style={styles.rows}>
             <Pressable
@@ -304,7 +307,9 @@ export default function SpaceDetailScreen() {
         <View style={styles.delete}>
           <TextButton label={t.delete} tone="berry" onPress={confirmDelete} />
         </View>
-      </ScrollView>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -324,9 +329,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    gap: spacing.lg,
     paddingHorizontal: spacing.xl - spacing.xs,
     paddingBottom: spacing.xl * 2,
+  },
+  // 목록 위아래 덩어리는 예전처럼 사이를 띄운다
+  block: {
+    gap: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   names: {
     gap: spacing.sm,
@@ -367,10 +376,8 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.xs,
   },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: spacing.md,
+    marginBottom: spacing.md,
   },
   // 두 줄로 놓는다. 홀수면 마지막 칸은 왼쪽에 반 폭으로 남는다
   tile: {
