@@ -11,6 +11,7 @@ import { listSpaces } from '@/db/spaces';
 import { listRecentWaterings } from '@/db/watering';
 import type { WateringWithPlant } from '@/db/watering';
 import { usePlantUi } from '@/plants/ui-store';
+import { useFreshDay } from '@/plants/use-fresh-day';
 
 /** 가정에서 쓰기에 넉넉한 양. 식물 20개가 두세 달 쌓는 기록이다 */
 const RECENT = 500;
@@ -39,6 +40,7 @@ export function useRecords(): Records | null {
   }, []);
 
   useFocusEffect(reload);
+  useFreshDay(reload);
 
   const gardenVersion = usePlantUi((state) => state.gardenVersion);
   useEffect(() => {

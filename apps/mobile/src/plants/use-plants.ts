@@ -8,6 +8,7 @@ import type { Space } from '@/db/schema';
 import { listSpaces } from '@/db/spaces';
 
 import { usePlantUi } from './ui-store';
+import { useFreshDay } from './use-fresh-day';
 
 export interface Garden {
   spaces: Space[];
@@ -27,6 +28,8 @@ export function useGarden(): { garden: Garden | null; reload: () => void } {
   }, []);
 
   useFocusEffect(reload);
+  // 자정을 넘기거나 앱이 앞으로 오면 "오늘"이 달라진다
+  useFreshDay(reload);
 
   // 계절이 바뀌어 다음 물주기를 고쳐 썼을 때도 다시 읽는다
   const gardenVersion = usePlantUi((state) => state.gardenVersion);
