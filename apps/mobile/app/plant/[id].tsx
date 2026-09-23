@@ -17,6 +17,7 @@ import {
   planManualInterval,
 } from '@/plants/care';
 import { CareCard } from '@/plants/care-card';
+import { PhotoSlider } from '@/plants/photo-slider';
 import { TaskCard } from '@/plants/task-card';
 import { DueTag } from '@/plants/due-tag';
 import { formatDottedDate, formatInterval, formatMonthDay } from '@/plants/format';
@@ -87,7 +88,7 @@ export default function PlantDetailScreen() {
     );
   }
 
-  const { plant, space, waterings, care, tasks } = detail;
+  const { plant, space, waterings, care, tasks, photos } = detail;
   const t = ko.plantDetail;
   const context = nowContext(detail.loadedAt);
   const soil = classifyPlant(plant, context.now, context.utcOffsetMinutes);
@@ -148,7 +149,9 @@ export default function PlantDetailScreen() {
           </View>
         </View>
 
-        {plant.coverPhotoPath ? (
+        {photos.length > 0 ? (
+          <PhotoSlider photos={photos} utcOffsetMinutes={context.utcOffsetMinutes} />
+        ) : plant.coverPhotoPath ? (
           <Image
             accessibilityIgnoresInvertColors
             contentFit="cover"

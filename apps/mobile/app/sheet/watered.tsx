@@ -1,10 +1,13 @@
 import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+
+import { Image } from 'expo-image';
 
 import { db } from '@/db/client';
 import { insertEvent } from '@/db/events';
+import { addPlantPhoto } from '@/db/photos';
 import { getPlantWithSpace, updatePlant } from '@/db/plants';
 import type { PlantWithSpace } from '@/db/plants';
 import { recordWatering } from '@/db/watering';
@@ -13,14 +16,17 @@ import type { SoilState } from '@/engine';
 import { ko } from '@/i18n/ko';
 import { rescheduleSoon } from '@/notifications';
 import { isFertilizerDueToday } from '@/plants/feeding-db';
+import { deletePhoto, photoUri, pickPhoto } from '@/photos/photo-store';
+import type { PhotoSource } from '@/photos/photo-store';
 import { planPostpone, planWatering } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
-import { AppText, Button, ChoiceCard, Notice, spacing } from '@/ui';
+import { AppText, Button, ChoiceCard, Notice, radius, spacing, TextButton, useColors } from '@/ui';
 
 // 물 줬어요 시트 (SPEC 3.2): 흙 상태 3택(건너뛸 수 있다) + 잎이 처졌어요 + 완료.
 // 수경은 흙 상태 대신 "물이 탁했어요" 하나만 묻는다 (5.5). 비료 차례인 날에는 "비료도 줬어요"를 묻는다 (8.2).
 export default function WateredSheet() {
+  const colors = useColors();
   const router = useRouter();
   const { plantId } = useLocalSearchParams<{ plantId: string }>();
   const markWatered = usePlantUi((state) => state.markWatered);
@@ -30,6 +36,8 @@ export default function WateredSheet() {
   /** 오늘 비료 차례면 true. 사용자가 고르면 fertilized 로 기록한다 (SPEC 8.2) */
   const [fertilizerDue, setFertilizerDue] = useState(false);
   const [fertilized, setFertilized] = useState(false);
+  /** 오늘 모습을 남기는 사진 (SPEC 8.4). 고르면 물 줬어요와 함께 저장한다 */
+  const [photo, setPhoto] = useState<{ path: string; width: number; height: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -78,6 +86,18 @@ export default function WateredSheet() {
         { ...nowContext(), logId: randomUUID() },
       );
       await recordWatering(db, plant.id, plan.plantPatch, plan.log);
+      if (photo) {
+        // 식물당 최근 100장만 남기고 넘치는 파일은 지운다 (8.4)
+        const pruned = await addPlantPhoto(db, {
+          id: randomUUID(),
+          plantId: plant.id,
+          path: photo.path,
+          takenAt: plan.log.wateredAt,
+          width: photo.width,
+          height: photo.height,
+        });
+        pruned.forEach(deletePhoto);
+      }
       if (fertilizerDue && fertilized) {
         await insertEvent(db, {
           id: randomUUID(),
@@ -103,6 +123,48 @@ export default function WateredSheet() {
       setBusy(false);
     }
   }
+
+  async function addPhoto(source: PhotoSource) {
+    if (!target || busy) return;
+    const result = await pickPhoto(source, 'plants', target.plant.id);
+    if (result.status !== 'picked') return;
+    if (photo) deletePhoto(photo.path);
+    setPhoto(result.photo);
+  }
+
+  function chooseSource() {
+    Alert.alert(ko.wateredSheet.addPhoto, undefined, [
+      { text: ko.spaceDetail.retakeCamera, onPress: () => void addPhoto('camera') },
+      { text: ko.spaceDetail.retakeLibrary, onPress: () => void addPhoto('library') },
+      { text: ko.common.cancel, style: 'cancel' },
+    ]);
+  }
+
+  function removePhoto() {
+    if (photo) deletePhoto(photo.path);
+    setPhoto(null);
+  }
+
+  const photoChoice = photo ? (
+    <View style={styles.photoRow}>
+      <Image
+        accessibilityIgnoresInvertColors
+        accessibilityLabel={ko.wateredSheet.photoAdded}
+        contentFit="cover"
+        source={{ uri: photoUri(photo.path) }}
+        style={[styles.photo, { backgroundColor: colors.block }]}
+      />
+      <AppText style={styles.fill}>{ko.wateredSheet.photoAdded}</AppText>
+      <TextButton label={ko.wateredSheet.removePhoto} onPress={removePhoto} />
+    </View>
+  ) : (
+    <Button
+      label={ko.wateredSheet.addPhoto}
+      variant="surface"
+      disabled={busy}
+      onPress={chooseSource}
+    />
+  );
 
   const fertilizerChoice = (
     <ChoiceCard
@@ -167,6 +229,8 @@ export default function WateredSheet() {
       {/* 분재는 말랐어요를 누르면 바로 끝나므로 비료는 그 위에서 묻는다 */}
       {fertilizerDue && !bonsai ? fertilizerChoice : null}
 
+      {bonsai ? null : photoChoice}
+
       {failed ? <Notice message={ko.wateredSheet.failed} /> : null}
       {bonsai ? null : (
         <Button label={ko.action.done} disabled={busy} onPress={() => void finish()} />
@@ -189,5 +253,18 @@ const styles = StyleSheet.create({
   },
   loading: {
     height: 320,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  photo: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.control,
+  },
+  fill: {
+    flex: 1,
   },
 });

@@ -99,6 +99,10 @@ export const ko = {
     bonsaiMoist: '아직 촉촉해요',
     bonsaiMoistHint: '오늘은 건너뛰고 내일 다시 봐요',
     waterCloudy: '물이 탁했어요',
+    /** 자라는 모습을 남기는 사진 (SPEC 8.4) */
+    addPhoto: '오늘 사진도 남기기',
+    photoAdded: '사진을 함께 남겨요',
+    removePhoto: '사진 빼기',
     /** 비료 차례인 날 (SPEC 8.2) */
     fertilize: '비료도 줬어요',
     fertilizeHint: '오늘은 비료도 함께 주는 날이에요',
@@ -348,6 +352,9 @@ export const ko = {
     intervalAuto: '자동',
     intervalManual: '직접 정함',
     nickname: '별명',
+    photos: '자라는 모습',
+    photoCount: (index: number, total: number) => `${index} / ${total}`,
+    photoOn: (date: string) => `${date}에 찍은 사진`,
     history: '최근 물주기',
     historyEmpty: '아직 물 준 기록이 없어요',
     historyMore: '기록 더 보기',
