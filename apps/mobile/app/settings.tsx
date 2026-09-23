@@ -1,33 +1,39 @@
 import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { eraseAll, exportBackup, importBackup } from '@/data/archive';
 import { db } from '@/db/client';
 import { getSetting } from '@/db/settings';
 import { toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
+import { rescheduleSoon } from '@/notifications/reschedule';
 import { formatTimeOfDay, parseNotificationSettings } from '@/notifications/settings';
 import type { NotificationSettings } from '@/notifications/settings';
+import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { isWeatherUsable, temperatureSummary } from '@/weather/forecast';
 import { findRegion } from '@/weather/regions';
 import { useWeatherState } from '@/weather/store';
+import { showCachedWeather, syncWeather } from '@/weather/sync';
 import { AppText, BackButton, Card, Chevron, spacing, useColors } from '@/ui';
 
 type TimeKey = 'notify_time' | 'bonsai_evening_time' | 'bonsai_winter_time' | 'dnd';
+/** 내보내기·가져오기·전체 삭제는 오래 걸릴 수 있어 한 번에 하나만 (SPEC 3.6) */
+type DataJob = 'export' | 'import' | 'erase';
 
 function Row({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
   return (
     <Pressable
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${label} ${value}`}
+      accessibilityLabel={value ? `${label} ${value}` : label}
       disabled={!onPress}
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
       <AppText style={styles.fill}>{label}</AppText>
-      <AppText variant="caption">{value}</AppText>
+      {value ? <AppText variant="caption">{value}</AppText> : null}
       {onPress ? <Chevron /> : null}
     </Pressable>
   );
@@ -49,31 +55,35 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// 설정 (SPEC 3.6): 알림 시각·방해금지, 분재 확인 시각, 날씨 지역, 버전.
-// 난방 시즌 직접 정하기와 데이터 내보내기는 이후 태스크에서 더한다.
+// 설정 (SPEC 3.6): 알림 시각·방해금지, 분재 확인 시각, 날씨 지역, 데이터, 버전.
+// 난방 시즌 직접 정하기는 이후 태스크에서 더한다.
 export default function SettingsScreen() {
   const colors = useColors();
   const router = useRouter();
   const [notify, setNotify] = useState<NotificationSettings | null>(null);
   const [regionId, setRegionId] = useState<string | null>(null);
+  const [job, setJob] = useState<DataJob | null>(null);
+  const [dataNote, setDataNote] = useState<string | null>(null);
   const weather = useWeatherState((state) => state.weather);
+
+  const load = useCallback(async () => {
+    setNotify(
+      parseNotificationSettings({
+        notifyTime: await getSetting(db, 'notify_time'),
+        dndStart: await getSetting(db, 'dnd_start'),
+        dndEnd: await getSetting(db, 'dnd_end'),
+        bonsaiEveningTime: await getSetting(db, 'bonsai_evening_time'),
+        bonsaiWinterTime: await getSetting(db, 'bonsai_winter_time'),
+      }),
+    );
+    setRegionId(await getSetting(db, 'region_code'));
+  }, []);
 
   // 시트에서 돌아올 때마다 다시 읽는다
   useFocusEffect(
     useCallback(() => {
-      void (async () => {
-        setNotify(
-          parseNotificationSettings({
-            notifyTime: await getSetting(db, 'notify_time'),
-            dndStart: await getSetting(db, 'dnd_start'),
-            dndEnd: await getSetting(db, 'dnd_end'),
-            bonsaiEveningTime: await getSetting(db, 'bonsai_evening_time'),
-            bonsaiWinterTime: await getSetting(db, 'bonsai_winter_time'),
-          }),
-        );
-        setRegionId(await getSetting(db, 'region_code'));
-      })();
-    }, []),
+      void load();
+    }, [load]),
   );
 
   const t = ko.settings;
@@ -91,6 +101,53 @@ export default function SettingsScreen() {
       : summary
         ? t[summary.when](summary.low, summary.high, summary.pop)
         : t.weatherOff;
+
+  /** 기기 안의 것이 통째로 바뀌었다. 화면과 알림을 다시 맞춘다 */
+  async function afterDataChange() {
+    await load();
+    usePlantUi.getState().bumpGarden();
+    useWeatherState.getState().setWeather(null);
+    void showCachedWeather().then(() => syncWeather());
+    rescheduleSoon();
+  }
+
+  async function runExport() {
+    setJob('export');
+    setDataNote(null);
+    const result = await exportBackup(context.now, context.utcOffsetMinutes);
+    setJob(null);
+    if (result === 'empty') setDataNote(t.exportEmpty);
+    else if (result === 'unavailable') setDataNote(t.exportUnavailable);
+    else if (result === 'failed') setDataNote(t.exportFailed);
+  }
+
+  async function runImport() {
+    setJob('import');
+    setDataNote(null);
+    const result = await importBackup();
+    if (result.status === 'imported') await afterDataChange();
+    setJob(null);
+    if (result.status === 'imported') {
+      setDataNote(t.importDone(result.summary.spaces, result.summary.plants));
+    } else if (result.status === 'invalid') setDataNote(t.importInvalid);
+    else if (result.status === 'failed') setDataNote(t.importFailed);
+  }
+
+  async function runErase() {
+    setJob('erase');
+    setDataNote(null);
+    const done = await eraseAll();
+    if (done) await afterDataChange();
+    setJob(null);
+    setDataNote(done ? t.eraseDone : t.eraseFailed);
+  }
+
+  function confirm(title: string, body: string, confirmText: string, run: () => Promise<void>) {
+    Alert.alert(title, body, [
+      { text: ko.common.cancel, style: 'cancel' },
+      { text: confirmText, style: 'destructive', onPress: () => void run() },
+    ]);
+  }
 
   return (
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.paper }]}>
@@ -150,6 +207,33 @@ export default function SettingsScreen() {
         </Section>
         <AppText variant="caption" style={styles.note}>
           {weatherLine}
+        </AppText>
+
+        <Section title={t.data}>
+          <Row
+            label={t.exportRow}
+            value={job === 'export' ? t.exporting : ''}
+            onPress={job ? undefined : () => void runExport()}
+          />
+          <Divider />
+          <Row
+            label={t.importRow}
+            value={job === 'import' ? t.importing : ''}
+            onPress={
+              job ? undefined : () => confirm(t.importTitle, t.importBody, t.importConfirm, runImport)
+            }
+          />
+          <Divider />
+          <Row
+            label={t.eraseRow}
+            value=""
+            onPress={
+              job ? undefined : () => confirm(t.eraseTitle, t.eraseBody, t.eraseConfirm, runErase)
+            }
+          />
+        </Section>
+        <AppText variant="caption" style={styles.note}>
+          {dataNote ?? t.exportHint}
         </AppText>
 
         <Section title={t.info}>
