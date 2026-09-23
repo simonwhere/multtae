@@ -91,7 +91,13 @@ function Stats({ records }: { records: Records }) {
         return (
           <Card
             key={plant.id}
-            accessibilityLabel={plant.nickname}
+            // 카드를 누를 수 있어 안의 글자는 읽히지 않는다. 요약을 라벨에 담는다 (SPEC 15)
+            accessibilityLabel={[
+              plant.nickname,
+              t.waterings(stats.waterings),
+              stats.averageDays === null ? t.averageEmpty : t.average(stats.averageDays),
+              t.current(stats.currentDays),
+            ].join(', ')}
             onPress={() => router.push({ pathname: '/plant/[id]', params: { id: plant.id } })}
             style={styles.stats}>
             <View style={styles.statsTop}>

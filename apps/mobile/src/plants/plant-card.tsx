@@ -7,6 +7,7 @@ import { photoUri } from '@/photos/photo-store';
 import { AppText, Card, DayGauge, radius, spacing, useColors } from '@/ui';
 
 import { DueTag } from './due-tag';
+import { plantCardLabel } from './format';
 
 export interface PlantCardProps {
   plant: Plant;
@@ -41,10 +42,17 @@ export function PlantCard({
   children,
 }: PlantCardProps) {
   const colors = useColors();
+  // 카드를 누를 수 있으면 스크린리더는 카드 안의 글자 대신 이 말만 읽는다 (SPEC 15)
+  const label = plantCardLabel({
+    name: plant.nickname,
+    note: note ?? space.name,
+    daysLeft: soil.daysLeft,
+    done,
+  });
 
   return (
     <Card
-      accessibilityLabel={plant.nickname}
+      accessibilityLabel={label}
       onPress={onPress}
       tone={highlighted ? 'highlight' : 'surface'}
       style={styles.card}>

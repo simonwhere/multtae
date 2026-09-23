@@ -73,8 +73,16 @@ describe('색 토큰: SPEC.md 14.2 화원 라벨', () => {
 
   it.each(SCHEMES)('%s: 게이지의 찬 칸과 빈 칸은 UI 요소 기준(3)으로 구분된다', (scheme) => {
     const c = colors[scheme];
-    expect(contrast(c.accent, c.gaugeEmpty)).toBeGreaterThanOrEqual(3);
-    expect(contrast(c.accent, c.berryEmpty)).toBeGreaterThanOrEqual(3);
+    for (const empty of [c.gaugeEmpty, c.berryEmpty, c.gaugeEmptyOnHighlight]) {
+      expect(contrast(c.accent, empty)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it.each(SCHEMES)('%s: 강조 면 위 게이지의 빈 칸은 카드 면보다 밝다 (구멍처럼 보이지 않게)', (scheme) => {
+    const c = colors[scheme];
+    expect(luminance(c.gaugeEmptyOnHighlight)).toBeGreaterThan(luminance(c.highlight));
+    // 라이트의 흰 칸(1.21)이 기준이다. 다크도 그만큼은 떠 보여야 한다
+    expect(contrast(c.gaugeEmptyOnHighlight, c.highlight)).toBeGreaterThanOrEqual(1.2);
   });
 
   it.each(SCHEMES)('%s: 카드 면은 바탕과 구분된다', (scheme) => {

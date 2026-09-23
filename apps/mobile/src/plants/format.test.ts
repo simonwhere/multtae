@@ -8,6 +8,8 @@ import {
   formatInterval,
   formatMonthDay,
   formatWeekday,
+  plantCardLabel,
+  speakDaysLeft,
 } from './format';
 
 const C = DEFAULT_COEFFICIENTS;
@@ -57,5 +59,25 @@ describe('날짜 표기', () => {
     expect(formatDottedDate({ year: 2026, month: 9, day: 21 })).toBe('9.21');
     expect(formatWeekday({ year: 2026, month: 9, day: 21 })).toBe('월요일');
     expect(formatWeekday({ year: 2026, month: 9, day: 27 })).toBe('일요일');
+  });
+});
+
+describe('스크린리더가 읽을 말 (SPEC.md 15)', () => {
+  it('남은 날은 D-3 대신 "3일 뒤"로 읽는다', () => {
+    expect(speakDaysLeft(3)).toBe('3일 뒤');
+    expect(speakDaysLeft(0)).toBe('오늘');
+    expect(speakDaysLeft(-1)).toBe('1일 지남');
+  });
+
+  it('식물 카드는 이름과 자리, 남은 날을 한 번에 읽는다', () => {
+    expect(plantCardLabel({ name: '곰솔', note: '남향 실내 창가', daysLeft: -1 })).toBe(
+      '곰솔, 남향 실내 창가, 1일 지남',
+    );
+  });
+
+  it('오늘 물 준 카드는 완료라고 읽는다', () => {
+    expect(plantCardLabel({ name: '금귤', note: '9월 30일에 다시 줘요', daysLeft: 7, done: true })).toBe(
+      '금귤, 9월 30일에 다시 줘요, 완료',
+    );
   });
 });

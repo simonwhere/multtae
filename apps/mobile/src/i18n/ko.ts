@@ -613,6 +613,8 @@ export const ko = {
   format: {
     monthDay: (month: number, day: number) => `${month}월 ${day}일`,
     dDay: (days: number) => (days === 0 ? '오늘' : `D-${days}`),
+    /** 소리로 읽을 때. D-3 은 눈으로 볼 때만 쓰고, 읽을 때는 "3일 뒤"로 말한다 */
+    inDays: (days: number) => (days === 0 ? '오늘' : `${days}일 뒤`),
     overdue: (days: number) => `${days}일 지남`,
     every: (days: number) => (days === 1 ? '매일 물을 줘요' : `${days}일마다 물을 줘요`),
     hydroEvery: (days: number) => `${days}일마다 물을 갈아 줘요`,

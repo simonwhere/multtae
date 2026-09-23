@@ -27,3 +27,24 @@ export function formatDottedDate(date: CalendarDate): string {
 export function formatWeekday(date: CalendarDate): string {
   return ko.today.weekday[new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay()];
 }
+
+/** 남은 날을 소리로 읽을 말: "오늘", "3일 뒤", "1일 지남" (SPEC 15 스크린리더) */
+export function speakDaysLeft(daysLeft: number): string {
+  return daysLeft >= 0 ? ko.format.inDays(daysLeft) : ko.format.overdue(-daysLeft);
+}
+
+/**
+ * 식물 카드를 한 번에 읽을 말: "곰솔, 남향 실내 창가, 1일 지남".
+ * 카드를 누를 수 있으면 스크린리더가 카드 안의 글자 대신 이 말만 읽는다.
+ */
+export function plantCardLabel(input: {
+  name: string;
+  /** 이름 아래 한 줄. 공간 이름이거나 다음 물주기 날짜다 */
+  note: string;
+  daysLeft: number;
+  /** 오늘 물을 줬다 */
+  done?: boolean;
+}): string {
+  const due = input.done ? ko.today.doneBadge : speakDaysLeft(input.daysLeft);
+  return [input.name, input.note, due].join(', ');
+}

@@ -83,7 +83,11 @@ export function DayGauge({
   }, [animated, filled, progress]);
 
   const emptyColor =
-    status === 'overdue' ? colors.berryEmpty : onHighlight ? colors.surface : colors.gaugeEmpty;
+    status === 'overdue'
+      ? colors.berryEmpty
+      : onHighlight
+        ? colors.gaugeEmptyOnHighlight
+        : colors.gaugeEmpty;
 
   return (
     <View

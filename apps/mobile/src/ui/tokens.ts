@@ -30,6 +30,8 @@ export interface ColorTokens {
   highlight: string;
   /** 게이지의 빈 칸 */
   gaugeEmpty: string;
+  /** 강조 면 위 게이지의 빈 칸. 카드 면보다 밝아야 구멍처럼 보이지 않는다 */
+  gaugeEmptyOnHighlight: string;
   /** 밀림과 삭제, 열매 자주 */
   berry: string;
   /** 밀림 이름표와 경고 상자의 면 */
@@ -53,6 +55,7 @@ export const colors: Record<ColorScheme, ColorTokens> = {
     onAccent: '#FFFFFF',
     highlight: '#E4EDD3',
     gaugeEmpty: '#DDE6DB',
+    gaugeEmptyOnHighlight: '#FFFFFF',
     berry: '#8E3646',
     berryTint: '#F3E2E5',
     berryEmpty: '#EBD3D7',
@@ -70,6 +73,7 @@ export const colors: Record<ColorScheme, ColorTokens> = {
     onAccent: '#10201A',
     highlight: '#2B3C2F',
     gaugeEmpty: '#33403A',
+    gaugeEmptyOnHighlight: '#465B4E',
     berry: '#E8A3B0',
     berryTint: '#3B242A',
     berryEmpty: '#4A2D34',
