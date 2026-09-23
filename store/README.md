@@ -33,8 +33,19 @@ SPEC.md 17.1 의 목록이다. 앱에 아래 상태를 만들어 두고 한 장�
 
 ## 찍기 전에
 
-1. **개발 빌드로 켠다.** Expo Go 에서는 오른쪽 아래 파란 개발용 버튼이 함께 찍힌다
-   (Expo Go 의 Tools button 을 꺼도 화면에 남는 경우가 있다).
+1. **릴리스 빌드로 켠다.** Expo Go 와 개발 빌드는 화면 위에 파란 개발용 버튼이 함께 찍힌다.
+   preview 프로필이 시뮬레이터용 릴리스 빌드라 버튼이 없다.
+
+   ```bash
+   cd apps/mobile
+   npx eas-cli@latest build --profile preview --platform ios
+   # 끝나면 받은 tar.gz 를 풀어서
+   xcrun simctl install booted app.app
+   xcrun simctl launch booted kr.multtae.app
+   ```
+
+   데이터는 쓰던 기기에서 설정 > 파일로 내보내기 로 내보낸 뒤, 새 빌드에서
+   설정 > 파일에서 가져오기 로 넣으면 그대로 옮겨진다.
 2. 상태 표시줄을 깨끗하게 한다.
 
    ```bash
