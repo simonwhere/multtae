@@ -6,6 +6,17 @@ export const ko = {
   app: {
     name: '물때',
   },
+  /** 온보딩 (SPEC 3.1). 첫 실행에 한 번 */
+  onboarding: {
+    skip: '건너뛰기',
+    placeTitle: '공간을 먼저 알려주세요',
+    placeBody: '식물은 그다음이에요. 같은 식물도 자리에 따라 물 주는 날이 달라져요.',
+    next: '다음',
+    notifyTitle: '물 줄 날 아침에 알려 드릴게요',
+    notifyBody: '알림을 켜면 그날 아침에 한 번만 알려 드려요. 설정에서 시각을 바꾸거나 끌 수 있어요.',
+    allow: '알림 받기',
+    later: '나중에',
+  },
   common: {
     next: '다음',
     back: '이전',

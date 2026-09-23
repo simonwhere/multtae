@@ -1,6 +1,6 @@
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -12,6 +12,7 @@ import { db } from '@/db/client';
 import migrations from '@/db/migrations/migrations';
 import { ko } from '@/i18n/ko';
 import { useNotifications } from '@/notifications';
+import { useOnboarding } from '@/onboarding/use-onboarding';
 import { useWeather } from '@/weather/use-weather';
 import { AppText, radius, spacing, useColors } from '@/ui';
 import { fontAssets } from '@/ui/fonts';
@@ -21,6 +22,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colors = useColors();
+  const router = useRouter();
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   const { success: migrated, error: migrationError } = useMigrations(db, migrations);
 
@@ -39,6 +41,12 @@ export default function RootLayout() {
   // 알림은 DB 와 계수를 읽어서 짠다. 둘 다 준비된 뒤에 시작한다
   useNotifications(migrated && coefficientsLoaded);
   useWeather(migrated && coefficientsLoaded);
+
+  // 첫 실행이면 온보딩부터 (SPEC 3.1). 화면이 올라온 뒤에 옮긴다
+  const onboarding = useOnboarding(migrated);
+  useEffect(() => {
+    if (ready && onboarding === 'needed') router.replace('/onboarding');
+  }, [ready, onboarding, router]);
 
   if (!ready) {
     return null;
@@ -73,6 +81,7 @@ export default function RootLayout() {
         <Stack.Screen name="plant/[id]" />
         <Stack.Screen name="space/[id]" />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
         {/* 상태 진단은 사진을 고르는 모달, 결과는 기록 탭에서도 여는 화면이다 (8.1) */}
         <Stack.Screen name="diagnose/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="diagnosis/[eventId]" />
