@@ -8,6 +8,8 @@ import { rescheduleNow } from '@/notifications/reschedule';
 import { coalesce } from '@/notifications/scheduler';
 
 import { loadCachedWeather, refreshWeather } from './refresh';
+import { reportError } from '@/telemetry/report';
+
 import { useWeatherState } from './store';
 
 let forceNext = false;
@@ -38,6 +40,6 @@ export async function syncWeather(force = false): Promise<void> {
   try {
     await run();
   } catch (error) {
-    if (__DEV__) console.warn('syncWeather', error);
+    reportError({ where: 'weather.sync', error });
   }
 }

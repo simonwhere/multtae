@@ -9,7 +9,9 @@
  *   pnpm seed:species --group herb 한 식물군만
  *
  * 주소와 키는 apps/mobile/.env 에서 읽는다. 비용은 새로 만드는 종 하나당 약 15원이다.
+ * 서버에 APP_SIGNATURE_SECRET 을 넣었다면 .env 의 EXPO_PUBLIC_APP_SIGNATURE_SECRET 으로 서명해 보낸다 (SPEC 9).
  */
+import { createHmac } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -19,6 +21,15 @@ import type { SeedEntry } from './species-list.ts';
 /** 한 번에 보내는 요청 수. 생성은 20초쯤 걸리고, 한꺼번에 많이 보내면 모델 쪽에서 막는다 */
 const CONCURRENCY = 3;
 const TIMEOUT_MS = 120_000;
+
+/** 앱과 같은 방식의 서명 (supabase/functions/_shared/signature.ts). 시크릿이 없으면 붙이지 않는다 */
+function signature(): Record<string, string> {
+  const secret = process.env.EXPO_PUBLIC_APP_SIGNATURE_SECRET?.trim();
+  if (!secret) return {};
+  const timestamp = Date.now();
+  const mac = createHmac('sha256', secret).update(`${timestamp}.species`).digest('hex');
+  return { 'x-app-signature': `${timestamp}.${mac}` };
+}
 
 const GROUPS: Record<string, SeedEntry[]> = {
   tropical: TROPICAL,
@@ -59,7 +70,7 @@ async function seedOne(
 
   try {
     const response = await fetch(endpoint, {
-      headers: { apikey: key, Authorization: `Bearer ${key}` },
+      headers: { apikey: key, Authorization: `Bearer ${key}`, ...signature() },
       signal: controller.signal,
     });
     if (!response.ok) {

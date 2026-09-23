@@ -12,6 +12,8 @@ export const SERVER_LIMIT_ROWS: CoefficientRow[] = [
   { key: 'daily_cap_identify', value: 450 },
   { key: 'daily_cap_light_grade', value: 300 },
   { key: 'daily_cap_diagnose', value: 200 },
+  /** 종을 새로 만드는 것도 Claude 를 부른다. 하루 100종이면 넉넉하다 (SPEC 13.3) */
+  { key: 'daily_cap_species', value: 100 },
   /** 날씨 캐시 시간. 기상청 하루 한도에 가까워지면 6 으로 늘린다 (SPEC 13.3) */
   { key: 'weather_cache_hours', value: 3 },
 ];

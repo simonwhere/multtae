@@ -5,6 +5,7 @@
 import { db } from '@/db/client';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
+import { reportError } from '@/telemetry/report';
 
 import { expoNotifier, getPermissionState, requestPermission } from './expo-notifier';
 import { coalesce, rescheduleAll } from './scheduler';
@@ -22,14 +23,14 @@ export async function rescheduleNow(): Promise<void> {
   try {
     await requestReschedule();
   } catch (error) {
-    if (__DEV__) console.warn('rescheduleAll', error);
+    reportError({ where: 'notifications.reschedule', error });
   }
 }
 
 /** 알림을 다시 예약한다. 실패해도 앱 기능은 그대로여야 하므로 기다리지도 던지지도 않는다 */
 export function rescheduleSoon(): void {
   requestReschedule().catch((error: unknown) => {
-    if (__DEV__) console.warn('rescheduleAll', error);
+    reportError({ where: 'notifications.reschedule', error });
   });
 }
 

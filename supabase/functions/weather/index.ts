@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 import { CORS_HEADERS, fail, json } from '../_shared/http.ts';
+import { SIGNATURE_HEADER, verifySignature } from '../_shared/signature.ts';
 import { toGrid } from '../_shared/kma-grid.ts';
 import type { Grid } from '../_shared/kma-grid.ts';
 import { readCap } from '../_shared/limits.ts';
@@ -87,6 +88,15 @@ async function fetchDust(serviceKey: string, area: AirArea, now: number): Promis
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
   if (request.method !== 'GET') return fail('bad_request', 405);
+  // 앱 서명 확인 (SPEC 9, 13.3). 시크릿을 아직 넣지 않았으면 그냥 지나간다
+  const signature = await verifySignature(
+    request.headers.get(SIGNATURE_HEADER),
+    Deno.env.get('APP_SIGNATURE_SECRET') ?? '',
+    'weather',
+    Date.now(),
+  );
+  if (signature !== 'ok') return fail('bad_request', 401);
+
 
   const region = findRegion(new URL(request.url).searchParams.get('region') ?? '');
   if (!region) return fail('bad_request', 400);

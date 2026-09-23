@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 
 import { askClaude } from '../_shared/claude.ts';
 import { CORS_HEADERS, fail, json } from '../_shared/http.ts';
+import { SIGNATURE_HEADER, verifySignature } from '../_shared/signature.ts';
 import { bumpUsage, DEFAULT_CAPS, readCap } from '../_shared/limits.ts';
 import {
   buildLightPrompt,
@@ -24,6 +25,15 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
   if (request.method !== 'POST') return fail('bad_request', 405);
+  // 앱 서명 확인 (SPEC 9, 13.3). 시크릿을 아직 넣지 않았으면 그냥 지나간다
+  const signature = await verifySignature(
+    request.headers.get(SIGNATURE_HEADER),
+    Deno.env.get('APP_SIGNATURE_SECRET') ?? '',
+    'light-grade',
+    Date.now(),
+  );
+  if (signature !== 'ok') return fail('bad_request', 401);
+
 
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
   const supabaseUrl = Deno.env.get('SUPABASE_URL');

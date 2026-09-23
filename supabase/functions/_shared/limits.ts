@@ -16,6 +16,8 @@ export const DEFAULT_CAPS = {
   lightGrade: 300,
   /** 진단 전체의 하루 상한. 기기당 3회와 별개로 비용이 튀지 않게 막는다 (13.3) */
   diagnoseTotal: 200,
+  /** 종을 새로 만드는 것도 Claude 를 부른다. 이미 있는 종은 세지 않는다 (13.3) */
+  species: 100,
 } as const;
 
 interface RpcClient {

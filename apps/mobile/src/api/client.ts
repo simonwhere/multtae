@@ -3,10 +3,14 @@
  * 앱은 비밀 키를 갖지 않고, AI 호출은 모두 Edge Function 을 거친다 (CLAUDE.md 절대 규칙).
  */
 
+import { SIGNATURE_ENV, SIGNATURE_HEADER, signatureHeader } from './signature';
+import type { Sha256 } from './signature';
+
 /** .env 에 넣는 이름 */
 export const SUPABASE_ENV = {
   url: 'EXPO_PUBLIC_SUPABASE_URL',
   key: 'EXPO_PUBLIC_SUPABASE_KEY',
+  signature: SIGNATURE_ENV,
 } as const;
 
 export interface SupabaseConfig {
@@ -22,6 +26,26 @@ export function supabaseConfig(): SupabaseConfig | null {
   const url = clean(process.env.EXPO_PUBLIC_SUPABASE_URL).replace(/\/+$/, '');
   const key = clean(process.env.EXPO_PUBLIC_SUPABASE_KEY);
   return url && key ? { url, key } : null;
+}
+
+/**
+ * 무작위 호출을 막는 앱 서명 (SPEC 9). 시크릿이 없으면 붙이지 않는다.
+ * 해시를 하는 expo-crypto 는 기기에만 있어서, 시크릿이 있을 때만 불러온다.
+ */
+async function signHeaders(name: string): Promise<Record<string, string>> {
+  const secret = clean(process.env.EXPO_PUBLIC_APP_SIGNATURE_SECRET);
+  if (!secret) return {};
+
+  try {
+    const Crypto = await import('expo-crypto');
+    const sha256: Sha256 = async (data) =>
+      new Uint8Array(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, data));
+    const header = await signatureHeader(sha256, secret, name, Date.now());
+    return header ? { [SIGNATURE_HEADER]: header } : {};
+  } catch {
+    // 서명을 못 만들어도 부르기는 한다. 서버가 막으면 그 기능만 쉰다
+    return {};
+  }
 }
 
 export interface CallOptions {
@@ -63,7 +87,11 @@ export async function callFunction<T>(
   try {
     const response = await fetch(url.toString(), {
       method,
-      headers: { apikey: config.key, Authorization: `Bearer ${config.key}` },
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${config.key}`,
+        ...(await signHeaders(name)),
+      },
       body,
       signal: controller.signal,
     });
