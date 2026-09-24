@@ -84,6 +84,10 @@ def centered(size, background, mark_color, mark_ratio=0.62, stroke_scale=1.0):
     return image
 
 
+def notification_icon():
+    return centered(96, (0, 0, 0, 0), (255, 255, 255), 0.86, stroke_scale=2.6)
+
+
 def main():
     # iOS 앱 아이콘: 새순 연두 바탕에 깊은 잎 초록 잔가지
     centered(1024, HIGHLIGHT + (255,), ACCENT, 0.66, stroke_scale=1.7).save(OUT / "icon.png")
@@ -96,6 +100,10 @@ def main():
     centered(432, (0, 0, 0, 0), (0, 0, 0), 0.44, stroke_scale=1.7).save(
         OUT / "android-icon-monochrome.png"
     )
+
+    # 안드로이드 알림 아이콘: 상태 표시줄의 흰 실루엣. 시스템은 모양(투명도)만 쓰고 색은 app.json 이 칠한다.
+    # 24dp 로 작게 보이므로 선을 굵게 한다 (9-4)
+    notification_icon().save(OUT / "notification-icon.png")
 
     # 스플래시: 바탕은 app.json 이 칠한다. 마크만 투명 바탕에
     for name, color in (("splash-icon.png", ACCENT), ("splash-icon-dark.png", ACCENT_DARK)):

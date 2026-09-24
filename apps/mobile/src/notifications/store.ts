@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { PermissionState } from './expo-notifier';
+import type { PermissionState } from './permission';
 
 interface NotificationState {
   /** 알림 권한. null 은 아직 확인하지 않았다는 뜻 */

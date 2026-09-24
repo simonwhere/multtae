@@ -57,6 +57,9 @@ export const SETTING_KEYS = [
   'weather_alert',
   // 오늘 닫은 경고 카드 (SPEC 3.2 "닫기 가능, 당일만 표시")
   'dismissed_cards',
+  // 이 기기에서 알림 권한 창을 띄운 적이 있는지. 안드로이드 13 이상은 묻기 전에도 거부로 알려 와서
+  // 따로 적어 둔다 (9-4). 기기마다 다르므로 내보내지 않는다
+  'notification_asked',
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 

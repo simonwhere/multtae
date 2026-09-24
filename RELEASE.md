@@ -118,6 +118,36 @@ npx eas-cli@latest build --profile development --platform ios   # 시뮬레이�
 npx eas-cli@latest build --profile preview --platform android    # apk 를 받아 설치
 ```
 
+### 홈 화면 위젯 (9-3)
+
+iOS 위젯은 앱과 따로 서명되는 확장(`kr.multtae.app.widget`)이고, 앱과는 App Group
+`group.kr.multtae.app` 으로 내용을 나눈다. Apple Developer 계정이 생기면:
+
+1. developer.apple.com > Membership 의 Team ID 를 `app.json` 의 `ios.appleTeamId` 에 넣는다
+   (없으면 위젯 대상의 서명 팀이 비어 실기기·프로덕션 빌드가 실패한다)
+2. 첫 프로덕션 빌드 때 EAS 가 앱과 위젯 두 대상의 인증서·프로파일을 만들고 App Group 도
+   등록하겠냐고 묻는다. 모두 예로 답한다
+
+안드로이드 위젯은 `app.json` 의 `react-native-android-widget` 설정으로 들어가서 따로 할 일이 없다.
+
+### 이 맥에서 직접 빌드할 때
+
+EAS 빌드에는 해당하지 않는다.
+
+- 프로젝트 폴더 이름(`식물물주기 알람`)에 한글이 있어 CocoaPods 가 `pod install` 에서 멈춘다.
+  영문 경로로 복사해서 빌드한다. JS 는 원래 폴더에서 띄운 Metro 가 준다.
+
+  ```bash
+  rsync -a --exclude node_modules --exclude /apps/mobile/ios --exclude /apps/mobile/android --exclude .git ./ /tmp/multtae/
+  cd /tmp/multtae && pnpm install --frozen-lockfile && cd apps/mobile
+  npx expo prebuild --clean --no-install
+  npx expo run:ios --no-bundler        # 또는 run:android --no-bundler --device <AVD 이름>
+  ```
+
+- Xcode 27(iOS 27 SDK)로 빌드한 앱은 UIScene 수명 주기를 쓰지 않으면 켜지자마자 멈춘다.
+  Expo 기본 틀이 아직 쓰지 않아 [plugins/with-scene-lifecycle.js](apps/mobile/plugins/with-scene-lifecycle.js)
+  가 prebuild 때 켠다. Expo 가 기본 틀을 바꾸면 이 플러그인은 아무것도 하지 않는다
+
 ## 4. 스토어에 올리기 (8-4)
 
 ```bash

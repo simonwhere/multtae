@@ -1,3 +1,4 @@
+export * from './alert';
 export * from './app-text';
 export * from './back-button';
 export * from './button';

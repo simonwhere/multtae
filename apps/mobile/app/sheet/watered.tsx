@@ -1,7 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Image } from 'expo-image';
 
@@ -21,7 +21,7 @@ import type { PhotoSource } from '@/photos/photo-store';
 import { planPostpone, planWatering } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
-import { AppText, Button, ChoiceCard, Notice, radius, spacing, TextButton, useColors } from '@/ui';
+import { AppText, Button, ChoiceCard, Notice, radius, showAlert, spacing, TextButton, useColors } from '@/ui';
 
 // 물 줬어요 시트 (SPEC 3.2): 흙 상태 3택(건너뛸 수 있다) + 잎이 처졌어요 + 완료.
 // 수경은 흙 상태 대신 "물이 탁했어요" 하나만 묻는다 (5.5). 비료 차례인 날에는 "비료도 줬어요"를 묻는다 (8.2).
@@ -133,7 +133,7 @@ export default function WateredSheet() {
   }
 
   function chooseSource() {
-    Alert.alert(ko.wateredSheet.addPhoto, undefined, [
+    showAlert(ko.wateredSheet.addPhoto, undefined, [
       { text: ko.spaceDetail.retakeCamera, onPress: () => void addPhoto('camera') },
       { text: ko.spaceDetail.retakeLibrary, onPress: () => void addPhoto('library') },
       { text: ko.common.cancel, style: 'cancel' },

@@ -36,8 +36,21 @@ export interface Backup {
 
 export type BackupTables = Omit<Backup, 'app' | 'version' | 'exportedAt' | 'appVersion'>;
 
+/** 기기마다 다른 설정. 파일로 옮기지 않고, 가져와도 이 기기의 값을 그대로 둔다 */
+export const DEVICE_ONLY_SETTINGS: readonly SettingKey[] = ['notification_asked'];
+
+export const isPortableSetting = (row: { key: SettingKey }): boolean =>
+  !DEVICE_ONLY_SETTINGS.includes(row.key);
+
 export function buildBackup(tables: BackupTables, appVersion: string, now: number): Backup {
-  return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: now, appVersion, ...tables };
+  return {
+    app: BACKUP_APP,
+    version: BACKUP_VERSION,
+    exportedAt: now,
+    appVersion,
+    ...tables,
+    settings: tables.settings.filter(isPortableSetting),
+  };
 }
 
 const rows = (value: unknown): Record<string, unknown>[] =>
@@ -93,10 +106,12 @@ export function parseBackup(text: string): Backup | null {
     photos: rows(raw.photos).filter(
       (row) => ofPlant(row) && isText(row.path) && isTime(row.takenAt),
     ) as unknown as NewPhoto[],
-    settings: rows(raw.settings).filter(
-      (row): row is { key: SettingKey; value: string } =>
-        isOneOf(SETTING_KEYS, row.key) && isString(row.value),
-    ),
+    settings: rows(raw.settings)
+      .filter(
+        (row): row is { key: SettingKey; value: string } =>
+          isOneOf(SETTING_KEYS, row.key) && isString(row.value),
+      )
+      .filter(isPortableSetting),
   };
 }
 

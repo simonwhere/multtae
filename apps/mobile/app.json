@@ -16,6 +16,11 @@
       "bundleIdentifier": "kr.multtae.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.kr.multtae.app"
+        ]
       }
     },
     "android": {
@@ -43,7 +48,13 @@
         }
       ],
       "expo-sqlite",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#2F5F49"
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -54,7 +65,36 @@
       ],
       "expo-background-task",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      "@bacons/apple-targets",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Today",
+              "label": "물때",
+              "description": "오늘 물 줄 식물을 보여 드려요",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "400dp",
+              "maxResizeHeight": "300dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
+            }
+          ]
+        }
+      ],
+      "./plugins/with-scene-lifecycle",
+      [
+        "./plugins/with-android-accent",
+        {
+          "light": "#2F5F49",
+          "dark": "#8FC7A5"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

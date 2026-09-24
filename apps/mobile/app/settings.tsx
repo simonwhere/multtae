@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { eraseAll, exportBackup, mergeBackup, pickBackup, replaceWithBackup } from '@/data/archive';
@@ -19,7 +19,7 @@ import { isWeatherUsable, temperatureSummary } from '@/weather/forecast';
 import { findRegion } from '@/weather/regions';
 import { useWeatherState } from '@/weather/store';
 import { showCachedWeather, syncWeather } from '@/weather/sync';
-import { AppText, BackButton, Card, Chevron, spacing, useColors } from '@/ui';
+import { AppText, BackButton, Card, Chevron, showAlert, spacing, useColors } from '@/ui';
 
 type TimeKey = 'notify_time' | 'bonsai_evening_time' | 'bonsai_winter_time' | 'dnd';
 /** 내보내기·가져오기·전체 삭제는 오래 걸릴 수 있어 한 번에 하나만 (SPEC 3.6) */
@@ -133,7 +133,7 @@ export default function SettingsScreen() {
     if (result.status !== 'picked') return;
 
     const { summary } = result.picked;
-    Alert.alert(t.importFound(summary.spaces, summary.plants), t.importChoose, [
+    showAlert(t.importFound(summary.spaces, summary.plants), t.importChoose, [
       { text: ko.common.cancel, style: 'cancel' },
       { text: t.importReplace, style: 'destructive', onPress: () => void runReplace(result.picked) },
       { text: t.importMerge, style: 'default', isPreferred: true, onPress: () => void runMerge(result.picked) },
@@ -179,7 +179,7 @@ export default function SettingsScreen() {
   }
 
   function confirm(title: string, body: string, confirmText: string, run: () => Promise<void>) {
-    Alert.alert(title, body, [
+    showAlert(title, body, [
       { text: ko.common.cancel, style: 'cancel' },
       { text: confirmText, style: 'destructive', onPress: () => void run() },
     ]);

@@ -17,6 +17,19 @@ export const ko = {
     allow: '알림 받기',
     later: '나중에',
   },
+  /** 홈 화면 위젯 (9-3). 문구는 앱이 미리 만들어 위젯에 넘긴다 */
+  widget: {
+    headline: '오늘 물 줄 식물',
+    none: '오늘은 물 줄 식물이 없어요',
+    more: (count: number) => `외 ${count}개`,
+    next: (name: string, date: string) => `다음은 ${name}, ${date}`,
+    empty: '식물을 등록하면 여기에 물 줄 날이 보여요',
+    /** 만들어 둔 날을 다 썼을 때. 앱을 열면 다시 만든다 */
+    stale: '앱을 열면 다시 맞춰요',
+    /** 위젯 목록에 보이는 이름과 설명. targets/widget/TodayWidget.swift 에도 같은 글자가 있다 */
+    galleryName: '물때',
+    galleryDescription: '오늘 물 줄 식물을 보여 드려요',
+  },
   common: {
     next: '다음',
     back: '이전',

@@ -4,6 +4,7 @@
  */
 import { events, photos, plants, plantTasks, settings, spaces, wateringLogs } from '../db/schema';
 import type { Database } from '../db/types';
+import { isPortableSetting } from './backup';
 import type { Backup, BackupTables } from './backup';
 import { planMerge } from './merge';
 import type { MergeResult } from './merge';
@@ -65,6 +66,8 @@ async function photoPaths(db: Database): Promise<string[]> {
  * 지워야 할 옛 사진 경로를 돌려준다.
  */
 export async function replaceAll(db: Database, backup: Backup): Promise<string[]> {
+  // 기기마다 다른 설정은 파일 것으로 바꾸지 않는다
+  const deviceOnly = (await db.select().from(settings)).filter((row) => !isPortableSetting(row));
   const oldPaths = await deleteAll(db);
 
   // 9-2 이전 파일에는 고친 시각이 없다. 마이그레이션 0005 처럼 등록한 때로 채운다
@@ -78,7 +81,8 @@ export async function replaceAll(db: Database, backup: Backup): Promise<string[]
   if (backup.events.length > 0) await db.insert(events).values(backup.events);
   if (backup.plantTasks.length > 0) await db.insert(plantTasks).values(backup.plantTasks);
   if (backup.photos.length > 0) await db.insert(photos).values(backup.photos);
-  if (backup.settings.length > 0) await db.insert(settings).values(backup.settings);
+  const nextSettings = [...backup.settings.filter(isPortableSetting), ...deviceOnly];
+  if (nextSettings.length > 0) await db.insert(settings).values(nextSettings);
 
   // 가져온 사진은 파일도 함께 오므로 그 경로는 지우지 않는다
   const kept = new Set(backup.photos.map((photo) => photo.path));

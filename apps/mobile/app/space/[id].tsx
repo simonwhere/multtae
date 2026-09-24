@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { gradeLight } from '@/api/light-grade';
@@ -33,6 +33,7 @@ import {
   Chevron,
   LightGauge,
   radius,
+  showAlert,
   spacing,
   Tag,
   TextButton,
@@ -126,7 +127,7 @@ export default function SpaceDetailScreen() {
   }
 
   function chooseRetake() {
-    Alert.alert(t.retake, undefined, [
+    showAlert(t.retake, undefined, [
       { text: t.retakeCamera, onPress: () => void retake('camera') },
       { text: t.retakeLibrary, onPress: () => void retake('library') },
       { text: ko.common.cancel, style: 'cancel' },
@@ -135,10 +136,10 @@ export default function SpaceDetailScreen() {
 
   function confirmDelete() {
     if (plants.length > 0) {
-      Alert.alert(t.delete, t.deleteBlocked);
+      showAlert(t.delete, t.deleteBlocked);
       return;
     }
-    Alert.alert(t.deleteTitle(withObject(space.name)), t.deleteBody, [
+    showAlert(t.deleteTitle(withObject(space.name)), t.deleteBody, [
       { text: ko.common.cancel, style: 'cancel' },
       {
         text: t.delete,

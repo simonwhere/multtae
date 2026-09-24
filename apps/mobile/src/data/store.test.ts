@@ -146,6 +146,32 @@ describe('합치기 (9-2)', () => {
   });
 });
 
+describe('기기마다 다른 설정 (9-4)', () => {
+  it('알림 권한을 물었는지는 파일로 옮기지 않고, 바꾸거나 합쳐도 이 기기 값을 둔다', async () => {
+    await setSetting(db, 'notification_asked', '1');
+    const backup = buildBackup(await readAll(db), '0.1.0', 1);
+    expect(backup.settings.map((row) => row.key)).toEqual(['notify_time']);
+
+    // 다른 기기에서 온 파일에 섞여 있어도 읽지 않는다
+    const foreign = parseBackup(
+      JSON.stringify({ ...backup, settings: [...backup.settings, { key: 'notification_asked', value: '1' }] }),
+    )!;
+    expect(foreign.settings.map((row) => row.key)).toEqual(['notify_time']);
+
+    await replaceAll(db, foreign);
+    expect(await getSetting(db, 'notification_asked')).toBe('1');
+
+    await mergeAll(db, foreign);
+    expect(await getSetting(db, 'notification_asked')).toBe('1');
+  });
+
+  it('전체 삭제하면 처음처럼 다시 묻는다', async () => {
+    await setSetting(db, 'notification_asked', '1');
+    await deleteAll(db);
+    expect(await getSetting(db, 'notification_asked')).toBeNull();
+  });
+});
+
 function backupTables(backup: ReturnType<typeof buildBackup>) {
   const { app, version, exportedAt, appVersion, ...tables } = backup;
   return tables;

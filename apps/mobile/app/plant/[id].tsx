@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { db } from '@/db/client';
@@ -26,19 +26,7 @@ import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { usePlantDetail } from '@/plants/use-plant-detail';
 import { findSeedSpecies } from '@/species/seed';
-import {
-  AppText,
-  BackButton,
-  Button,
-  Card,
-  Chevron,
-  DayGauge,
-  radius,
-  spacing,
-  Tag,
-  TextButton,
-  useColors,
-} from '@/ui';
+import { AppText, BackButton, Button, Card, Chevron, DayGauge, radius, showAlert, spacing, Tag, TextButton, useColors } from '@/ui';
 
 /** 상세에 보여 주는 최근 물주기 건수 (SPEC 3.4 이력) */
 const HISTORY_COUNT = 5;
@@ -114,7 +102,7 @@ export default function PlantDetailScreen() {
   }
 
   function confirmDelete() {
-    Alert.alert(t.deleteTitle, t.deleteBody, [
+    showAlert(t.deleteTitle, t.deleteBody, [
       { text: ko.common.cancel, style: 'cancel' },
       {
         text: t.deleteConfirm,

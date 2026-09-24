@@ -6,6 +6,7 @@ import { db } from '@/db/client';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { reportError } from '@/telemetry/report';
+import { syncWidget } from '@/widget/sync';
 
 import { expoNotifier, getPermissionState, requestPermission } from './expo-notifier';
 import { coalesce, rescheduleAll } from './scheduler';
@@ -13,9 +14,16 @@ import { useNotificationState } from './store';
 
 const requestReschedule = coalesce(async () => {
   const { now, utcOffsetMinutes, coefficients } = nowContext();
-  const result = await rescheduleAll(db, expoNotifier, { now, utcOffsetMinutes, coefficients });
-  // 계절이 바뀌어 다음 물주기를 고쳐 썼으면 열려 있는 화면이 다시 읽게 한다
-  if (result.updatedPlants > 0) usePlantUi.getState().bumpGarden();
+  try {
+    const result = await rescheduleAll(db, expoNotifier, { now, utcOffsetMinutes, coefficients });
+    // 계절이 바뀌어 다음 물주기를 고쳐 썼으면 열려 있는 화면이 다시 읽게 한다
+    if (result.updatedPlants > 0) usePlantUi.getState().bumpGarden();
+  } finally {
+    // 위젯은 다시 센 날짜로 그린다. 알림이 실패해도 위젯은 맞춘다 (9-3)
+    await syncWidget(now, utcOffsetMinutes).catch((error: unknown) => {
+      reportError({ where: 'widget.sync', error });
+    });
+  }
 });
 
 /** 알림을 다시 예약하고 끝날 때까지 기다린다. 백그라운드 작업처럼 끝을 알려야 하는 곳에서 쓴다 */

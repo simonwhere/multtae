@@ -1,4 +1,6 @@
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ko } from '@/i18n/ko';
@@ -50,11 +52,24 @@ export function RegistrationShell({
   // 모달이 올라오는 동안 SafeAreaView 는 하단 여백을 0 으로 재는 때가 있어 루트의 값을 직접 쓴다.
   const insets = useSafeAreaInsets();
 
+  // 안드로이드 뒤로 가기는 앞 단계로, 첫 단계면 닫기와 같게 한다. 온보딩에서 바로 온 등록은
+  // 아래에 깔린 화면이 없어 그냥 두면 앱이 닫힌다. 위에 다른 화면이 떠 있을 때는 그 화면에 맡긴다 (9-4)
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        (onBack ?? onClose)();
+        return true;
+      });
+      return () => subscription.remove();
+    }, [onBack, onClose]),
+  );
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.paper }]}>
-      {/* iOS 모달 시트는 화면 위에서 상단 여백만큼 내려와 있다. 그만큼 더 밀어 올려야 버튼이 키보드에 안 가린다 */}
+      {/* iOS 모달 시트는 화면 위에서 상단 여백만큼 내려와 있다. 그만큼 더 밀어 올려야 버튼이 키보드에 안 가린다.
+          안드로이드 15 부터는 앱이 화면 끝까지 그려져 키보드가 떠도 창이 줄지 않으므로 여기서 밀어 올린다 (9-4) */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         style={styles.screen}>
         {/* iOS 시트 안에서는 상단 여백이 0 이고, 전체 화면으로 뜨는 Android 에서는 상태 표시줄만큼 내려온다 */}

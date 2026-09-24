@@ -12,6 +12,8 @@ import { describe, expect, it } from 'vitest';
 const ALLOWED = [
   // 조사는 글자에 따라 갈리는 문법이라 말 자체다
   'src/lib/josa.ts',
+  // 한글 글자 범위로 줄바꿈을 다루는 곳. 문구가 아니다
+  'src/lib/keep-words.ts',
   // 서버에 넣을 SQL 을 만드는 파일. 주석이 SQL 문자열 안에 들어간다
   'src/coefficients/seed.ts',
   // 낱말 목록이 곧 데이터인 곳
