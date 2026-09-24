@@ -182,6 +182,25 @@ describe('종 선택과 식물군 (SPEC 4.2, 10.2)', () => {
     expect(resolveBaseInterval(bonsaiZz)).toBeNull();
     expect(resolveBaseInterval(apply(bonsaiZz, { type: 'bonsaiToggled', isBonsai: false }))).toBe(14);
   });
+
+  it('분재 수종에 정원수 기준 긴 주기가 붙어 오면 쓰지 않는다 (예전 서버 값이 기기에 남은 경우)', () => {
+    // 2026-09-24 이전 서버는 분재 수종에도 4~10일을 줬다. 분재 화분 기준은 3일 안쪽이다
+    const juniper = (baseInterval: number | null) =>
+      apply(empty, {
+        type: 'speciesChosen',
+        species: {
+          scientificName: 'Juniperus chinensis',
+          nameKo: '향나무',
+          groupCode: 'bonsai_conifer',
+          baseInterval,
+          bonsaiGroup: 'conifer',
+        },
+      });
+
+    expect(resolveBaseInterval(juniper(7))).toBeNull();
+    expect(resolveBaseInterval(juniper(3))).toBe(3);
+    expect(resolveBaseInterval(juniper(null))).toBeNull();
+  });
 });
 
 describe('별명', () => {

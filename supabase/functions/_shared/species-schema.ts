@@ -65,6 +65,12 @@ export type ValidationResult =
   | { ok: true; value: Species }
   | { ok: false; reason: string };
 
+/**
+ * 분재 화분은 작고 얕아 흙이 빨리 마른다. 분재군 기본값이 1.5~2일이라(SPEC 5.1) 종별 값도 이 안쪽이다.
+ * 앱의 plants/registration.ts 가 같은 값으로 오래된 기기 캐시를 거른다.
+ */
+export const BONSAI_MAX_BASE_INTERVAL = 3;
+
 /** 스키마는 맞지만 내용이 앞뒤가 안 맞는 경우 (10.4 상식 체크). 맞으면 null */
 function senseCheck(species: Species): string | null {
   const { group_code, base_interval, bonsai_group, care, winter_indoor_ok } = species;
@@ -78,6 +84,9 @@ function senseCheck(species: Species): string | null {
   }
   if (group_code === 'tropical' && care.temp_min !== null && care.temp_min < 0) {
     return 'tropical 인데 temp_min 이 영하입니다.';
+  }
+  if (isBonsai && base_interval !== null && base_interval > BONSAI_MAX_BASE_INTERVAL) {
+    return `분재인데 base_interval 이 ${BONSAI_MAX_BASE_INTERVAL}일을 넘습니다. 분재 화분 기준으로 주거나, 모르면 null 로 두세요. 땅이나 큰 화분 기준이 아닙니다.`;
   }
   if (isBonsai !== (bonsai_group !== null)) {
     return 'group_code 와 bonsai_group 이 어긋납니다. 분재 수종이면 둘 다 있어야 합니다.';

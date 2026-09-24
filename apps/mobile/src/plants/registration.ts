@@ -145,6 +145,12 @@ export function resolveGroupCode(draft: PlantDraft): GroupCode | null {
 }
 
 /**
+ * 분재 화분은 작고 얕아 흙이 빨리 마른다. 분재군 기본값이 1.5~2일이라(SPEC 5.1) 종별 값도 이 안쪽이다.
+ * 서버의 species-schema.ts 가 같은 값으로 생성본을 거르고, 여기서는 그 전에 기기에 남은 값을 거른다.
+ */
+export const BONSAI_MAX_BASE_INTERVAL = 3;
+
+/**
  * 종별 기본 주기. 없으면 null 이고 엔진이 식물군 기본값을 쓴다.
  * 일반 종을 분재로(또는 분재 수종을 일반 화분으로) 키우면 종별 값의 전제가 달라지므로 쓰지 않는다.
  */
@@ -152,6 +158,10 @@ export function resolveBaseInterval(draft: PlantDraft): number | null {
   const known = knownOf(draft);
   // 일반 종을 분재로(또는 분재 수종을 일반 화분으로) 키우면 종별 값의 전제가 달라지므로 쓰지 않는다
   if (!known || draft.isBonsai !== (known.bonsaiGroup !== null)) return null;
+  // 분재 화분에 정원수 기준 주기가 붙어 오면 분재를 말린다. 분재군 기본값으로 간다
+  if (draft.isBonsai && known.baseInterval !== null && known.baseInterval > BONSAI_MAX_BASE_INTERVAL) {
+    return null;
+  }
   return known.baseInterval;
 }
 

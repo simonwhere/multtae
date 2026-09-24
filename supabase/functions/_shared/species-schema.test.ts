@@ -95,6 +95,14 @@ describe('validateSpecies: 상식 체크 (SPEC.md 10.4)', () => {
     ).toBe(true);
   });
 
+  it('분재는 화분이 작아 흙이 빨리 마른다. 주기가 3일을 넘으면 거부하고, 비우면 분재군 기본값을 쓴다', () => {
+    const bonsai = { group_code: 'bonsai_conifer', bonsai_group: 'conifer' };
+
+    expect(reject({ ...bonsai, base_interval: 7 })).toBe(false);
+    expect(reject({ ...bonsai, base_interval: 3 })).toBe(true);
+    expect(reject({ ...bonsai, base_interval: null })).toBe(true);
+  });
+
   it('열대인데 최저 온도가 영하면 거부한다', () => {
     expect(reject({ care: { ...monstera().care, temp_min: -5 } })).toBe(false);
   });
