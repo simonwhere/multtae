@@ -284,16 +284,28 @@ export const ko = {
     data: '데이터',
     exportTitle: '내보내기',
     exportRow: '파일로 내보내기',
-    exportHint: '식물과 기록, 사진을 파일 하나로 묶어 드려요. 기기를 바꿀 때 가져오기로 그대로 옮길 수 있어요.',
+    exportHint: '식물과 기록, 사진을 파일 하나로 묶어 드려요. 가족에게 보내 함께 돌보거나, 기기를 바꿀 때 그대로 옮길 수 있어요.',
     exporting: '파일을 만드는 중이에요',
     exportEmpty: '아직 내보낼 것이 없어요',
     exportFailed: '파일을 만들지 못했어요. 다시 시도해 주세요.',
     exportUnavailable: '이 기기에서는 파일을 건넬 수 없어요.',
     importRow: '파일에서 가져오기',
     importing: '파일을 읽는 중이에요',
-    importTitle: '가져올까요',
-    importBody: '지금 기기에 있는 식물과 기록은 모두 지우고 파일에 있는 것으로 바꿔요. 되돌릴 수 없어요.',
-    importConfirm: '가져오기',
+    /** 가족과 나눈 파일 합치기 (9-2) */
+    importFound: (spaces: number, plants: number) => `공간 ${spaces}곳, 식물 ${plants}개가 든 파일이에요`,
+    importChoose:
+      '합치면 지금 기록은 그대로 두고 새 것만 더해요. 가족과 함께 돌볼 때 써요. 모두 바꾸면 지금 기록을 지우고 파일 것으로 바꿔요. 기기를 옮길 때 써요.',
+    importMerge: '합치기',
+    importReplace: '모두 바꾸기',
+    mergeAdded: (plants: number, records: number) =>
+      plants > 0 && records > 0
+        ? `합쳤어요. 식물 ${plants}개와 기록 ${records}건이 새로 들어왔어요.`
+        : plants > 0
+          ? `합쳤어요. 식물 ${plants}개가 새로 들어왔어요.`
+          : `합쳤어요. 기록 ${records}건이 새로 들어왔어요.`,
+    mergeUpdated: (plants: number) => `식물 ${plants}개는 최근 것으로 맞췄어요.`,
+    mergeUpdatedOnly: (plants: number) => `합쳤어요. 식물 ${plants}개를 최근 것으로 맞췄어요.`,
+    mergeSame: '이미 같은 내용이에요.',
     importDone: (spaces: number, plants: number) => `공간 ${spaces}곳, 식물 ${plants}개를 가져왔어요`,
     importInvalid: '물때에서 내보낸 파일이 아니에요. 다른 파일을 골라 주세요.',
     importFailed: '가져오지 못했어요. 다시 시도해 주세요.',

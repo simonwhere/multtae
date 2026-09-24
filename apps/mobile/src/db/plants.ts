@@ -2,7 +2,7 @@ import { asc, count, eq } from 'drizzle-orm';
 
 import { events, photos, plants, spaces } from './schema';
 import type { NewPhoto, NewPlant, Plant, Space } from './schema';
-import type { Database } from './types';
+import type { Database, UpdateOptions } from './types';
 
 export interface PlantWithSpace {
   plant: Plant;
@@ -33,8 +33,16 @@ export async function getPlantWithSpace(
 /** 식물에서 고칠 수 있는 값. id 와 등록 시각은 바꾸지 않는다 */
 export type PlantPatch = Partial<Omit<Plant, 'id' | 'createdAt'>>;
 
-export async function updatePlant(db: Database, plantId: string, patch: PlantPatch): Promise<void> {
-  await db.update(plants).set(patch).where(eq(plants.id, plantId));
+export async function updatePlant(
+  db: Database,
+  plantId: string,
+  patch: PlantPatch,
+  { touch = true, now = Date.now() }: UpdateOptions = {},
+): Promise<void> {
+  await db
+    .update(plants)
+    .set(touch ? { ...patch, updatedAt: now } : patch)
+    .where(eq(plants.id, plantId));
 }
 
 export async function countPlants(db: Database): Promise<number> {
@@ -51,7 +59,10 @@ export async function insertPlant(
   plant: NewPlant,
   plantPhotos: NewPhoto[],
 ): Promise<void> {
-  await db.insert(plants).values(plant).onConflictDoNothing({ target: plants.id });
+  await db
+    .insert(plants)
+    .values({ ...plant, updatedAt: plant.updatedAt ?? plant.createdAt })
+    .onConflictDoNothing({ target: plants.id });
   if (plantPhotos.length > 0) {
     await db.insert(photos).values(plantPhotos).onConflictDoNothing({ target: photos.id });
   }

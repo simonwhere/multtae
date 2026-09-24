@@ -36,6 +36,13 @@
       "when": 1790080570665,
       "tag": "0004_watering_due_at",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790260358660,
+      "tag": "0005_updated_at",
+      "breakpoints": true
     }
   ]
 }

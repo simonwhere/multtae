@@ -13,6 +13,7 @@ const space = (patch: Partial<Space>): Space => ({
   lightSource: 'default',
   aiEvidence: null,
   createdAt: 1,
+  updatedAt: 1,
   ...patch,
 });
 

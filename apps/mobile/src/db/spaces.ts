@@ -2,7 +2,7 @@ import { asc, count, eq } from 'drizzle-orm';
 
 import { plants, spaces } from './schema';
 import type { NewSpace, Space } from './schema';
-import type { Database } from './types';
+import type { Database, UpdateOptions } from './types';
 
 /** 등록한 순서대로 */
 export async function listSpaces(db: Database): Promise<Space[]> {
@@ -21,8 +21,12 @@ export async function updateSpace(
   db: Database,
   spaceId: string,
   patch: SpacePatch,
+  { touch = true, now = Date.now() }: UpdateOptions = {},
 ): Promise<void> {
-  await db.update(spaces).set(patch).where(eq(spaces.id, spaceId));
+  await db
+    .update(spaces)
+    .set(touch ? { ...patch, updatedAt: now } : patch)
+    .where(eq(spaces.id, spaceId));
 }
 
 /**
@@ -53,5 +57,8 @@ export async function countSpaces(db: Database): Promise<number> {
  * 저장 직후 앱이 꺼져 초안이 남았다가 다시 저장해도 공간이 둘이 되지 않는다.
  */
 export async function insertSpace(db: Database, space: NewSpace): Promise<void> {
-  await db.insert(spaces).values(space).onConflictDoNothing({ target: spaces.id });
+  await db
+    .insert(spaces)
+    .values({ ...space, updatedAt: space.updatedAt ?? space.createdAt })
+    .onConflictDoNothing({ target: spaces.id });
 }

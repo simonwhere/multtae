@@ -73,6 +73,11 @@ export const spaces = sqliteTable('spaces', {
   /** light-grade 응답 JSON (SPEC 9.2) */
   aiEvidence: text('ai_evidence', { mode: 'json' }),
   createdAt: integer('created_at').notNull(),
+  /**
+   * 사람이 마지막으로 고친 시각. 가족과 나눈 파일을 합칠 때 어느 쪽이 최근인지 본다 (9-2).
+   * 알림을 다시 짜며 저절로 바뀐 것은 치지 않는다
+   */
+  updatedAt: integer('updated_at').notNull().default(0),
 });
 
 export const plants = sqliteTable(
@@ -119,6 +124,8 @@ export const plants = sqliteTable(
     postponeCount: integer('postpone_count').notNull().default(0),
     coverPhotoPath: text('cover_photo_path'),
     createdAt: integer('created_at').notNull(),
+    /** 사람이 마지막으로 고친 시각 (spaces.updatedAt 과 같다, 9-2) */
+    updatedAt: integer('updated_at').notNull().default(0),
   },
   (table) => [
     index('plants_space_id_idx').on(table.spaceId),

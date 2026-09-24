@@ -4,7 +4,8 @@ import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { eraseAll, exportBackup, importBackup } from '@/data/archive';
+import { eraseAll, exportBackup, mergeBackup, pickBackup, replaceWithBackup } from '@/data/archive';
+import type { PickedBackup } from '@/data/archive';
 import { db } from '@/db/client';
 import { getSetting } from '@/db/settings';
 import { toCalendarDate } from '@/engine';
@@ -121,16 +122,51 @@ export default function SettingsScreen() {
     else if (result === 'failed') setDataNote(t.exportFailed);
   }
 
+  /** 파일을 먼저 읽고, 합칠지 모두 바꿀지 고르게 한다 (9-2) */
   async function runImport() {
     setJob('import');
     setDataNote(null);
-    const result = await importBackup();
-    if (result.status === 'imported') await afterDataChange();
+    const result = await pickBackup();
     setJob(null);
-    if (result.status === 'imported') {
-      setDataNote(t.importDone(result.summary.spaces, result.summary.plants));
-    } else if (result.status === 'invalid') setDataNote(t.importInvalid);
+    if (result.status === 'invalid') setDataNote(t.importInvalid);
     else if (result.status === 'failed') setDataNote(t.importFailed);
+    if (result.status !== 'picked') return;
+
+    const { summary } = result.picked;
+    Alert.alert(t.importFound(summary.spaces, summary.plants), t.importChoose, [
+      { text: ko.common.cancel, style: 'cancel' },
+      { text: t.importReplace, style: 'destructive', onPress: () => void runReplace(result.picked) },
+      { text: t.importMerge, style: 'default', isPreferred: true, onPress: () => void runMerge(result.picked) },
+    ]);
+  }
+
+  async function runMerge(picked: PickedBackup) {
+    setJob('import');
+    const merged = await mergeBackup(picked);
+    if (merged) await afterDataChange();
+    setJob(null);
+    if (!merged) {
+      setDataNote(t.importFailed);
+      return;
+    }
+    const { added, updated } = merged;
+    const note =
+      added.plants + added.records > 0
+        ? [t.mergeAdded(added.plants, added.records), updated.plants > 0 ? t.mergeUpdated(updated.plants) : null]
+            .filter(Boolean)
+            .join(' ')
+        : updated.plants > 0
+          ? t.mergeUpdatedOnly(updated.plants)
+          : t.mergeSame;
+    setDataNote(note);
+  }
+
+  async function runReplace(picked: PickedBackup) {
+    setJob('import');
+    const done = await replaceWithBackup(picked);
+    if (done) await afterDataChange();
+    setJob(null);
+    setDataNote(done ? t.importDone(picked.summary.spaces, picked.summary.plants) : t.importFailed);
   }
 
   async function runErase() {
@@ -220,7 +256,7 @@ export default function SettingsScreen() {
             label={t.importRow}
             value={job === 'import' ? t.importing : ''}
             onPress={
-              job ? undefined : () => confirm(t.importTitle, t.importBody, t.importConfirm, runImport)
+              job ? undefined : () => void runImport()
             }
           />
           <Divider />

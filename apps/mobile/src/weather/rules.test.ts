@@ -29,6 +29,7 @@ function space(id: string, spaceType: Space['spaceType']): Space {
     lightSource: 'default',
     aiEvidence: null,
     createdAt: 1,
+    updatedAt: 1,
   };
 }
 
@@ -58,6 +59,7 @@ function plant(nickname: string, patch: Partial<Plant> = {}): Plant {
     postponeCount: 0,
     coverPhotoPath: null,
     createdAt: 1,
+    updatedAt: 1,
     ...patch,
   };
 }

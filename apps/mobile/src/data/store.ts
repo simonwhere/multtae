@@ -5,6 +5,8 @@
 import { events, photos, plants, plantTasks, settings, spaces, wateringLogs } from '../db/schema';
 import type { Database } from '../db/types';
 import type { Backup, BackupTables } from './backup';
+import { planMerge } from './merge';
+import type { MergeResult } from './merge';
 
 /** 기기 안의 모든 표를 읽는다 */
 export async function readAll(db: Database): Promise<BackupTables> {
@@ -65,8 +67,13 @@ async function photoPaths(db: Database): Promise<string[]> {
 export async function replaceAll(db: Database, backup: Backup): Promise<string[]> {
   const oldPaths = await deleteAll(db);
 
-  if (backup.spaces.length > 0) await db.insert(spaces).values(backup.spaces);
-  if (backup.plants.length > 0) await db.insert(plants).values(backup.plants);
+  // 9-2 이전 파일에는 고친 시각이 없다. 마이그레이션 0005 처럼 등록한 때로 채운다
+  const edited = <T extends { createdAt: number; updatedAt?: number }>(row: T) => ({
+    ...row,
+    updatedAt: row.updatedAt ?? row.createdAt,
+  });
+  if (backup.spaces.length > 0) await db.insert(spaces).values(backup.spaces.map(edited));
+  if (backup.plants.length > 0) await db.insert(plants).values(backup.plants.map(edited));
   if (backup.wateringLogs.length > 0) await db.insert(wateringLogs).values(backup.wateringLogs);
   if (backup.events.length > 0) await db.insert(events).values(backup.events);
   if (backup.plantTasks.length > 0) await db.insert(plantTasks).values(backup.plantTasks);
@@ -79,4 +86,17 @@ export async function replaceAll(db: Database, backup: Backup): Promise<string[]
   for (const plant of backup.plants) if (plant.coverPhotoPath) kept.add(plant.coverPhotoPath);
   for (const event of backup.events) if (event.photoPath) kept.add(event.photoPath);
   return oldPaths.filter((path) => !kept.has(path));
+}
+
+/**
+ * 가족과 나눈 파일을 합친다 (9-2). 지금 기록은 두고 새 것만 더하고, 같은 식물·공간은
+ * merge.ts 의 규칙대로 맞춘다. 지워야 할 옛 사진 경로(사진 상한을 넘은 것 등)를 함께 돌려준다.
+ */
+export async function mergeAll(
+  db: Database,
+  incoming: Backup,
+): Promise<{ result: MergeResult; removedPaths: string[] }> {
+  const result = planMerge(await readAll(db), incoming);
+  const removedPaths = await replaceAll(db, { ...incoming, ...result.tables });
+  return { result, removedPaths };
 }

@@ -27,7 +27,7 @@ export async function saveSpacePatch(
     .map((item) => item.plant);
   const changes = planSpaceReschedule(plants, next, context);
   for (const change of changes) {
-    await updatePlant(db, change.id, { nextWaterAt: change.nextWaterAt });
+    await updatePlant(db, change.id, { nextWaterAt: change.nextWaterAt }, { touch: false });
   }
   return changes.length;
 }

@@ -15,7 +15,8 @@ import { deletePhoto } from '@/photos/photo-store';
 
 import { backupFileName, backupSummary, buildBackup, parseBackup } from './backup';
 import type { Backup, BackupTables } from './backup';
-import { deleteAll, readAll, replaceAll } from './store';
+import type { MergeResult } from './merge';
+import { deleteAll, mergeAll, readAll, replaceAll } from './store';
 
 /** 압축 파일 안의 기록 파일 이름 */
 const DATA_FILE = 'multtae.json';
@@ -68,15 +69,22 @@ export async function exportBackup(
   }
 }
 
-export type ImportResult =
-  | { status: 'imported'; summary: ReturnType<typeof backupSummary> }
+/** 고른 파일. 합칠지 바꿀지 고르는 동안 들고 있는다 */
+export interface PickedBackup {
+  backup: Backup;
+  photos: { path: string; bytes: Uint8Array }[];
+  summary: ReturnType<typeof backupSummary>;
+}
+
+export type PickResult =
+  | { status: 'picked'; picked: PickedBackup }
   | { status: 'canceled' }
   /** 우리 앱의 파일이 아니거나 읽을 수 없다 */
   | { status: 'invalid' }
   | { status: 'failed' };
 
-/** 고른 파일로 기기 안의 기록을 통째로 바꾼다. 되돌릴 수 없다 */
-export async function importBackup(): Promise<ImportResult> {
+/** 파일을 골라 읽기만 한다. 기기 안의 기록은 아직 그대로다 */
+export async function pickBackup(): Promise<PickResult> {
   try {
     const picked = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
     const asset = picked.canceled ? null : picked.assets[0];
@@ -87,7 +95,7 @@ export async function importBackup(): Promise<ImportResult> {
       asset.name?.toLowerCase().endsWith('.zip') === true || asset.mimeType === 'application/zip';
 
     let backup: Backup | null = null;
-    let photos: { path: string; bytes: Uint8Array }[] = [];
+    const photos: { path: string; bytes: Uint8Array }[] = [];
 
     if (isZip) {
       const zip = await JSZip.loadAsync(await file.bytes());
@@ -103,13 +111,42 @@ export async function importBackup(): Promise<ImportResult> {
     }
     if (!backup) return { status: 'invalid' };
 
-    const removed = await replaceAll(db, backup);
-    removed.forEach(deletePhoto);
-    for (const photo of photos) writePhoto(photo.path, photo.bytes);
-
-    return { status: 'imported', summary: backupSummary(backup) };
+    return { status: 'picked', picked: { backup, photos, summary: backupSummary(backup) } };
   } catch {
     return { status: 'failed' };
+  }
+}
+
+/** 기기 안의 기록을 파일 것으로 통째로 바꾼다. 기기를 옮길 때 쓴다. 되돌릴 수 없다 */
+export async function replaceWithBackup(picked: PickedBackup): Promise<boolean> {
+  try {
+    const removed = await replaceAll(db, picked.backup);
+    removed.forEach(deletePhoto);
+    for (const photo of picked.photos) writePhoto(photo.path, photo.bytes);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 가족이 보낸 파일을 합친다 (9-2). 지금 기록은 두고 새 것만 더한다.
+ * 사진은 합친 결과가 쓰는 것 중 기기에 없는 것만 적는다.
+ */
+export async function mergeBackup(picked: PickedBackup): Promise<MergeResult | null> {
+  try {
+    const { result, removedPaths } = await mergeAll(db, picked.backup);
+    removedPaths.forEach(deletePhoto);
+
+    const used = new Set(photoPathsOf(result.tables));
+    for (const photo of picked.photos) {
+      if (used.has(photo.path) && !new File(Paths.document, photo.path).exists) {
+        writePhoto(photo.path, photo.bytes);
+      }
+    }
+    return result;
+  } catch {
+    return null;
   }
 }
 

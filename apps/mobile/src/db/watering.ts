@@ -4,7 +4,7 @@ import { updatePlant } from './plants';
 import type { PlantPatch } from './plants';
 import { plants, wateringLogs } from './schema';
 import type { NewWateringLog, WateringLog } from './schema';
-import type { Database } from './types';
+import type { Database, UpdateOptions } from './types';
 
 /**
  * "물 줬어요": 기록을 남기고 식물을 갱신한다. 기록을 먼저 넣고, 같은 id 는 무시한다.
@@ -15,9 +15,10 @@ export async function recordWatering(
   plantId: string,
   patch: PlantPatch,
   log: NewWateringLog,
+  options?: UpdateOptions,
 ): Promise<void> {
   await db.insert(wateringLogs).values(log).onConflictDoNothing({ target: wateringLogs.id });
-  await updatePlant(db, plantId, patch);
+  await updatePlant(db, plantId, patch, options);
 }
 
 export interface WateringWithPlant {

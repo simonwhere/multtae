@@ -79,7 +79,8 @@ export async function rescheduleAll(
       now,
       logId: `rain-${item.plant.id}-${dateKey(context.today)}`,
     });
-    await recordWatering(db, item.plant.id, plan.plantPatch, plan.log);
+    // 비는 사람이 고친 것이 아니다. 합칠 때 최근 판단에 넣지 않는다 (9-2)
+    await recordWatering(db, item.plant.id, plan.plantPatch, plan.log, { touch: false });
     item.plant = { ...item.plant, ...plan.plantPatch };
     updatedPlants += 1;
   }
@@ -88,7 +89,7 @@ export async function rescheduleAll(
   for (const item of items) {
     const patch = planReschedule(item.plant, item.space, context);
     if (!patch) continue;
-    await updatePlant(db, item.plant.id, patch);
+    await updatePlant(db, item.plant.id, patch, { touch: false });
     item.plant = { ...item.plant, ...patch };
     updatedPlants += 1;
   }

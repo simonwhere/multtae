@@ -203,6 +203,22 @@ describe('업그레이드: 첫 버전(0000) DB 에 이후 마이그레이션 적
     expect(sqlite.prepare('select count(*) as n from spaces').get()).toMatchObject({ n: 1 });
   });
 
+  it('0005: 이미 있던 식물·공간은 등록한 때를 마지막으로 고친 때로 채운다 (9-2 합치기)', () => {
+    const sqlite = openTestDatabase();
+    applyMigrations(sqlite, { to: 5 });
+    sqlite.exec(`
+      insert into spaces (id, name, direction, space_type, light_grade, light_source, created_at)
+        values ('space-1', '남향 거실 창가', 'S', 'indoor_window', 'high', 'default', 1000);
+      insert into plants (id, space_id, nickname, group_code, pot_size, soil_type, learn_factor, last_watered_at, created_at)
+        values ('plant-1', 'space-1', '몬스테라', 'tropical', 'm', 'potting', 1, 2000, 1500);
+    `);
+
+    applyMigrations(sqlite, { from: 5 });
+
+    expect(sqlite.prepare('select updated_at from spaces').get()).toMatchObject({ updated_at: 1000 });
+    expect(sqlite.prepare('select updated_at from plants').get()).toMatchObject({ updated_at: 1500 });
+  });
+
   it('업그레이드한 DB 와 새로 설치한 DB 의 모양이 같다', () => {
     const upgraded = openTestDatabase();
     applyMigrations(upgraded, { to: 1 });

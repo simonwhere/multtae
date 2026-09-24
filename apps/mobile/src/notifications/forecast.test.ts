@@ -21,6 +21,7 @@ const livingRoom: Space = {
   lightSource: 'default',
   aiEvidence: null,
   createdAt: 1,
+  updatedAt: 1,
 };
 
 function item(patch: Partial<Plant>): PlantWithSpace {
@@ -47,6 +48,7 @@ function item(patch: Partial<Plant>): PlantWithSpace {
       postponeCount: 0,
       coverPhotoPath: null,
       createdAt: 1,
+      updatedAt: 1,
       ...patch,
     },
   };

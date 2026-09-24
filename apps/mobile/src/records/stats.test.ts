@@ -37,6 +37,7 @@ function plant(patch: Partial<Plant> = {}): Plant {
     postponeCount: 0,
     coverPhotoPath: null,
     createdAt: 1,
+    updatedAt: 1,
     ...patch,
   };
 }
