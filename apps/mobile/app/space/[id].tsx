@@ -66,7 +66,7 @@ export default function SpaceDetailScreen() {
   const [retaking, setRetaking] = useState(false);
   const [retakeFailed, setRetakeFailed] = useState(false);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/spaces'));
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/plants'));
 
   if (detail === null || detail === 'missing') {
     return (

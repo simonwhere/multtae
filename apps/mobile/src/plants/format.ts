@@ -49,3 +49,15 @@ export function plantCardLabel(input: {
   const due = input.done ? ko.today.doneBadge : speakDaysLeft(input.daysLeft);
   return [input.name, input.note, due].join(', ');
 }
+
+/** 오늘 탭 날짜 아래 한 줄 (SPEC 3.2, 10-4): "밀린 식물 1개, 오늘 2개, 3일 안에 3개 더".
+ *  밀림·오늘이 없으면 null 이다. 그때는 목록이 "오늘은 물 줄 식물이 없어요"를 말한다 */
+export function todaySummary(counts: { overdue: number; due: number; upcoming: number }): string | null {
+  const t = ko.today.summary;
+  const parts: string[] = [];
+  if (counts.overdue > 0) parts.push(t.overdue(counts.overdue));
+  if (counts.due > 0) parts.push(counts.overdue > 0 ? t.dueAfterOverdue(counts.due) : t.due(counts.due));
+  if (parts.length === 0) return null;
+  if (counts.upcoming > 0) parts.push(t.upcoming(counts.upcoming));
+  return parts.join(', ');
+}

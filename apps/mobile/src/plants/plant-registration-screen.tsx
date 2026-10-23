@@ -118,6 +118,9 @@ function SpeciesStep({
   const [notFound, setNotFound] = useState(false);
   const { results, searching: looking } = useSpeciesSearch(query);
   const chosen = draft.species;
+  const chosenKnown = chosen?.kind === 'known' ? chosen.species : null;
+  // 이름으로 찾는 목록은 길다. 고른 뒤에는 그 종만 남기고 접어, 분재 여부가 바로 아래에 오게 한다 (10-4)
+  const [showAll, setShowAll] = useState(false);
   const t = ko.plantRegister.species;
   const { state, choosing } = identify;
 
@@ -149,6 +152,7 @@ function SpeciesStep({
   // 인식 결과가 있고 아직 검색으로 넘어가지 않았다
   const showCandidates = !searching && state.status === 'done' && state.candidates.length > 0;
   const failed = !searching && (state.status === 'failed' || (state.status === 'done' && state.candidates.length === 0));
+  const collapsed = !showCandidates && chosenKnown !== null && !showAll;
 
   return (
     <View style={styles.stack}>
@@ -192,7 +196,20 @@ function SpeciesStep({
 
       {notFound ? <Notice message={t.notFound} /> : null}
 
-      {searching || failed || state.status === 'idle' ? (
+      {collapsed && chosenKnown ? (
+        <View style={styles.stack}>
+          <ChoiceCard
+            label={chosenKnown.nameKo}
+            hint={chosenKnown.scientificName}
+            hintVariant="scientific"
+            selected
+            onPress={() => setShowAll(true)}
+          />
+          <TextButton label={t.changeSpecies} onPress={() => setShowAll(true)} />
+        </View>
+      ) : null}
+
+      {(searching || failed || state.status === 'idle') && !collapsed ? (
         <>
           <TextField
             label={t.search}
@@ -219,7 +236,10 @@ function SpeciesStep({
                 selected={
                   chosen?.kind === 'known' && chosen.species.scientificName === species.scientificName
                 }
-                onPress={() => dispatch({ type: 'speciesChosen', species })}
+                onPress={() => {
+                  setShowAll(false);
+                  dispatch({ type: 'speciesChosen', species });
+                }}
               />
             ))}
             {results.length === 0 ? (
@@ -243,6 +263,22 @@ function SpeciesStep({
           ))}
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/** 화분과 흙을 한 화면에서 (10-4) */
+function PotSoilStep({ draft, dispatch }: { draft: PlantDraft; dispatch: Dispatch }) {
+  return (
+    <View style={styles.sections}>
+      <View style={styles.stack}>
+        <AppText variant="label">{ko.plantRegister.potSoil.pot}</AppText>
+        <PotStep draft={draft} dispatch={dispatch} />
+      </View>
+      <View style={styles.stack}>
+        <AppText variant="label">{ko.plantRegister.potSoil.soil}</AppText>
+        <SoilStep draft={draft} dispatch={dispatch} />
+      </View>
     </View>
   );
 }
@@ -508,9 +544,16 @@ export function PlantRegistrationScreen() {
           onRemove={registration.removePhoto}
         />
       ) : null}
-      {draft.step === 'species' ? <SpeciesStep draft={draft} dispatch={dispatch} identify={identify} /> : null}
-      {draft.step === 'pot' ? <PotStep draft={draft} dispatch={dispatch} /> : null}
-      {draft.step === 'soil' ? <SoilStep draft={draft} dispatch={dispatch} /> : null}
+      {draft.step === 'species' ? (
+        <View style={styles.sections}>
+          <SpeciesStep draft={draft} dispatch={dispatch} identify={identify} />
+          {/* 종을 고르면 그 자리에서 분재로 키우는지 묻는다. 따로 화면을 두지 않는다 (10-4) */}
+          {draft.species?.kind === 'known' || (draft.species?.groupCode ?? null) !== null ? (
+            <BonsaiStep draft={draft} dispatch={dispatch} />
+          ) : null}
+        </View>
+      ) : null}
+      {draft.step === 'potSoil' ? <PotSoilStep draft={draft} dispatch={dispatch} /> : null}
       {draft.step === 'space' ? (
         <SpaceStep
           draft={draft}
@@ -519,7 +562,6 @@ export function PlantRegistrationScreen() {
           onRegisterSpace={() => router.push('/register/space')}
         />
       ) : null}
-      {draft.step === 'bonsai' ? <BonsaiStep draft={draft} dispatch={dispatch} /> : null}
       {draft.step === 'finish' ? (
         <FinishStep
           draft={draft}
@@ -538,6 +580,9 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: spacing.md,
+  },
+  sections: {
+    gap: spacing.xl,
   },
   row: {
     flexDirection: 'row',

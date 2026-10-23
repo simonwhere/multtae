@@ -10,7 +10,7 @@ import { recordWatering } from '@/db/watering';
 import { canPostpone, toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
 import { askPermissionOnce, NotificationBanner, rescheduleSoon } from '@/notifications';
-import { formatDottedDate, formatMonthDay, formatWeekday } from '@/plants/format';
+import { formatDottedDate, formatMonthDay, formatWeekday, todaySummary } from '@/plants/format';
 import { PlantCard } from '@/plants/plant-card';
 import { SwipeRow } from '@/plants/swipe-row';
 import { classifyToday, planPostpone, planWatering } from '@/plants/today';
@@ -36,24 +36,6 @@ function SectionTitle({ title }: { title: string }) {
     <AppText variant="label" accessibilityRole="header" style={styles.sectionTitle}>
       {title}
     </AppText>
-  );
-}
-
-/** 밀림·오늘·다가옴이 몇 개인지. 점의 색과 함께 글자로도 말한다 (SPEC 3.2, 15) */
-function CountChip({ label, count, dot }: { label: string; count: number; dot: string }) {
-  const colors = useColors();
-
-  return (
-    <View
-      accessible
-      accessibilityLabel={`${label} ${count}`}
-      style={[styles.chip, { backgroundColor: colors.surface, borderColor: colors.hair }]}>
-      <View style={styles.chipLabel}>
-        <View style={[styles.dot, { backgroundColor: dot }]} />
-        <AppText variant="caption">{label}</AppText>
-      </View>
-      <AppText variant="numeralSm">{count}</AppText>
-    </View>
   );
 }
 
@@ -260,11 +242,15 @@ export default function TodayScreen() {
           <Button label={ko.today.registerPlant} onPress={() => router.push('/register/plant')} />
         </View>
       ) : (
-        <View style={styles.chips}>
-          <CountChip label={ko.today.overdue} count={sections.overdue.length} dot={colors.berry} />
-          <CountChip label={ko.today.title} count={sections.due.length} dot={colors.accent} />
-          <CountChip label={ko.today.upcoming} count={sections.upcoming.length} dot={colors.sprig} />
-        </View>
+        // 숫자 카드 세 개 대신 한 줄 (10-4). 밀림·오늘이 없으면 목록의 allClear 가 말한다
+        (() => {
+          const summary = todaySummary({
+            overdue: sections.overdue.length,
+            due: sections.due.length,
+            upcoming: sections.upcoming.length,
+          });
+          return summary ? <AppText style={styles.summary}>{summary}</AppText> : null;
+        })()
       )}
       {bulk.length >= 2 ? (
         <Button label={ko.today.waterAll(bulk.length)} variant="secondary" onPress={confirmWaterAll} />
@@ -421,28 +407,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  chips: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+  summary: {
     marginTop: spacing.xs,
-  },
-  chip: {
-    flex: 1,
-    gap: spacing.xs,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md + 2,
-    paddingVertical: spacing.md,
-  },
-  chipLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs + 2,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    marginHorizontal: spacing.xs,
   },
   sectionTitle: {
     marginTop: spacing.md,

@@ -89,6 +89,22 @@ function PhotoStep({
   );
 }
 
+/** 방향과 자리를 한 화면에서 묻는다 (10-4) */
+function PlaceStep({ draft, dispatch }: { draft: SpaceDraft; dispatch: Dispatch }) {
+  return (
+    <View style={styles.sections}>
+      <View style={styles.stack}>
+        <AppText variant="label">{ko.spaceRegister.place.direction}</AppText>
+        <DirectionStep draft={draft} dispatch={dispatch} />
+      </View>
+      <View style={styles.stack}>
+        <AppText variant="label">{ko.spaceRegister.place.type}</AppText>
+        <TypeStep draft={draft} dispatch={dispatch} />
+      </View>
+    </View>
+  );
+}
+
 function DirectionStep({ draft, dispatch }: { draft: SpaceDraft; dispatch: Dispatch }) {
   const choice = (direction: Direction) => (
     <ChoiceCard
@@ -243,7 +259,7 @@ function NameStep({
   );
 }
 
-/** 공간 등록 4단계 + 이름·저장 (SPEC.md 4.1). 한 화면에 한 질문, 진행 표시는 차오르는 흙 게이지 (14.5) */
+/** 공간 등록 3화면: 사진, 자리(방향·유형), 확인(빛·이름) (SPEC.md 4.1, 10-4). 진행 표시는 차오르는 흙 게이지 (14.5) */
 export function SpaceRegistrationScreen() {
   const router = useRouter();
   const colors = useColors();
@@ -289,13 +305,15 @@ export function SpaceRegistrationScreen() {
           onPick={(source) => void registration.pickPhoto(source)}
         />
       ) : null}
-      {draft.step === 'direction' ? <DirectionStep draft={draft} dispatch={dispatch} /> : null}
-      {draft.step === 'type' ? <TypeStep draft={draft} dispatch={dispatch} /> : null}
-      {draft.step === 'light' ? (
-        <LightStep draft={draft} reading={registration.readingLight} dispatch={dispatch} />
-      ) : null}
-      {draft.step === 'name' ? (
-        <NameStep draft={draft} existingNames={registration.existingNames} dispatch={dispatch} />
+      {draft.step === 'place' ? <PlaceStep draft={draft} dispatch={dispatch} /> : null}
+      {/* 빛 확인과 이름을 한 화면에서 (10-4). 사진을 읽는 동안에는 이름 칸도 기다린다 */}
+      {draft.step === 'confirm' ? (
+        <View style={styles.sections}>
+          <LightStep draft={draft} reading={registration.readingLight} dispatch={dispatch} />
+          {registration.readingLight ? null : (
+            <NameStep draft={draft} existingNames={registration.existingNames} dispatch={dispatch} />
+          )}
+        </View>
       ) : null}
     </RegistrationShell>
   );
@@ -307,6 +325,9 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: spacing.md,
+  },
+  sections: {
+    gap: spacing.xl,
   },
   row: {
     flexDirection: 'row',

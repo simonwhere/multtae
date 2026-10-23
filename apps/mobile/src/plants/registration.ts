@@ -30,8 +30,16 @@ import { ko } from '../i18n/ko';
 import { uniqueName } from '../lib/unique-name';
 import { isBoolean, isNullOr, isOneOf, isString, parseJsonObject } from '../lib/validate';
 
-export const PLANT_STEPS = ['photo', 'species', 'pot', 'soil', 'space', 'bonsai', 'finish'] as const;
+/** 사진 → 종(분재 여부 포함) → 화분과 흙 → 공간 → 확인. 일곱 화면을 다섯으로 줄였다 (10-4) */
+export const PLANT_STEPS = ['photo', 'species', 'potSoil', 'space', 'finish'] as const;
 export type PlantStep = (typeof PLANT_STEPS)[number];
+
+/** 10-4 전에 저장된 초안의 단계 이름. 이어서 할 수 있게 새 단계로 옮긴다 */
+const LEGACY_STEPS: Record<string, PlantStep> = {
+  pot: 'potSoil',
+  soil: 'potSoil',
+  bonsai: 'space',
+};
 
 /** SPEC 4.2: 식물 최대 200개, 사진 최대 3장 */
 export const MAX_PLANTS = 200;
@@ -179,15 +187,16 @@ function isStepFilled(draft: PlantDraft, step: PlantStep): boolean {
     case 'photo':
       return draft.photos.length > 0;
     case 'species':
-      return draft.species?.kind === 'known' || (draft.species?.groupCode ?? null) !== null;
-    case 'pot':
-      return true;
-    case 'soil':
+      // 종을 골랐고, 분재로 키운다면 어떤 나무에 가까운지도 골랐다 (분재 여부는 종 화면에서 묻는다)
+      return (
+        (draft.species?.kind === 'known' || (draft.species?.groupCode ?? null) !== null) &&
+        (!draft.isBonsai || draft.bonsaiGroup !== null)
+      );
+    case 'potSoil':
+      // 화분은 기본값이 중형이라 흙만 고르면 된다
       return draft.soilType !== null;
     case 'space':
       return draft.spaceId !== null;
-    case 'bonsai':
-      return !draft.isBonsai || draft.bonsaiGroup !== null;
     case 'finish': {
       if (draft.nickname === null) return true;
       const length = draft.nickname.trim().length;
@@ -400,6 +409,7 @@ function isSpeciesChoice(value: unknown): value is SpeciesChoice {
 /** 저장해 둔 초안(JSON)을 되살린다. 없거나 깨졌으면 null 이고, 그러면 처음부터 시작한다 */
 export function parsePlantDraft(json: string | null): PlantDraft | null {
   const raw = parseJsonObject(json);
+  if (raw && isString(raw.step) && raw.step in LEGACY_STEPS) raw.step = LEGACY_STEPS[raw.step];
   if (
     !raw ||
     !isString(raw.id) ||

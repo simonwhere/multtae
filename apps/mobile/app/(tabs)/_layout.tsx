@@ -10,12 +10,11 @@ const TAB_BAR_HEIGHT = 64;
 
 const TABS: { name: string; title: string; icon: TabIconName }[] = [
   { name: 'index', title: ko.tabs.today, icon: 'today' },
-  { name: 'spaces', title: ko.tabs.spaces, icon: 'spaces' },
   { name: 'plants', title: ko.tabs.plants, icon: 'plants' },
   { name: 'records', title: ko.tabs.records, icon: 'records' },
 ];
 
-// 하단 탭 4개와 우하단 + 버튼 (SPEC 3)
+// 하단 탭 3개(오늘·식물·기록)와 우하단 + 버튼 (SPEC 3, 10-4). 공간은 식물 탭에서 묶음으로 본다
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();

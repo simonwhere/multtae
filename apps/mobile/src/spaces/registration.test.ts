@@ -44,8 +44,8 @@ const atLight = apply(
 );
 
 describe('공간 등록 단계 (SPEC.md 4.1)', () => {
-  it('사진 → 방향 → 유형 → 빛 등급 → 이름 순서다', () => {
-    expect(SPACE_STEPS).toEqual(['photo', 'direction', 'type', 'light', 'name']);
+  it('사진 → 자리(방향과 유형) → 확인(빛과 이름) 순서다 (10-4)', () => {
+    expect(SPACE_STEPS).toEqual(['photo', 'place', 'confirm']);
     expect(empty).toMatchObject({ id: 'space-1', step: 'photo' });
   });
 
@@ -55,42 +55,39 @@ describe('공간 등록 단계 (SPEC.md 4.1)', () => {
 
     const withPhoto = apply(empty, { type: 'photoPicked', photoPath: 'spaces/space-1.jpg' });
     expect(canAdvance(withPhoto)).toBe(true);
-    expect(apply(withPhoto, { type: 'next' }).step).toBe('direction');
+    expect(apply(withPhoto, { type: 'next' }).step).toBe('place');
   });
 
-  it('방향과 유형도 골라야 넘어간다', () => {
-    const atDirection = apply(
+  it('방향과 유형을 둘 다 골라야 넘어간다', () => {
+    const atPlace = apply(
       empty,
       { type: 'photoPicked', photoPath: 'spaces/space-1.jpg' },
       { type: 'next' },
     );
-    expect(canAdvance(atDirection)).toBe(false);
+    expect(canAdvance(atPlace)).toBe(false);
 
-    const atType = apply(atDirection, { type: 'directionChosen', direction: 'N' }, { type: 'next' });
-    expect(atType.step).toBe('type');
-    expect(canAdvance(atType)).toBe(false);
-    expect(canAdvance(apply(atType, { type: 'typeChosen', spaceType: 'terrace' }))).toBe(true);
+    const withDirection = apply(atPlace, { type: 'directionChosen', direction: 'N' });
+    expect(canAdvance(withDirection)).toBe(false);
+    expect(apply(withDirection, { type: 'next' }).step).toBe('place');
+    expect(canAdvance(apply(withDirection, { type: 'typeChosen', spaceType: 'terrace' }))).toBe(true);
   });
 
   it('모든 단계에서 뒤로 갈 수 있고 입력은 남는다', () => {
-    const back = apply(atLight, { type: 'back' }, { type: 'back' });
+    const back = apply(atLight, { type: 'back' });
 
-    expect(back.step).toBe('direction');
+    expect(back.step).toBe('place');
     expect(back).toMatchObject({ direction: 'S', spaceType: 'indoor_window' });
     expect(apply(empty, { type: 'back' }).step).toBe('photo');
   });
 
   it('마지막 단계에서 next 는 제자리다', () => {
-    const atName = apply(atLight, { type: 'next' });
-
-    expect(atName.step).toBe('name');
-    expect(apply(atName, { type: 'next' }).step).toBe('name');
+    expect(atLight.step).toBe('confirm');
+    expect(apply(atLight, { type: 'next' }).step).toBe('confirm');
   });
 
-  it('진행률은 흙 게이지가 차오르는 값이다: 첫 단계 1/5, 마지막 1', () => {
-    expect(progressOf(empty)).toBeCloseTo(0.2, 10);
-    expect(progressOf(atLight)).toBeCloseTo(0.8, 10);
-    expect(progressOf(apply(atLight, { type: 'next' }))).toBe(1);
+  it('진행률은 흙 게이지가 차오르는 값이다: 첫 단계 1/3, 마지막 1', () => {
+    expect(progressOf(empty)).toBeCloseTo(1 / 3, 10);
+    expect(progressOf(atLight)).toBe(1);
   });
 
   it('초안을 바꾸지 않고 새 객체를 돌려준다', () => {
@@ -307,7 +304,7 @@ describe('임시 저장 복원 (SPEC 4: 중간 이탈 시 임시 저장)', () =>
     expect(parseSpaceDraft(JSON.stringify(read))?.aiLight).toEqual(reading());
     expect(parseSpaceDraft(JSON.stringify({ ...read, aiLight: { grade: 'sunny' } }))).toMatchObject({
       aiLight: null,
-      step: 'light',
+      step: 'confirm',
     });
   });
 
@@ -326,8 +323,14 @@ describe('임시 저장 복원 (SPEC 4: 중간 이탈 시 임시 저장)', () =>
   });
 
   it('입력보다 앞선 단계가 저장돼 있으면 아직 안 채운 첫 단계로 되돌린다', () => {
-    const ahead = { ...empty, photoPath: 'spaces/space-1.jpg', step: 'light' };
+    const ahead = { ...empty, photoPath: 'spaces/space-1.jpg', step: 'confirm' };
 
-    expect(parseSpaceDraft(JSON.stringify(ahead))?.step).toBe('direction');
+    expect(parseSpaceDraft(JSON.stringify(ahead))?.step).toBe('place');
+  });
+
+  it('10-4 전에 저장한 초안의 단계 이름은 새 단계로 옮긴다', () => {
+    expect(parseSpaceDraft(JSON.stringify({ ...atLight, step: 'light' }))?.step).toBe('confirm');
+    expect(parseSpaceDraft(JSON.stringify({ ...atLight, step: 'name' }))?.step).toBe('confirm');
+    expect(parseSpaceDraft(JSON.stringify({ ...atLight, step: 'type' }))?.step).toBe('place');
   });
 });

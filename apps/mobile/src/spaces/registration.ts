@@ -13,8 +13,17 @@ import { isNullOr, isOneOf, isString, parseJsonObject } from '../lib/validate';
 import { parseLightReading } from './light-reading';
 import type { LightReading } from './light-reading';
 
-export const SPACE_STEPS = ['photo', 'direction', 'type', 'light', 'name'] as const;
+/** 사진 → 자리(방향과 유형) → 확인(빛과 이름). 다섯 화면을 셋으로 줄였다 (10-4) */
+export const SPACE_STEPS = ['photo', 'place', 'confirm'] as const;
 export type SpaceStep = (typeof SPACE_STEPS)[number];
+
+/** 10-4 전에 저장된 초안의 단계 이름. 이어서 할 수 있게 새 단계로 옮긴다 */
+const LEGACY_STEPS: Record<string, SpaceStep> = {
+  direction: 'place',
+  type: 'place',
+  light: 'confirm',
+  name: 'confirm',
+};
 
 /** SPEC 4.1: 공간 최대 20개 */
 export const MAX_SPACES = 20;
@@ -65,13 +74,9 @@ function isStepFilled(draft: SpaceDraft, step: SpaceStep): boolean {
   switch (step) {
     case 'photo':
       return draft.photoPath !== null;
-    case 'direction':
-      return draft.direction !== null;
-    case 'type':
-      return draft.spaceType !== null;
-    case 'light':
-      return true;
-    case 'name': {
+    case 'place':
+      return draft.direction !== null && draft.spaceType !== null;
+    case 'confirm': {
       if (draft.name === null) return true;
       const length = draft.name.trim().length;
       return length > 0 && length <= MAX_SPACE_NAME_LENGTH;
@@ -201,6 +206,7 @@ export function toNewSpace(
 /** 저장해 둔 초안(JSON)을 되살린다. 없거나 깨졌으면 null 이고, 그러면 처음부터 시작한다 */
 export function parseSpaceDraft(json: string | null): SpaceDraft | null {
   const raw = parseJsonObject(json);
+  if (raw && isString(raw.step) && raw.step in LEGACY_STEPS) raw.step = LEGACY_STEPS[raw.step];
   if (
     !raw ||
     !isString(raw.id) ||

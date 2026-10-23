@@ -53,10 +53,10 @@ export function useSpaceRegistration() {
     };
   }, []);
 
-  // 빛 등급 단계에 오면 사진을 한 번 보낸다 (SPEC 4.1, 9.2).
+  // 확인 단계(빛과 이름)에 오면 사진을 한 번 보낸다 (SPEC 4.1, 9.2).
   // 읽지 못해도 화면은 방향 × 유형으로 가늠한 값을 보여 주므로 오류를 따로 알리지 않는다.
   useEffect(() => {
-    if (!draft || draft.step !== 'light') return;
+    if (!draft || draft.step !== 'confirm') return;
 
     const { photoPath, direction, spaceType } = draft;
     if (!photoPath || !direction || !spaceType || draft.aiLight) return;

@@ -10,6 +10,7 @@ import {
   formatWeekday,
   plantCardLabel,
   speakDaysLeft,
+  todaySummary,
 } from './format';
 
 const C = DEFAULT_COEFFICIENTS;
@@ -85,5 +86,25 @@ describe('스크린리더가 읽을 말 (SPEC.md 15)', () => {
     expect(plantCardLabel({ name: '금귤', note: '9월 30일에 다시 줘요', daysLeft: 7, done: true })).toBe(
       '금귤, 9월 30일에 다시 줘요, 완료',
     );
+  });
+});
+
+describe('오늘 탭 한 줄 요약 (10-4)', () => {
+  it('밀림, 오늘, 다가옴을 한 문장으로', () => {
+    expect(todaySummary({ overdue: 1, due: 2, upcoming: 3 })).toBe('밀린 식물 1개, 오늘 2개, 3일 안에 3개 더');
+  });
+
+  it('밀린 것이 없으면 오늘부터 말한다', () => {
+    expect(todaySummary({ overdue: 0, due: 2, upcoming: 0 })).toBe('오늘 물 줄 식물 2개');
+    expect(todaySummary({ overdue: 0, due: 2, upcoming: 1 })).toBe('오늘 물 줄 식물 2개, 3일 안에 1개 더');
+  });
+
+  it('밀린 것만 있어도 말한다', () => {
+    expect(todaySummary({ overdue: 3, due: 0, upcoming: 0 })).toBe('밀린 식물 3개');
+  });
+
+  it('밀림도 오늘도 없으면 비운다. 목록이 "물 줄 식물이 없어요"를 말한다', () => {
+    expect(todaySummary({ overdue: 0, due: 0, upcoming: 0 })).toBeNull();
+    expect(todaySummary({ overdue: 0, due: 0, upcoming: 4 })).toBeNull();
   });
 });

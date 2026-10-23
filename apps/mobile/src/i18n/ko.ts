@@ -45,7 +45,6 @@ export const ko = {
   },
   tabs: {
     today: '오늘',
-    spaces: '공간',
     plants: '식물',
     records: '기록',
     add: '등록',
@@ -79,6 +78,13 @@ export const ko = {
     done: '오늘 물 줬어요',
     doneBadge: '완료',
     allClear: '오늘은 물 줄 식물이 없어요',
+    /** 날짜 아래 한 줄 요약 (10-4). 숫자 카드 세 개를 대신한다. 밀림·오늘이 없으면 목록의 allClear 가 말한다 */
+    summary: {
+      overdue: (count: number) => `밀린 식물 ${count}개`,
+      due: (count: number) => `오늘 물 줄 식물 ${count}개`,
+      dueAfterOverdue: (count: number) => `오늘 ${count}개`,
+      upcoming: (count: number) => `3일 안에 ${count}개 더`,
+    },
     /** 밀림·오늘의 식물 여럿을 한 번에 (10-2). 분재는 흙을 봐야 해서 뺀다 */
     waterAll: (count: number) => `${count}개 모두 물 줬어요`,
     waterAllTitle: (count: number) => `${count}개에 물을 줬다고 기록할까요`,
@@ -190,9 +196,8 @@ export const ko = {
       skipped: '',
     },
   },
+  /** 공간 탭은 10-4 에서 없앴고, 공간 제목 줄·공간 상세·접근성 라벨이 식물 수만 쓴다 */
   spacesTab: {
-    title: '공간',
-    empty: '아직 등록한 공간이 없어요',
     plantCount: (count: number) => `식물 ${count}개`,
   },
   /** 오늘 탭 날씨 (SPEC 3.2, 7.2) */
@@ -422,6 +427,10 @@ export const ko = {
   plantsTab: {
     title: '식물',
     empty: '아직 등록한 식물이 없어요',
+    /** 공간별 묶음 (10-4). 공간 제목을 누르면 공간 상세 */
+    noSpace: '식물을 둘 공간부터 등록해 보세요',
+    spaceEmpty: '아직 이 자리에 둔 식물이 없어요',
+    openSpace: (name: string) => `${name} 자리 보기`,
   },
   /** 식물 상세 (SPEC 3.4). 계산식은 보여 주지 않고 결과만 말한다 */
   plantDetail: {
@@ -730,8 +739,16 @@ export const ko = {
       limit: '오늘은 사진 인식이 많아 이름으로 찾도록 도와드릴게요.',
       unavailable: '사진으로 찾지 못했어요. 이름으로 찾아 주세요.',
       searchInstead: '이름으로 찾기',
+      /** 고른 뒤 접힌 목록을 다시 펼친다 (10-4) */
+      changeSpecies: '다른 식물 고르기',
       retry: '다시 찾아보기',
       notFound: '이 식물의 정보를 아직 못 구했어요. 종류만 골라 주세요.',
+    },
+    /** 화분과 흙을 한 화면에서 (10-4) */
+    potSoil: {
+      title: '화분과 흙을 알려 주세요',
+      pot: '화분 크기',
+      soil: '흙',
     },
     pot: {
       title: '화분은 얼마나 큰가요',
@@ -787,6 +804,16 @@ export const ko = {
       cameraDenied: '카메라 권한이 꺼져 있어요. 설정에서 켜거나 앨범에서 골라 주세요.',
       cameraUnavailable: '이 기기에서는 카메라를 쓸 수 없어요. 앨범에서 골라 주세요.',
       failed: '사진을 저장하지 못했어요. 다시 시도해 주세요.',
+    },
+    /** 방향과 자리를 한 화면에서 (10-4) */
+    place: {
+      title: '어떤 자리인가요',
+      direction: '창이 향한 쪽',
+      type: '자리',
+    },
+    /** 빛 확인과 이름을 한 화면에서 (10-4) */
+    confirm: {
+      title: '이 자리의 빛은 이 정도예요',
     },
     direction: {
       title: '창이 어느 쪽을 향하나요',

@@ -48,20 +48,18 @@ function seed(scientificName: string) {
 }
 
 describe('식물 등록 단계 (SPEC.md 4.2)', () => {
-  it('사진 → 종 → 화분 → 흙 → 공간 → 분재 → 첫 알림 확인 순서다', () => {
-    expect(PLANT_STEPS).toEqual(['photo', 'species', 'pot', 'soil', 'space', 'bonsai', 'finish']);
+  it('사진 → 종(분재 여부 포함) → 화분과 흙 → 공간 → 첫 알림 확인 순서다 (10-4)', () => {
+    expect(PLANT_STEPS).toEqual(['photo', 'species', 'potSoil', 'space', 'finish']);
     expect(empty).toMatchObject({ step: 'photo', potSize: 'm', wateredDaysAgo: 0 });
   });
 
-  it('화분은 기본값이 중형이라 바로 넘어가고, 나머지는 골라야 넘어간다', () => {
+  it('화분은 기본값이 중형이라 흙만 고르면 넘어가고, 나머지는 골라야 넘어간다', () => {
     const at = (step: PlantDraft['step'], draft = empty) => ({ ...draft, step });
 
     expect(canAdvance(at('photo'))).toBe(false);
     expect(canAdvance(at('species'))).toBe(false);
-    expect(canAdvance(at('pot'))).toBe(true);
-    expect(canAdvance(at('soil'))).toBe(false);
+    expect(canAdvance(at('potSoil'))).toBe(false);
     expect(canAdvance(at('space'))).toBe(false);
-    expect(canAdvance(at('bonsai'))).toBe(true);
     for (const step of PLANT_STEPS) expect(canAdvance(at(step, monstera))).toBe(true);
   });
 
@@ -73,8 +71,8 @@ describe('식물 등록 단계 (SPEC.md 4.2)', () => {
     expect(apply(empty, { type: 'back' }).step).toBe('photo');
   });
 
-  it('진행률은 첫 단계 1/7 에서 마지막 1 까지 찬다', () => {
-    expect(progressOf(empty)).toBeCloseTo(1 / 7, 10);
+  it('진행률은 첫 단계 1/5 에서 마지막 1 까지 찬다', () => {
+    expect(progressOf(empty)).toBeCloseTo(1 / 5, 10);
     expect(progressOf({ ...empty, step: 'finish' })).toBe(1);
   });
 
@@ -131,9 +129,9 @@ describe('종 선택과 식물군 (SPEC 4.2, 10.2)', () => {
     expect(changed).toMatchObject({ isBonsai: false, bonsaiGroup: null });
   });
 
-  it('분재 토글을 켜면 수종군을 골라야 하고, 수종군이 식물군을 정한다', () => {
+  it('분재 토글을 켜면 수종군을 골라야 종 화면을 넘어가고, 수종군이 식물군을 정한다', () => {
     const olive = apply(
-      { ...empty, step: 'bonsai' },
+      { ...empty, step: 'species' },
       { type: 'speciesChosen', species: seed('Olea europaea') },
       { type: 'bonsaiToggled', isBonsai: true },
     );
@@ -454,6 +452,12 @@ describe('임시 저장 복원 (SPEC 4)', () => {
   it('입력보다 앞선 단계가 저장돼 있으면 아직 안 채운 첫 단계로 되돌린다', () => {
     const ahead = { ...monstera, soilType: null, step: 'finish' };
 
-    expect(parsePlantDraft(JSON.stringify(ahead))?.step).toBe('soil');
+    expect(parsePlantDraft(JSON.stringify(ahead))?.step).toBe('potSoil');
+  });
+
+  it('10-4 전에 저장한 초안의 단계 이름은 새 단계로 옮긴다', () => {
+    expect(parsePlantDraft(JSON.stringify({ ...monstera, step: 'pot' }))?.step).toBe('potSoil');
+    expect(parsePlantDraft(JSON.stringify({ ...monstera, step: 'soil' }))?.step).toBe('potSoil');
+    expect(parsePlantDraft(JSON.stringify({ ...monstera, step: 'bonsai' }))?.step).toBe('space');
   });
 });
