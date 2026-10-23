@@ -1,0 +1,218 @@
+[
+  {
+    "name": "@bacons/apple-targets",
+    "version": "5.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/evanbacon/expo-apple-targets"
+  },
+  {
+    "name": "@expo-google-fonts/figtree",
+    "version": "0.4.1",
+    "license": "MIT AND OFL-1.1",
+    "repository": "https://github.com/expo/google-fonts"
+  },
+  {
+    "name": "@react-native-community/datetimepicker",
+    "version": "9.1.0",
+    "license": "MIT",
+    "repository": "https://github.com/react-native-datetimepicker/datetimepicker"
+  },
+  {
+    "name": "drizzle-orm",
+    "version": "0.45.2",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/drizzle-team/drizzle-orm"
+  },
+  {
+    "name": "expo",
+    "version": "57.0.24",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-background-task",
+    "version": "57.0.19",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-constants",
+    "version": "57.0.19",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-crypto",
+    "version": "57.0.3",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-dev-client",
+    "version": "57.0.19",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-document-picker",
+    "version": "57.0.2",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-file-system",
+    "version": "57.0.7",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-font",
+    "version": "57.0.4",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-image",
+    "version": "57.0.5",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-image-manipulator",
+    "version": "57.0.19",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-image-picker",
+    "version": "57.0.19",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-linking",
+    "version": "57.0.10",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-notifications",
+    "version": "57.0.20",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-router",
+    "version": "57.0.22",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-sharing",
+    "version": "57.0.21",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-splash-screen",
+    "version": "57.0.9",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-sqlite",
+    "version": "57.0.3",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-status-bar",
+    "version": "57.0.1",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-system-ui",
+    "version": "57.0.4",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "expo-task-manager",
+    "version": "57.0.19",
+    "license": "MIT",
+    "repository": "https://github.com/expo/expo"
+  },
+  {
+    "name": "jszip",
+    "version": "3.10.2",
+    "license": "(MIT OR GPL-3.0-or-later)",
+    "repository": "https://github.com/Stuk/jszip"
+  },
+  {
+    "name": "react",
+    "version": "19.2.3",
+    "license": "MIT",
+    "repository": "https://github.com/facebook/react"
+  },
+  {
+    "name": "react-dom",
+    "version": "19.2.3",
+    "license": "MIT",
+    "repository": "https://github.com/facebook/react"
+  },
+  {
+    "name": "react-native",
+    "version": "0.86.3",
+    "license": "MIT",
+    "repository": "https://github.com/react/react-native"
+  },
+  {
+    "name": "react-native-android-widget",
+    "version": "0.22.1",
+    "license": "MIT",
+    "repository": "https://github.com/sAleksovski/react-native-android-widget"
+  },
+  {
+    "name": "react-native-gesture-handler",
+    "version": "2.32.0",
+    "license": "MIT",
+    "repository": "https://github.com/software-mansion/react-native-gesture-handler"
+  },
+  {
+    "name": "react-native-reanimated",
+    "version": "4.5.1",
+    "license": "MIT",
+    "repository": "https://github.com/software-mansion/react-native-reanimated"
+  },
+  {
+    "name": "react-native-safe-area-context",
+    "version": "5.7.0",
+    "license": "MIT",
+    "repository": "https://github.com/AppAndFlow/react-native-safe-area-context"
+  },
+  {
+    "name": "react-native-screens",
+    "version": "4.26.2",
+    "license": "MIT",
+    "repository": "https://github.com/software-mansion/react-native-screens"
+  },
+  {
+    "name": "react-native-svg",
+    "version": "15.15.4",
+    "license": "MIT",
+    "repository": "https://github.com/react-native-community/react-native-svg"
+  },
+  {
+    "name": "react-native-worklets",
+    "version": "0.10.1",
+    "license": "MIT",
+    "repository": "https://github.com/software-mansion/react-native-reanimated"
+  },
+  {
+    "name": "zustand",
+    "version": "5.0.15",
+    "license": "MIT",
+    "repository": "https://github.com/pmndrs/zustand"
+  }
+]

@@ -3,7 +3,15 @@ import { describe, expect, it } from 'vitest';
 import type { PlantWithSpace } from '../db/plants';
 import type { Plant, Space } from '../db/schema';
 import { DEFAULT_COEFFICIENTS } from '../engine';
-import { classifyToday, planPostpone, planWatering, toEnginePlant, UPCOMING_DAYS } from './today';
+import {
+  classifyToday,
+  planFeedback,
+  planPostpone,
+  planWatering,
+  toEnginePlant,
+  UPCOMING_DAYS,
+  wateringUndoPatch,
+} from './today';
 
 const C = DEFAULT_COEFFICIENTS;
 const KST = 540;
@@ -222,6 +230,55 @@ describe('planWatering: 물 줬어요 (SPEC.md 3.2, 5.4, 5.5)', () => {
 
     expect(() => water(frozen, 'wet')).not.toThrow();
     expect(frozen.learnFactor).toBe(1.0);
+  });
+});
+
+describe('planFeedback: 먼저 기록하고 흙 상태는 나중에 덧붙인다 (SPEC.md 3.2, 10-2)', () => {
+  const recorded = (target: Plant) => {
+    const first = planWatering(target, livingRoom, { soilState: 'skipped', leafDroop: false }, { ...context, logId: 'log-1' });
+    return { ...target, ...first.plantPatch };
+  };
+
+  it('열 때 건너뜀으로 기록한 뒤 축축했음을 덧붙이면, 처음부터 함께 기록한 것과 같다', () => {
+    const together = planWatering(plant({}), livingRoom, { soilState: 'wet', leafDroop: false }, { ...context, logId: 'log-1' });
+    const later = planFeedback(recorded(plant({})), livingRoom, { soilState: 'wet', leafDroop: false }, context);
+
+    expect(later.plantPatch).toEqual({ learnFactor: together.plantPatch.learnFactor, nextWaterAt: together.plantPatch.nextWaterAt });
+    expect(later.logPatch).toEqual({
+      soilState: 'wet',
+      leafDroop: false,
+      intervalCalc: together.log.intervalCalc,
+      factorSnapshot: together.log.factorSnapshot,
+    });
+    expect(later.result.days).toBe(8);
+  });
+
+  it('건너뛴 채 완료하면 아무것도 바뀌지 않는다', () => {
+    const target = recorded(plant({}));
+    const plan = planFeedback(target, livingRoom, { soilState: 'skipped', leafDroop: false }, context);
+
+    expect(plan.plantPatch).toEqual({ learnFactor: target.learnFactor, nextWaterAt: target.nextWaterAt });
+  });
+
+  it('수경은 흙 상태를 남기지 않고 고정 주기 그대로다', () => {
+    const target = recorded(plant({ soilType: 'hydro' }));
+    const plan = planFeedback(target, livingRoom, { soilState: 'wet', leafDroop: true }, context);
+
+    expect(plan.logPatch).toMatchObject({ soilState: 'skipped', leafDroop: false });
+    expect(plan.plantPatch).toEqual({ learnFactor: target.learnFactor, nextWaterAt: target.nextWaterAt });
+  });
+
+  it('"안 줬어요"로 되돌릴 값은 기록 전의 물주기 상태뿐이다', () => {
+    const target = plant({ learnFactor: 1.2, postponeCount: 2 });
+
+    expect(wateringUndoPatch(target)).toEqual({
+      learnFactor: 1.2,
+      lastWateredAt: target.lastWateredAt,
+      lastWateredUnknown: false,
+      nextWaterAt: target.nextWaterAt,
+      postponeCount: 2,
+      updatedAt: target.updatedAt,
+    });
   });
 });
 

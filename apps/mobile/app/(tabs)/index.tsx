@@ -1,3 +1,4 @@
+import { randomUUID } from 'expo-crypto';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -5,13 +6,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { db } from '@/db/client';
 import { updatePlant } from '@/db/plants';
+import { recordWatering } from '@/db/watering';
 import { canPostpone, toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
 import { askPermissionOnce, NotificationBanner, rescheduleSoon } from '@/notifications';
 import { formatDottedDate, formatMonthDay, formatWeekday } from '@/plants/format';
 import { PlantCard } from '@/plants/plant-card';
 import { SwipeRow } from '@/plants/swipe-row';
-import { classifyToday, planPostpone } from '@/plants/today';
+import { classifyToday, planPostpone, planWatering } from '@/plants/today';
 import { winterWarnings } from '@/plants/winter';
 import { repotHints } from '@/plants/feeding-db';
 import type { RepotHint } from '@/plants/feeding';
@@ -27,7 +29,7 @@ import type { TodayItem, TodaySections } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
 import { useGarden } from '@/plants/use-plants';
-import { AppText, Button, motion, radius, spacing, Sprig, TabIcon, useColors } from '@/ui';
+import { AppText, Button, motion, radius, showAlert, spacing, Sprig, TabIcon, useColors } from '@/ui';
 
 function SectionTitle({ title }: { title: string }) {
   return (
@@ -155,6 +157,28 @@ export default function TodayScreen() {
     reload();
   }
 
+  // 밀림·오늘의 식물을 한 번에 기록한다 (10-2). 흙 상태는 남기지 않고, 분재는 흙을 봐야 해서 뺀다
+  const bulk = sections ? [...sections.overdue, ...sections.due].filter((item) => !item.plant.isBonsai) : [];
+  function confirmWaterAll() {
+    showAlert(ko.today.waterAllTitle(bulk.length), ko.today.waterAllBody, [
+      { text: ko.common.cancel, style: 'cancel' },
+      { text: ko.today.waterAllConfirm, onPress: () => void waterAll() },
+    ]);
+  }
+  async function waterAll() {
+    for (const item of bulk) {
+      const plan = planWatering(
+        item.plant,
+        item.space,
+        { soilState: 'skipped', leafDroop: false },
+        { ...context, logId: randomUUID() },
+      );
+      await recordWatering(db, item.plant.id, plan.plantPatch, plan.log);
+    }
+    rescheduleSoon();
+    reload();
+  }
+
   const rows = useMemo(() => (sections ? rowsOf(sections) : []), [sections]);
   const empty = garden !== null && (garden.spaces.length === 0 || garden.plants.length === 0);
 
@@ -242,6 +266,9 @@ export default function TodayScreen() {
           <CountChip label={ko.today.upcoming} count={sections.upcoming.length} dot={colors.sprig} />
         </View>
       )}
+      {bulk.length >= 2 ? (
+        <Button label={ko.today.waterAll(bulk.length)} variant="secondary" onPress={confirmWaterAll} />
+      ) : null}
     </View>
   );
 

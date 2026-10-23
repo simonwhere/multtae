@@ -21,6 +21,26 @@ export async function recordWatering(
   await updatePlant(db, plantId, patch, options);
 }
 
+/** 시트에서 흙 상태를 덧붙일 때. 기록이 먼저 있고 식물은 그 뒤에 고친다 (10-2) */
+export async function updateWateringLog(
+  db: Database,
+  logId: string,
+  patch: Partial<Pick<WateringLog, 'soilState' | 'leafDroop' | 'intervalCalc' | 'factorSnapshot'>>,
+): Promise<void> {
+  await db.update(wateringLogs).set(patch).where(eq(wateringLogs.id, logId));
+}
+
+/** "안 줬어요": 방금 남긴 기록을 지우고 식물을 기록 전으로 되돌린다 */
+export async function undoWatering(
+  db: Database,
+  logId: string,
+  plantId: string,
+  before: PlantPatch,
+): Promise<void> {
+  await db.delete(wateringLogs).where(eq(wateringLogs.id, logId));
+  await updatePlant(db, plantId, before, { touch: false });
+}
+
 export interface WateringWithPlant {
   log: WateringLog;
   nickname: string;

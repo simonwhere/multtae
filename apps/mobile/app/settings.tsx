@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { eraseAll, exportBackup, mergeBackup, pickBackup, replaceWithBackup } from '@/data/archive';
@@ -10,6 +10,7 @@ import { db } from '@/db/client';
 import { getSetting } from '@/db/settings';
 import { toCalendarDate } from '@/engine';
 import { ko } from '@/i18n/ko';
+import { FEEDBACK_EMAIL, PRIVACY_URL, TERMS_URL } from '@/legal/links';
 import { rescheduleSoon } from '@/notifications/reschedule';
 import { formatTimeOfDay, parseNotificationSettings } from '@/notifications/settings';
 import type { NotificationSettings } from '@/notifications/settings';
@@ -65,6 +66,7 @@ export default function SettingsScreen() {
   const [regionId, setRegionId] = useState<string | null>(null);
   const [job, setJob] = useState<DataJob | null>(null);
   const [dataNote, setDataNote] = useState<string | null>(null);
+  const [infoNote, setInfoNote] = useState<string | null>(null);
   const weather = useWeatherState((state) => state.weather);
 
   const load = useCallback(async () => {
@@ -178,6 +180,16 @@ export default function SettingsScreen() {
     setDataNote(done ? t.eraseDone : t.eraseFailed);
   }
 
+  /** 문서와 메일은 바깥 앱에서 연다 (3.6 정보) */
+  async function openLink(url: string) {
+    setInfoNote(null);
+    try {
+      await Linking.openURL(url);
+    } catch {
+      setInfoNote(t.openFailed);
+    }
+  }
+
   function confirm(title: string, body: string, confirmText: string, run: () => Promise<void>) {
     showAlert(title, body, [
       { text: ko.common.cancel, style: 'cancel' },
@@ -276,8 +288,27 @@ export default function SettingsScreen() {
         </AppText>
 
         <Section title={t.info}>
+          <Row label={t.privacy} value="" onPress={() => void openLink(PRIVACY_URL)} />
+          <Divider />
+          <Row label={t.terms} value="" onPress={() => void openLink(TERMS_URL)} />
+          <Divider />
+          <Row label={t.licenses} value="" onPress={() => router.push('/licenses')} />
+          <Divider />
+          <Row
+            label={t.feedback}
+            value=""
+            onPress={() =>
+              void openLink(`mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(t.feedbackSubject)}`)
+            }
+          />
+          <Divider />
           <Row label={t.version} value={Constants.expoConfig?.version ?? ''} />
         </Section>
+        {infoNote ? (
+          <AppText variant="caption" style={styles.note}>
+            {infoNote}
+          </AppText>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

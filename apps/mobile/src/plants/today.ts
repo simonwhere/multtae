@@ -3,7 +3,7 @@
  * DB 와 화면에서 떼어 낸 순수 함수다. 무엇을 저장할지만 정하고 저장은 호출한 쪽이 한다.
  */
 import type { PlantWithSpace } from '../db/plants';
-import type { NewWateringLog, Plant } from '../db/schema';
+import type { NewWateringLog, Plant, WateringLog } from '../db/schema';
 import {
   addDays,
   applyFeedback,
@@ -175,6 +175,55 @@ export function planWatering(
     },
     result,
   };
+}
+
+export interface FeedbackPlan {
+  plantPatch: Pick<Plant, 'learnFactor' | 'nextWaterAt'>;
+  logPatch: Pick<WateringLog, 'soilState' | 'leafDroop' | 'intervalCalc' | 'factorSnapshot'>;
+  result: IntervalResult;
+}
+
+/**
+ * 물을 줬다고 먼저 기록한 뒤(흙 상태 skipped) 시트에서 고른 흙 상태·잎 처짐을 덧붙인다 (3.2, 10-2).
+ * skipped 는 U 를 바꾸지 않으므로, 지금 식물의 U 에서 다시 배우면 처음부터 함께 기록한 것과 같다.
+ * 다음 물주기는 이미 적힌 마지막 물 준 날에서 다시 센다.
+ */
+export function planFeedback(
+  plant: Plant,
+  space: EngineSpace,
+  input: WateringInput,
+  context: Omit<WateringContext, 'logId'>,
+): FeedbackPlan {
+  const { coefficients, season, utcOffsetMinutes } = context;
+  const enginePlant = toEnginePlant(plant);
+  const learns = computeInterval(enginePlant, space, season, coefficients).mode === 'computed';
+  const learnFactor = learns
+    ? applyFeedback(plant.learnFactor, input.soilState, input.leafDroop, coefficients)
+    : plant.learnFactor;
+  const result = computeInterval({ ...enginePlant, learnFactor }, space, season, coefficients);
+  const wateredOn = toCalendarDate(plant.lastWateredAt, utcOffsetMinutes);
+
+  return {
+    plantPatch: {
+      learnFactor,
+      nextWaterAt: startOfDay(nextWaterDate(wateredOn, result.days), utcOffsetMinutes),
+    },
+    logPatch: {
+      soilState: plant.soilType === 'hydro' ? 'skipped' : input.soilState,
+      leafDroop: plant.soilType === 'hydro' ? false : input.leafDroop,
+      intervalCalc: result.interval,
+      factorSnapshot: result.mode === 'computed' ? result.factors : null,
+    },
+    result,
+  };
+}
+
+/** "안 줬어요": 방금 기록한 물주기를 물리려고 기록 전의 값을 남겨 둔다. 고친 시각도 되돌린다 (9-2 합치기 기준) */
+export function wateringUndoPatch(
+  plant: Plant,
+): Pick<Plant, 'learnFactor' | 'lastWateredAt' | 'lastWateredUnknown' | 'nextWaterAt' | 'postponeCount' | 'updatedAt'> {
+  const { learnFactor, lastWateredAt, lastWateredUnknown, nextWaterAt, postponeCount, updatedAt } = plant;
+  return { learnFactor, lastWateredAt, lastWateredUnknown, nextWaterAt, postponeCount, updatedAt };
 }
 
 /** "내일로": 다음 물주기를 하루 미룬다. 최대 횟수를 채웠으면 null 이고 그대로 두어 밀림이 된다 */

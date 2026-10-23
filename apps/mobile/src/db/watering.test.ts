@@ -6,7 +6,7 @@ import type { NewPlant, NewSpace } from './schema';
 import { insertSpace } from './spaces';
 import { createTestDb } from './testing/test-db';
 import type { TestDb } from './testing/test-db';
-import { listPlantWaterings, listRecentWaterings, recordWatering } from './watering';
+import { listPlantWaterings, listRecentWaterings, recordWatering, undoWatering, updateWateringLog } from './watering';
 
 const livingRoom: NewSpace = {
   id: 'space-1',
@@ -155,5 +155,46 @@ describe('deletePlant: 식물 삭제 (3.4 편집)', () => {
 
   it('없는 식물이면 아무것도 하지 않는다', async () => {
     expect(await deletePlant(db, 'ghost')).toEqual([]);
+  });
+});
+
+describe('먼저 기록하고 나중에 덧붙이거나 물린다 (SPEC.md 3.2, 10-2)', () => {
+  const log = {
+    id: 'log-1',
+    plantId: 'plant-1',
+    wateredAt: 20_000,
+    soilState: 'skipped' as const,
+    leafDroop: false,
+    source: 'user' as const,
+    intervalCalc: 7,
+    factorSnapshot: null,
+    dueAt: 9_000,
+  };
+  const patch = { lastWateredAt: 20_000, lastWateredUnknown: false, nextWaterAt: 30_000, postponeCount: 0, learnFactor: 1 };
+
+  it('흙 상태를 덧붙이면 그 기록만 바뀐다', async () => {
+    await recordWatering(db, 'plant-1', patch, log);
+    await updateWateringLog(db, 'log-1', { soilState: 'wet', intervalCalc: 8.05 });
+
+    const [saved] = await listPlantWaterings(db, 'plant-1', 5);
+    expect(saved).toMatchObject({ id: 'log-1', soilState: 'wet', leafDroop: false, intervalCalc: 8.05 });
+  });
+
+  it('"안 줬어요": 기록을 지우고 식물을 기록 전으로 되돌린다. 고친 시각은 건드리지 않는다', async () => {
+    const before = (await getPlantWithSpace(db, 'plant-1'))!.plant;
+    await recordWatering(db, 'plant-1', patch, log);
+    await undoWatering(db, 'log-1', 'plant-1', {
+      learnFactor: before.learnFactor,
+      lastWateredAt: before.lastWateredAt,
+      lastWateredUnknown: before.lastWateredUnknown,
+      nextWaterAt: before.nextWaterAt,
+      postponeCount: before.postponeCount,
+      updatedAt: before.updatedAt,
+    });
+
+    expect(await listPlantWaterings(db, 'plant-1', 5)).toEqual([]);
+    const after = (await getPlantWithSpace(db, 'plant-1'))!.plant;
+    expect(after).toMatchObject({ lastWateredAt: 5_000, lastWateredUnknown: true, nextWaterAt: 9_000, postponeCount: 2 });
+    expect(after.updatedAt).toBe(before.updatedAt);
   });
 });

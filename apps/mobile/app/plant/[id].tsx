@@ -20,7 +20,7 @@ import { CareCard } from '@/plants/care-card';
 import { PhotoSlider } from '@/plants/photo-slider';
 import { TaskCard } from '@/plants/task-card';
 import { DueTag } from '@/plants/due-tag';
-import { formatDottedDate, formatInterval, formatMonthDay } from '@/plants/format';
+import { formatDottedDate, formatInterval, formatMonthDay, speakDaysLeft } from '@/plants/format';
 import { classifyPlant, toEnginePlant } from '@/plants/today';
 import { usePlantUi } from '@/plants/ui-store';
 import { nowContext } from '@/plants/use-now';
@@ -80,6 +80,7 @@ export default function PlantDetailScreen() {
   const t = ko.plantDetail;
   const context = nowContext(detail.loadedAt);
   const soil = classifyPlant(plant, context.now, context.utcOffsetMinutes);
+  const overdue = soil.status === 'overdue';
   const result = computeInterval(toEnginePlant(plant), space, context.season, context.coefficients);
   const species = plant.scientificName ? findSeedSpecies(plant.scientificName) : undefined;
   const streak = feedbackStreak(plant, waterings, context.coefficients);
@@ -149,22 +150,34 @@ export default function PlantDetailScreen() {
         ) : null}
 
         <Card tone="highlight" style={styles.stack}>
+          {/* 예정일이 지났으면 지난 날짜 대신 며칠 지났는지 크게 (10-2) */}
           <View style={styles.nextRow}>
             <View
               accessible
-              accessibilityLabel={`${t.nextWater} ${dateOf(plant.nextWaterAt ?? plant.lastWateredAt)}`}
+              accessibilityLabel={
+                overdue
+                  ? `${t.overdueTitle} ${speakDaysLeft(soil.daysLeft)}`
+                  : `${t.nextWater} ${dateOf(plant.nextWaterAt ?? plant.lastWateredAt)}`
+              }
               style={styles.nextDate}>
-              <AppText variant="label" color={colors.sub}>
-                {t.nextWater}
+              <AppText variant="label" color={overdue ? colors.berry : colors.sub}>
+                {overdue ? t.overdueTitle : t.nextWater}
               </AppText>
               <AppText variant="numeralMd">
-                {formatDottedDate(
-                  toCalendarDate(plant.nextWaterAt ?? plant.lastWateredAt, context.utcOffsetMinutes),
-                )}
+                {overdue
+                  ? t.overdueDays(-soil.daysLeft)
+                  : formatDottedDate(
+                      toCalendarDate(plant.nextWaterAt ?? plant.lastWateredAt, context.utcOffsetMinutes),
+                    )}
               </AppText>
             </View>
-            <DueTag soil={soil} onHighlight />
+            {overdue ? null : <DueTag soil={soil} onHighlight />}
           </View>
+          {overdue ? (
+            <AppText variant="caption">
+              {t.overdueNote(dateOf(plant.nextWaterAt ?? plant.lastWateredAt))}
+            </AppText>
+          ) : null}
           <DayGauge
             status={soil.status}
             moisture={soil.moisture}

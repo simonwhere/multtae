@@ -18,6 +18,10 @@ export const ko = {
     later: '나중에',
   },
   /** 홈 화면 위젯 (9-3). 문구는 앱이 미리 만들어 위젯에 넘긴다 */
+  licenses: {
+    title: '오픈소스 라이선스',
+    intro: '물줄때는 아래 오픈소스 소프트웨어로 만들었어요. 각 소프트웨어의 라이선스를 따릅니다.',
+  },
   widget: {
     headline: '오늘 물 줄 식물',
     none: '오늘은 물 줄 식물이 없어요',
@@ -75,6 +79,11 @@ export const ko = {
     done: '오늘 물 줬어요',
     doneBadge: '완료',
     allClear: '오늘은 물 줄 식물이 없어요',
+    /** 밀림·오늘의 식물 여럿을 한 번에 (10-2). 분재는 흙을 봐야 해서 뺀다 */
+    waterAll: (count: number) => `${count}개 모두 물 줬어요`,
+    waterAllTitle: (count: number) => `${count}개에 물을 줬다고 기록할까요`,
+    waterAllBody: '흙 상태는 남기지 않아요. 식물마다 남기려면 하나씩 눌러 주세요.',
+    waterAllConfirm: '모두 기록',
     nextWater: (date: string) => `다음 물주기 ${date}`,
     postponeLimit: '세 번 미뤘어요. 오늘은 흙을 확인해 주세요.',
     empty: '식물을 둘 공간부터 등록해 보세요',
@@ -103,6 +112,9 @@ export const ko = {
   },
   wateredSheet: {
     title: (nickname: string) => `${nickname}에 물을 줬어요`,
+    /** 시트를 열 때 이미 기록했다. 닫아도 남고, 이 단추로만 물린다 (10-2) */
+    recordedHint: '기록했어요. 흙 상태를 고르면 다음 물 줄 날을 더 잘 맞춰요.',
+    notWatered: '안 줬어요',
     soilQuestion: '물 주기 전에 흙은 어땠나요',
     soilGuide: '안 골라도 괜찮아요. 고르면 이 식물에 맞게 물 줄 날을 맞춰 드려요.',
     /** 키는 SoilState */
@@ -297,6 +309,12 @@ export const ko = {
     weatherOff: '지금은 날씨를 받지 못하고 있어요. 물주기 알림은 그대로 와요.',
     info: '정보',
     version: '버전',
+    privacy: '개인정보처리방침',
+    terms: '이용약관',
+    licenses: '오픈소스 라이선스',
+    feedback: '의견 보내기',
+    feedbackSubject: '물줄때 의견',
+    openFailed: '열지 못했어요. 나중에 다시 시도해 주세요.',
     saveFailed: '저장하지 못했어요. 다시 시도해 주세요.',
     /** 데이터 (SPEC 3.6). 기기 안에서만 만들고 서버로 보내지 않는다 */
     data: '데이터',
@@ -408,6 +426,10 @@ export const ko = {
   /** 식물 상세 (SPEC 3.4). 계산식은 보여 주지 않고 결과만 말한다 */
   plantDetail: {
     nextWater: '다음 물주기',
+    /** 예정일이 지났으면 날짜 대신 지난 일수를 크게 보여 준다 (10-2) */
+    overdueTitle: '물 줄 때가 지났어요',
+    overdueDays: (days: number) => `${days}일`,
+    overdueNote: (date: string) => `${date}이 차례였어요. 흙을 보고 오늘 주세요.`,
     lastWatered: (date: string) => `마지막으로 물 준 날 ${date}`,
     lastWateredUnknown: '아직 물 준 기록이 없어요',
     bonsai: '분재',
