@@ -24,7 +24,7 @@ describe('공간을 글로 (SPEC.md 3.3)', () => {
   });
 
   it('카드를 한 번에 읽을 말에는 이름과 자리, 빛이 다 들어간다', () => {
-    expect(spaceCardLabel(space, 2)).toBe('거실 창가, 남향 실내 창가, 식물 2개, 강광');
-    expect(spaceCardLabel(space)).toBe('거실 창가, 남향 실내 창가, 강광');
+    expect(spaceCardLabel(space, 2)).toBe('거실 창가, 남향 실내 창가, 식물 2개, 아주 밝아요');
+    expect(spaceCardLabel(space)).toBe('거실 창가, 남향 실내 창가, 아주 밝아요');
   });
 });

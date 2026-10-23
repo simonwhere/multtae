@@ -94,7 +94,7 @@ describe('rescheduleAll (SPEC.md 12.3)', () => {
       'overdue-20261004-0',
       'overdue-20261007-0',
     ]);
-    expect(scheduled()[0]).toMatchObject({ title: '물때예요', body: '몬스테라 물 줄 때' });
+    expect(scheduled()[0]).toMatchObject({ title: '물 줄 때예요', body: '몬스테라 물 줄 때' });
     expect(result).toEqual({ updatedPlants: 0, scheduled: scheduled() });
   });
 

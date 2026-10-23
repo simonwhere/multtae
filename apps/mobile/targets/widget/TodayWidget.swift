@@ -208,7 +208,7 @@ struct TodayWidget: Widget {
     }
     // 위젯 목록의 이름과 설명. 앱을 열기 전에도 보여야 해서 여기에만 글자를 둔다.
     // ko.ts 의 widget.galleryName·galleryDescription 과 같아야 한다 (src/widget/swift-parity.test.ts)
-    .configurationDisplayName("물때")
+    .configurationDisplayName("물줄때")
     .description("오늘 물 줄 식물을 보여 드려요")
     .supportedFamilies([.systemSmall, .systemMedium])
   }

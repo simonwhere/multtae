@@ -59,7 +59,7 @@ describe('planNotifications: 물주기 알림 (SPEC.md 12.1)', () => {
       type: 'water',
       date: date(9, 27),
       minuteOfDay: 480,
-      title: '물때예요',
+      title: '물 줄 때예요',
       body: '몬스테라 물 줄 때',
       target: 'today',
     });
@@ -97,7 +97,7 @@ describe('planNotifications: 물주기 알림 (SPEC.md 12.1)', () => {
 
     expect(planned[0]).toMatchObject({
       id: 'water-20260928-0',
-      title: '물때예요',
+      title: '물 줄 때예요',
       body: '몬스테라 물 줄 때\n스킨답서스 물 갈 때',
     });
   });
@@ -229,7 +229,7 @@ describe('planNotifications: 하루 상한과 방해금지 (SPEC.md 12.2)', () =
     expect(today[0]).toMatchObject({
       id: 'water-20260927-0',
       type: 'water',
-      title: '물때예요',
+      title: '물 줄 때예요',
       body: '몬스테라 물 줄 때\n스킨답서스 7일 지났어요\n오늘부터 겨울·난방 모드, 물주기가 전체적으로 늘었어요',
     });
   });

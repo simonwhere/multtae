@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "물때",
+    "name": "물줄때",
     "slug": "multtae",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -73,7 +73,7 @@
           "widgets": [
             {
               "name": "Today",
-              "label": "물때",
+              "label": "물줄때",
               "description": "오늘 물 줄 식물을 보여 드려요",
               "minWidth": "110dp",
               "minHeight": "110dp",

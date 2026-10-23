@@ -158,7 +158,7 @@ npx eas-cli@latest submit --platform ios        # App Store Connect 로 올라�
 
 App Store Connect 에서 할 일:
 
-1. 앱 만들기: 이름 **물때**, 번들 ID `kr.multtae.app`, 기본 언어 한국어
+1. 앱 만들기: 이름 **물줄때**, 번들 ID `kr.multtae.app`, 기본 언어 한국어
 2. [store/description-ko.md](store/description-ko.md) 의 이름·부제·설명문·키워드를 붙여 넣기
 3. 스크린샷 6장 올리기 (6.9인치)
 4. 개인정보처리방침 주소: https://simonwhere.github.io/multtae/privacy.html

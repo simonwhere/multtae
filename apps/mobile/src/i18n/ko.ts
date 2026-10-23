@@ -4,7 +4,7 @@
  */
 export const ko = {
   app: {
-    name: '물때',
+    name: '물줄때',
   },
   /** 온보딩 (SPEC 3.1). 첫 실행에 한 번 */
   onboarding: {
@@ -31,7 +31,7 @@ export const ko = {
     /** 만들어 둔 날을 다 썼을 때. 앱을 열면 다시 만든다 */
     stale: '앱을 열면 다시 맞춰요',
     /** 위젯 목록에 보이는 이름과 설명. targets/widget/TodayWidget.swift 에도 같은 글자가 있다 */
-    galleryName: '물때',
+    galleryName: '물줄때',
     galleryDescription: '오늘 물 줄 식물을 보여 드려요',
   },
   common: {
@@ -343,7 +343,7 @@ export const ko = {
     mergeUpdatedOnly: (plants: number) => `합쳤어요. 식물 ${plants}개를 최근 것으로 맞췄어요.`,
     mergeSame: '이미 같은 내용이에요.',
     importDone: (spaces: number, plants: number) => `공간 ${spaces}곳, 식물 ${plants}개를 가져왔어요`,
-    importInvalid: '물때에서 내보낸 파일이 아니에요. 다른 파일을 골라 주세요.',
+    importInvalid: '물줄때에서 내보낸 파일이 아니에요. 다른 파일을 골라 주세요.',
     importFailed: '가져오지 못했어요. 다시 시도해 주세요.',
     eraseRow: '전체 삭제',
     eraseTitle: '모두 지울까요',
@@ -531,7 +531,7 @@ export const ko = {
       const list = shown.join(', ');
       return total > shown.length ? `${list} 외 ${total - shown.length}개` : `${list} ${total}개`;
     },
-    waterTitle: '물때예요',
+    waterTitle: '물 줄 때예요',
     waterBody: (names: string) => `${names} 물 줄 때`,
     /** 수경은 물주기 대신 물 교체 (4.2) */
     hydroBody: (names: string) => `${names} 물 갈 때`,
@@ -620,10 +620,11 @@ export const ko = {
   },
   /** 키는 LightGrade */
   lightGrade: {
-    high: '강광',
-    medium: '중광',
-    low: '약광',
-    very_low: '저광',
+    /** 원예 용어(강광·중광·약광·저광) 대신 쉬운 말 (10-3). 코드 값은 그대로다 */
+    high: '아주 밝아요',
+    medium: '밝아요',
+    low: '어둑해요',
+    very_low: '어두워요',
   },
   /** 9.2 판정 기준을 풀어 쓴 설명 */
   lightGradeHint: {
