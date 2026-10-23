@@ -1,10 +1,11 @@
 /**
- * 분재 작업 캘린더 (SPEC.md 6.2). 종 DB 의 bonsai_tasks 를 등록할 때 식물별로 복사해 두고,
+ * 분재 작업 캘린더 (SPEC.md 6.2). 등록할 때 수종군 기준표를 식물별로 복사해 두고,
  * 이번 달에 할 일을 오늘 탭과 식물 상세에 보여 준다. 완료는 해마다 다시 돌아온다.
  * 화면·DB 와 무관한 순수 함수다.
  */
-import type { NewPlantTask, PlantTask } from '../db/schema';
+import type { BonsaiGroup, NewPlantTask, PlantTask } from '../db/schema';
 import type { CalendarDate } from '../engine';
+import { bonsaiTasksFor } from './bonsai-tasks';
 
 /** 시작 월이 끝 월보다 크면 해를 넘기는 작업이다 (예: 철사걸이 11~2월) */
 export function isActiveMonth(task: Pick<PlantTask, 'monthStart' | 'monthEnd'>, month: number): boolean {
@@ -37,38 +38,19 @@ export function upcomingTaskMonth(
     : null;
 }
 
-const isMonth = (value: unknown): value is number =>
-  Number.isInteger(value) && (value as number) >= 1 && (value as number) <= 12;
-
 /**
- * 종 DB 의 bonsai_tasks 를 식물의 작업 행으로. 분재가 아니면 만들지 않는다.
- * 서버가 만든 값이라 모양을 하나하나 확인한다.
+ * 분재의 작업 행을 만든다. 서버의 bonsai_tasks 는 AI 가 만들어 검수가 적으므로 쓰지 않고,
+ * 수종군과 학명으로 정해지는 기준표(bonsai-tasks.ts)를 복사한다 (SPEC 6.2, 10-1). 분재가 아니면 만들지 않는다.
  */
 export function taskRowsFor(
   plantId: string,
-  source: unknown,
-  isBonsai: boolean,
+  plant: { isBonsai: boolean; bonsaiGroup: BonsaiGroup | null; scientificName: string | null },
   newId: () => string,
 ): NewPlantTask[] {
-  if (!isBonsai || !Array.isArray(source)) return [];
-
-  const rows: NewPlantTask[] = [];
-  for (const entry of source) {
-    if (typeof entry !== 'object' || entry === null) continue;
-    const task = entry as Record<string, unknown>;
-    const taskCode = typeof task.task_code === 'string' ? task.task_code.trim() : '';
-    const labelKo = typeof task.label_ko === 'string' ? task.label_ko.trim() : '';
-    if (taskCode === '' || labelKo === '') continue;
-    if (!isMonth(task.month_start) || !isMonth(task.month_end)) continue;
-
-    rows.push({
-      id: newId(),
-      plantId,
-      taskCode,
-      monthStart: task.month_start,
-      monthEnd: task.month_end,
-      labelKo,
-    });
-  }
-  return rows;
+  if (!plant.isBonsai) return [];
+  return bonsaiTasksFor(plant.bonsaiGroup, plant.scientificName).map((task) => ({
+    id: newId(),
+    plantId,
+    ...task,
+  }));
 }

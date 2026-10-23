@@ -172,13 +172,13 @@ export default function PlantDetailScreen() {
             onHighlight
           />
           <View style={styles.nextFacts}>
-            <AppText variant="caption">{formatInterval(result)}</AppText>
+            <AppText variant="caption">{formatInterval(result, { bonsai: plant.isBonsai })}</AppText>
             <AppText variant="caption">
               {plant.lastWateredUnknown ? t.lastWateredUnknown : t.lastWatered(dateOf(plant.lastWateredAt))}
             </AppText>
           </View>
           <Button
-            label={ko.action.watered}
+            label={plant.isBonsai ? ko.action.checkSoil : ko.action.watered}
             onPress={() =>
               router.push({ pathname: '/sheet/watered', params: { plantId: plant.id } })
             }

@@ -15,7 +15,7 @@ import { createHmac } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { BONSAI_CONIFER, BONSAI_DECIDUOUS, HERB, SEED_LIST, SUCCULENT, TEMPERATE, TROPICAL } from './species-list.ts';
+import { BONSAI_CONIFER, BONSAI_DECIDUOUS, HERB, ORCHID, SEED_LIST, SUCCULENT, TEMPERATE, TROPICAL } from './species-list.ts';
 import type { SeedEntry } from './species-list.ts';
 
 /** 한 번에 보내는 요청 수. 생성은 20초쯤 걸리고, 한꺼번에 많이 보내면 모델 쪽에서 막는다 */
@@ -36,6 +36,7 @@ const GROUPS: Record<string, SeedEntry[]> = {
   temperate: TEMPERATE,
   succulent: SUCCULENT,
   herb: HERB,
+  orchid: ORCHID,
   bonsai_conifer: BONSAI_CONIFER,
   bonsai_deciduous: BONSAI_DECIDUOUS,
 };

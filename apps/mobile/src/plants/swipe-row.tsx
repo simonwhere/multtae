@@ -10,6 +10,8 @@ const ACTION_WIDTH = 104;
 
 export interface SwipeRowProps {
   onWatered: () => void;
+  /** 분재는 "흙 확인" (6.1). 없으면 "물 줬어요" */
+  wateredLabel?: string;
   /** 없으면 더 미룰 수 없다 */
   onPostpone?: () => void;
   children: React.ReactNode;
@@ -19,9 +21,10 @@ export interface SwipeRowProps {
  * 오늘 섹션 카드의 스와이프 (SPEC 3.2): 오른쪽으로 밀면 "물 줬어요", 왼쪽으로 밀면 "내일로".
  * 같은 동작이 카드의 버튼으로도 있어서 스와이프를 못 써도 된다 (SPEC 15).
  */
-export function SwipeRow({ onWatered, onPostpone, children }: SwipeRowProps) {
+export function SwipeRow({ onWatered, wateredLabel, onPostpone, children }: SwipeRowProps) {
   const colors = useColors();
   const row = useRef<SwipeableMethods>(null);
+  const label = wateredLabel ?? ko.action.watered;
 
   const run = (action: () => void) => {
     row.current?.close();
@@ -37,11 +40,11 @@ export function SwipeRow({ onWatered, onPostpone, children }: SwipeRowProps) {
       renderLeftActions={() => (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={ko.action.watered}
+          accessibilityLabel={label}
           onPress={() => run(onWatered)}
           style={[styles.action, styles.left, { backgroundColor: colors.accent }]}>
           <AppText variant="label" color={colors.onAccent}>
-            {ko.action.watered}
+            {label}
           </AppText>
         </Pressable>
       )}

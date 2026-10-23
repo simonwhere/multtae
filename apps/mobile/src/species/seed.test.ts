@@ -5,14 +5,14 @@ import { findSeedSpecies, searchSpecies, SEED_SPECIES } from './seed';
 
 const names = (query: string) => searchSpecies(query).map((species) => species.nameKo);
 
-describe('번들 시드 30종 (SPEC.md 16장 2-2)', () => {
-  it('30종이고 학명이 겹치지 않는다', () => {
-    expect(SEED_SPECIES).toHaveLength(30);
-    expect(new Set(SEED_SPECIES.map((species) => species.scientificName)).size).toBe(30);
-    expect(new Set(SEED_SPECIES.map((species) => species.nameKo)).size).toBe(30);
+describe('번들 시드 32종 (SPEC.md 16장 2-2, 10-1)', () => {
+  it('32종이고 학명이 겹치지 않는다', () => {
+    expect(SEED_SPECIES).toHaveLength(32);
+    expect(new Set(SEED_SPECIES.map((species) => species.scientificName)).size).toBe(32);
+    expect(new Set(SEED_SPECIES.map((species) => species.nameKo)).size).toBe(32);
   });
 
-  it('식물군 비율은 10.5 의 구성을 따른다: 관엽 11, 다육 6, 온대 5, 허브 4, 분재 4', () => {
+  it('식물군 비율은 10.5 의 구성을 따른다: 관엽 11, 다육 6, 온대 5, 허브 4, 난초 2, 분재 4', () => {
     const count = (group: string) =>
       SEED_SPECIES.filter((species) => species.groupCode === group).length;
 
@@ -20,6 +20,7 @@ describe('번들 시드 30종 (SPEC.md 16장 2-2)', () => {
     expect(count('succulent')).toBe(6);
     expect(count('temperate')).toBe(5);
     expect(count('herb')).toBe(4);
+    expect(count('orchid')).toBe(2);
     expect(count('bonsai_conifer') + count('bonsai_deciduous')).toBe(4);
   });
 
@@ -55,6 +56,7 @@ describe('번들 시드 30종 (SPEC.md 16장 2-2)', () => {
     });
     expect(findSeedSpecies('Pinus thunbergii')?.groupCode).toBe('bonsai_conifer');
     expect(findSeedSpecies('Ocimum basilicum')?.groupCode).toBe('herb');
+    expect(findSeedSpecies('Phalaenopsis amabilis')).toMatchObject({ groupCode: 'orchid', baseInterval: 10 });
   });
 
   it('식물군 기본값과 크게 다른 잘 알려진 종만 개별 주기를 갖는다', () => {
@@ -99,7 +101,7 @@ describe('searchSpecies: 텍스트 검색', () => {
   it('검색어가 없으면 전부를 가나다순으로 준다', () => {
     const all = names('');
 
-    expect(all).toHaveLength(30);
+    expect(all).toHaveLength(32);
     expect(all).toEqual([...all].sort((a, b) => a.localeCompare(b, 'ko')));
   });
 

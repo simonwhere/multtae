@@ -9,9 +9,13 @@ export const GROUP_CODES = [
   'tropical',
   'temperate',
   'herb',
+  'orchid',
   'bonsai_conifer',
   'bonsai_deciduous',
 ] as const;
+
+/** 난초·공중식물은 바크·수태·착생 기준이라 이보다 자주 주지 않는다 (10-1) */
+export const ORCHID_MIN_BASE_INTERVAL = 5;
 
 const BONSAI_GROUPS = ['conifer', 'deciduous', 'flowering'] as const;
 
@@ -78,6 +82,9 @@ function senseCheck(species: Species): string | null {
 
   if (group_code === 'succulent' && base_interval !== null && base_interval < 7) {
     return 'succulent 인데 base_interval 이 7일 미만입니다. 다육은 그보다 드물게 줍니다.';
+  }
+  if (group_code === 'orchid' && base_interval !== null && base_interval < ORCHID_MIN_BASE_INTERVAL) {
+    return `orchid 인데 base_interval 이 ${ORCHID_MIN_BASE_INTERVAL}일 미만입니다. 난초와 공중식물은 바크나 수태, 착생 기준으로 그보다 드물게 줍니다.`;
   }
   if (group_code === 'tropical' && winter_indoor_ok === false) {
     return 'tropical 인데 winter_indoor_ok 가 false 입니다. 열대 관엽은 실내에서 겨울을 납니다.';

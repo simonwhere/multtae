@@ -13,9 +13,10 @@ export function formatDaysLeft(daysLeft: number): string {
   return daysLeft >= 0 ? ko.format.dDay(daysLeft) : ko.format.overdue(-daysLeft);
 }
 
-/** 주기를 한 줄로: "7일마다 물을 줘요". 수경은 물을 갈아 준다 */
-export function formatInterval(result: IntervalResult): string {
-  return result.mode === 'hydro' ? ko.format.hydroEvery(result.days) : ko.format.every(result.days);
+/** 주기를 한 줄로: "7일마다 물을 줘요". 수경은 물을 갈아 주고, 분재는 날을 정해 주지 않고 흙을 확인한다 (6.1) */
+export function formatInterval(result: IntervalResult, options: { bonsai?: boolean } = {}): string {
+  if (result.mode === 'hydro') return ko.format.hydroEvery(result.days);
+  return options.bonsai ? ko.format.everyCheck(result.days) : ko.format.every(result.days);
 }
 
 /** 오늘 탭의 큰 날짜: "9.21" */

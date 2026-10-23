@@ -88,7 +88,10 @@ export default function SpaceDetailScreen() {
   const context = nowContext(detail.loadedAt);
   const reading = spaceLightReading(space);
   const evidence = shownEvidence(reading);
-  const memo = seasonMemo(space.spaceType, context.season);
+  // 분재가 있는 바깥 자리는 장마·폭염 조언이 다르다 (6.3)
+  const memo = seasonMemo(space.spaceType, context.season, {
+    bonsai: plants.some((plant) => plant.isBonsai),
+  });
 
   const edit = (field: EditField) =>
     router.push({ pathname: '/sheet/space-edit', params: { spaceId: space.id, field } });

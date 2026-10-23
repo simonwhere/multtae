@@ -36,8 +36,9 @@ describe('validateSpecies: 스키마 (SPEC.md 10.4)', () => {
     expect(result.ok && result.value.scientific_name).toBe('Monstera deliciosa');
   });
 
-  it('식물군은 여섯 개 중 하나다', () => {
+  it('식물군은 일곱 개 중 하나다', () => {
     expect(reject({ group_code: 'succulent', base_interval: 14, winter_indoor_ok: true })).toBe(true);
+    expect(reject({ group_code: 'orchid', base_interval: 10, winter_indoor_ok: true })).toBe(true);
     expect(reject({ group_code: 'flower' })).toBe(false);
     expect(reject({ group_code: null })).toBe(false);
   });
@@ -81,6 +82,12 @@ describe('validateSpecies: 상식 체크 (SPEC.md 10.4)', () => {
   it('다육인데 주기가 7일 미만이면 거부한다', () => {
     expect(reject({ group_code: 'succulent', base_interval: 6 })).toBe(false);
     expect(reject({ group_code: 'succulent', base_interval: 14 })).toBe(true);
+  });
+
+  it('난초·공중식물인데 주기가 5일 미만이면 거부한다 (10-1)', () => {
+    expect(reject({ group_code: 'orchid', base_interval: 3 })).toBe(false);
+    expect(reject({ group_code: 'orchid', base_interval: 7 })).toBe(true);
+    expect(reject({ group_code: 'orchid', base_interval: null })).toBe(true);
   });
 
   it('열대인데 실내 월동이 안 된다고 하면 거부한다', () => {

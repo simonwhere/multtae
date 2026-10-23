@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { currentCoefficients } from '@/coefficients';
 import { db } from '@/db/client';
 import { insertPlant, listPlantsWithSpace } from '@/db/plants';
-import { getCachedSpecies } from '@/db/species-cache';
 import { insertPlantTasks } from '@/db/tasks';
 import type { Space } from '@/db/schema';
 import { listSpaces } from '@/db/spaces';
@@ -143,13 +142,18 @@ export function usePlantRegistration() {
     setSaveFailed(false);
     try {
       await insertPlant(db, created.plant, created.photos);
-      // 분재면 종 DB 의 작업 캘린더를 이 식물의 것으로 복사한다 (SPEC 6.2)
-      const species = created.plant.scientificName
-        ? await getCachedSpecies(db, created.plant.scientificName)
-        : null;
+      // 분재면 수종군 기준표의 작업 캘린더를 이 식물의 것으로 복사한다 (SPEC 6.2)
       await insertPlantTasks(
         db,
-        taskRowsFor(created.plant.id, species?.bonsaiTasks, created.plant.isBonsai ?? false, randomUUID),
+        taskRowsFor(
+          created.plant.id,
+          {
+            isBonsai: created.plant.isBonsai ?? false,
+            bonsaiGroup: created.plant.bonsaiGroup ?? null,
+            scientificName: created.plant.scientificName ?? null,
+          },
+          randomUUID,
+        ),
       );
       await clearPlantDraft(db);
       rescheduleSoon();

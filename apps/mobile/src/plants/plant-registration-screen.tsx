@@ -437,7 +437,7 @@ function FinishStep({
               }}
             />
           </View>
-          <AppText variant="caption">{formatInterval(preview.result)}</AppText>
+          <AppText variant="caption">{formatInterval(preview.result, { bonsai: draft.isBonsai })}</AppText>
           {draft.wateredUnknown ? <AppText>{finish.unknownNote(preview.days)}</AppText> : null}
           {preview.result.mode === 'computed' && preview.result.belowMin && !draft.isBonsai ? (
             <AppText>{finish.belowMin}</AppText>

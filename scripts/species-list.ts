@@ -1,5 +1,5 @@
 /**
- * 시드 300종 (SPEC.md 10.5). scripts/seed-species.ts 가 이 목록으로 종 정보를 만든다.
+ * 시드 310종 (SPEC.md 10.5). scripts/seed-species.ts 가 이 목록으로 종 정보를 만든다.
  *
  * 학명은 현재 통용되는 이름으로 쓴다. 옛 이름으로 알려진 종은 앱이 검색으로 찾을 수 있게
  * 생성된 aliases_ko 가 받아 준다. apps/mobile/src/species/seed.ts 의 번들 30종과 철자를 맞춘다.
@@ -338,12 +338,27 @@ export const BONSAI_DECIDUOUS = entries(
   ['Berberis thunbergii', '매자나무'],
 );
 
-/** 300종 전체. 식물군별 구성은 SPEC 10.5 표와 같다 */
+/** 난초·공중식물 10종 (10-1). 호접란은 한국에서 가장 흔한 선물 식물이고 과습으로 가장 많이 죽는다 */
+export const ORCHID = entries(
+  ['Phalaenopsis amabilis', '호접란'],
+  ['Dendrobium nobile', '덴드로비움'],
+  ['Cymbidium goeringii', '춘란'],
+  ['Cymbidium sinense', '보세란'],
+  ['Vanda falcata', '풍란'],
+  ['Oncidium sphacelatum', '온시디움'],
+  ['Cattleya labiata', '카틀레야'],
+  ['Paphiopedilum insigne', '파피오페딜룸'],
+  ['Tillandsia ionantha', '이오난사'],
+  ['Tillandsia usneoides', '수염틸란드시아'],
+);
+
+/** 310종 전체. 식물군별 구성은 SPEC 10.5 표와 같다 */
 export const SEED_LIST: SeedEntry[] = [
   ...TROPICAL,
   ...TEMPERATE,
   ...SUCCULENT,
   ...HERB,
+  ...ORCHID,
   ...BONSAI_CONIFER,
   ...BONSAI_DECIDUOUS,
 ];

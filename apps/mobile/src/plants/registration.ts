@@ -41,7 +41,7 @@ export const MAX_NICKNAME_LENGTH = 20;
 export const MAX_DAYS_AGO = 60;
 
 /** 종을 모를 때 직접 고르는 식물군. 분재군은 6단계의 토글과 수종군이 정한다 (10.2) */
-export const SELECTABLE_GROUPS = ['tropical', 'temperate', 'succulent', 'herb'] as const;
+export const SELECTABLE_GROUPS = ['tropical', 'temperate', 'succulent', 'herb', 'orchid'] as const;
 export type SelectableGroup = (typeof SELECTABLE_GROUPS)[number];
 
 const MS_PER_HOUR = 3_600_000;

@@ -71,39 +71,50 @@ describe('upcomingTaskMonth: 다음 작업이 몇 월인가 (SPEC.md 3.4)', () =
   });
 });
 
-describe('taskRowsFor: 종 DB 의 작업을 식물의 캘린더로 옮긴다 (SPEC.md 6.2)', () => {
-  it('분재일 때만 만든다', () => {
-    const source = [
-      { task_code: 'pinch_candles', month_start: 5, month_end: 6, label_ko: '순따기' },
-    ];
+describe('taskRowsFor: 수종군 기준표를 식물의 캘린더로 옮긴다 (SPEC.md 6.2, 10-1)', () => {
+  const ids = () => {
+    let n = 0;
+    return () => `id-${(n += 1)}`;
+  };
 
-    expect(taskRowsFor('plant-1', source, true, () => 'id-1')).toEqual([
-      {
-        id: 'id-1',
-        plantId: 'plant-1',
-        taskCode: 'pinch_candles',
-        monthStart: 5,
-        monthEnd: 6,
-        labelKo: '순따기',
-      },
-    ]);
-    expect(taskRowsFor('plant-1', source, false, () => 'id-1')).toEqual([]);
+  it('소나무류는 순따기·묵은 잎 뽑기·철사걸이·분갈이다', () => {
+    const rows = taskRowsFor(
+      'plant-1',
+      { isBonsai: true, bonsaiGroup: 'conifer', scientificName: 'Pinus thunbergii' },
+      ids(),
+    );
+
+    expect(rows.map((row) => row.taskCode)).toEqual(['pinch_candles', 'pull_old_needles', 'wiring', 'repot']);
+    expect(rows[0]).toEqual({
+      id: 'id-1',
+      plantId: 'plant-1',
+      taskCode: 'pinch_candles',
+      monthStart: 5,
+      monthEnd: 6,
+      labelKo: '순따기',
+    });
+    // 철사걸이는 해를 넘긴다
+    expect(rows[2]).toMatchObject({ monthStart: 11, monthEnd: 2 });
   });
 
-  it('모양이 다른 항목은 건너뛴다. 서버가 만든 값이라 믿지 않는다', () => {
-    const source = [
-      { task_code: 'ok', month_start: 3, month_end: 4, label_ko: '괜찮음' },
-      { task_code: '', month_start: 3, month_end: 4, label_ko: '이름 없음' },
-      { task_code: 'bad', month_start: 0, month_end: 4, label_ko: '없는 달' },
-      { task_code: 'bad', month_start: 3, month_end: 13, label_ko: '없는 달' },
-      'not an object',
-    ];
+  it('향나무·진백 같은 다른 침엽은 순집기와 분갈이다. 종을 모르면 이쪽이다', () => {
+    const juniper = taskRowsFor('p', { isBonsai: true, bonsaiGroup: 'conifer', scientificName: 'Juniperus chinensis' }, ids());
+    const unknown = taskRowsFor('p', { isBonsai: true, bonsaiGroup: 'conifer', scientificName: null }, ids());
 
-    expect(taskRowsFor('plant-1', source, true, () => 'id')).toHaveLength(1);
+    expect(juniper.map((row) => row.taskCode)).toEqual(['pinch_tips', 'repot']);
+    expect(unknown.map((row) => row.taskCode)).toEqual(['pinch_tips', 'repot']);
   });
 
-  it('작업이 없거나 배열이 아니면 빈 배열', () => {
-    expect(taskRowsFor('plant-1', null, true, () => 'id')).toEqual([]);
-    expect(taskRowsFor('plant-1', [], true, () => 'id')).toEqual([]);
+  it('잡목과 화목은 작업이 다르다', () => {
+    const maple = taskRowsFor('p', { isBonsai: true, bonsaiGroup: 'deciduous', scientificName: 'Acer palmatum' }, ids());
+    const quince = taskRowsFor('p', { isBonsai: true, bonsaiGroup: 'flowering', scientificName: 'Chaenomeles japonica' }, ids());
+
+    expect(maple.map((row) => row.labelKo)).toEqual(['분갈이', '잎자르기', '가지치기']);
+    expect(quince.map((row) => row.labelKo)).toEqual(['꽃 후 전정', '분갈이']);
+  });
+
+  it('분재가 아니거나 수종군이 없으면 만들지 않는다', () => {
+    expect(taskRowsFor('p', { isBonsai: false, bonsaiGroup: 'conifer', scientificName: 'Pinus thunbergii' }, ids())).toEqual([]);
+    expect(taskRowsFor('p', { isBonsai: true, bonsaiGroup: null, scientificName: null }, ids())).toEqual([]);
   });
 });

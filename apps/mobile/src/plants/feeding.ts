@@ -14,6 +14,8 @@ const GROUP_FERTILIZER: Record<GroupCode, { months: readonly number[]; weeks: nu
   temperate: { months: range(4, 10), weeks: 4 },
   succulent: { months: [4, 5, 6, 9, 10], weeks: 8 },
   herb: { months: range(3, 10), weeks: 2 },
+  // 난초는 묽은 액체비료를 생장기에만 (10-1)
+  orchid: { months: range(4, 10), weeks: 4 },
   bonsai_conifer: { months: [4, 5, 6, 9, 10], weeks: 4 },
   bonsai_deciduous: { months: [4, 5, 6, 9, 10], weeks: 4 },
 };
@@ -70,6 +72,8 @@ const GROUP_REPOT_MONTHS: Record<GroupCode, number | null> = {
   tropical: 18,
   temperate: 18,
   herb: 12,
+  // 바크가 삭는 2년마다, 꽃이 진 뒤 (10-1)
+  orchid: 24,
   bonsai_conifer: null,
   bonsai_deciduous: null,
 };

@@ -8,6 +8,7 @@ import {
   DEFAULT_COEFFICIENTS,
   getSeason,
   halfIntervalDays,
+  isDroopWarning,
   nextWaterDate,
 } from './index';
 import type {
@@ -368,14 +369,19 @@ describe('applyFeedback: SPEC.md 5.4 학습 보정 U', () => {
     expect(applyFeedback(1.2, 'skipped', false, C)).toBe(1.2);
   });
 
-  it('잎이 처졌어요: 추가 ×0.9', () => {
-    expect(applyFeedback(1.0, 'ok', true, C)).toBeCloseTo(0.9, 10);
-    expect(applyFeedback(1.0, 'skipped', true, C)).toBeCloseTo(0.9, 10);
-    expect(applyFeedback(1.0, 'wet', true, C)).toBeCloseTo(1.035, 10);
+  it('잎이 처졌어요는 흙이 바싹 말랐을 때만 목마름으로 본다: 0.85 × 0.9 = 0.765 (표의 0.77 은 반올림 표기)', () => {
+    expect(applyFeedback(1.0, 'dry', true, C)).toBeCloseTo(0.765, 10);
   });
 
-  it('바싹 말랐음 + 잎이 처졌어요: 0.85 × 0.9 = 0.765 (표의 0.77 은 반올림 표기)', () => {
-    expect(applyFeedback(1.0, 'dry', true, C)).toBeCloseTo(0.765, 10);
+  it('흙이 젖었거나 적당한데 잎이 처진 것은 과습 신호라 주기를 줄이지 않는다', () => {
+    expect(applyFeedback(1.0, 'ok', true, C)).toBe(1.0);
+    expect(applyFeedback(1.0, 'skipped', true, C)).toBe(1.0);
+    expect(applyFeedback(1.0, 'wet', true, C)).toBeCloseTo(1.15, 10);
+    expect(isDroopWarning('wet', true)).toBe(true);
+    expect(isDroopWarning('ok', true)).toBe(true);
+    expect(isDroopWarning('dry', true)).toBe(false);
+    expect(isDroopWarning('skipped', true)).toBe(false);
+    expect(isDroopWarning('wet', false)).toBe(false);
   });
 
   it('이전 U 에 누적해서 곱한다', () => {
@@ -419,7 +425,7 @@ describe('applyFeedback: SPEC.md 5.4 학습 보정 U', () => {
 
     expect(applyFeedback(0.8, 'wet', false, custom)).toBeCloseTo(1.2, 10);
     expect(applyFeedback(1.0, 'wet', false, custom)).toBe(1.4);
-    expect(applyFeedback(1.0, 'ok', true, custom)).toBe(0.5);
+    expect(applyFeedback(1.0, 'dry', true, custom)).toBe(0.5);
   });
 
   it('시나리오 B: 축축했음을 입력하면 몬스테라 주기가 7일에서 8일로 늘어난다', () => {

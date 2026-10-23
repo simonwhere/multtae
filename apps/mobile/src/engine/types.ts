@@ -13,6 +13,7 @@ export const GROUP_CODES = [
   'tropical',
   'temperate',
   'herb',
+  'orchid',
   'bonsai_conifer',
   'bonsai_deciduous',
 ] as const;

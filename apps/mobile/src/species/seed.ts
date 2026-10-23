@@ -2,7 +2,7 @@
  * 번들 시드 30종과 텍스트 검색 (SPEC.md 16장 2-2).
  *
  * 서버 종 DB(3-1~3-4)가 생기기 전까지, 그리고 그 뒤에도 오프라인일 때 쓰는 최소 목록이다.
- * 구성은 10.5 의 대표 종에서 식물군 비율대로 골랐다: 관엽 11, 다육 6, 온대 5, 허브 4, 분재 4.
+ * 구성은 10.5 의 대표 종에서 식물군 비율대로 골랐다: 관엽 11, 다육 6, 온대 5, 허브 4, 난초·공중식물 2, 분재 4.
  * baseInterval 은 봄·중광·중형 화분·배양토 기준 일수이고, 식물군 기본값과 크게 다른 잘 알려진 종만 넣었다.
  * 나머지(null)는 식물군 기본값을 쓴다. 3-4 에서 서버가 만든 값으로 바뀐다.
  * 학명은 현재 통용되는 이름이고, 옛 학명은 synonyms 에 두어 검색에 쓴다.
@@ -86,6 +86,10 @@ export const SEED_SPECIES: SeedSpecies[] = [
     ['Salvia rosmarinus', '로즈마리', [], 5, ['Rosmarinus officinalis']],
     ['Mentha spicata', '스피어민트', ['민트']],
     ['Pelargonium × hortorum', '제라늄', ['페라고늄']],
+  ]),
+  ...group('orchid', null, [
+    ['Phalaenopsis amabilis', '호접란', ['팔레놉시스', '나비난초'], 10],
+    ['Tillandsia ionantha', '이오난사', ['틸란드시아', '공중식물'], 7],
   ]),
   ...group('bonsai_conifer', 'conifer', [
     ['Pinus thunbergii', '곰솔', ['흑송', '해송']],

@@ -11,7 +11,7 @@ import { addPlantPhoto } from '@/db/photos';
 import { getPlantWithSpace, updatePlant } from '@/db/plants';
 import type { PlantWithSpace } from '@/db/plants';
 import { recordWatering } from '@/db/watering';
-import { applyFeedback, SOIL_STATES } from '@/engine';
+import { applyFeedback, isDroopWarning, SOIL_STATES } from '@/engine';
 import type { SoilState } from '@/engine';
 import { ko } from '@/i18n/ko';
 import { rescheduleSoon } from '@/notifications';
@@ -225,6 +225,12 @@ export default function WateredSheet() {
           onPress={() => setChecked((value) => !value)}
         />
       )}
+      {/* 흙이 젖었는데 잎이 처진 것은 목마름이 아니라 뿌리 신호다. 주기는 줄이지 않는다 (5.4) */}
+      {!hydro && !bonsai && isDroopWarning(soilState ?? 'skipped', checked) ? (
+        <AppText variant="caption" color={colors.berry}>
+          {ko.wateredSheet.droopWarning}
+        </AppText>
+      ) : null}
 
       {/* 분재는 말랐어요를 누르면 바로 끝나므로 비료는 그 위에서 묻는다 */}
       {fertilizerDue && !bonsai ? fertilizerChoice : null}

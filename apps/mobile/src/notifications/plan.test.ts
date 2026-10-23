@@ -384,10 +384,13 @@ describe('분재 흙 확인 알림 (SPEC.md 6.1, 12.1)', () => {
     expect(check?.minuteOfDay).toBe(11 * 60);
   });
 
-  it('분재가 밀리면 일반 식물처럼 밀림으로 알린다', () => {
+  it('분재가 밀리면 밀림 알림과 함께, 사흘에 한 번이 아니라 날마다 흙 확인을 청한다 (10-1)', () => {
     const planned = plan({ plants: [bonsai('곰솔', date(9, 24))] });
 
-    expect(planned[0]).toMatchObject({ type: 'overdue', body: '곰솔 4일 지났어요' });
+    expect(planned.find((n) => n.type === 'overdue')).toMatchObject({ body: '곰솔 4일 지났어요' });
+    const checks = planned.filter((n) => n.type === 'bonsai');
+    expect(checks.map((n) => n.date.day).slice(0, 5)).toEqual([27, 28, 29, 30, 1]);
+    expect(checks[0]?.body).toBe('곰솔 흙이 말랐는지 봐 주세요');
   });
 });
 
@@ -486,7 +489,9 @@ describe('날씨 규칙과 알림 (SPEC.md 7.2, 12.1)', () => {
     });
 
     expect(
-      planned.filter((item) => item.type === 'bonsai').map((item) => [item.id, item.minuteOfDay]),
+      planned
+        .filter((item) => item.type === 'bonsai' && item.date.day === 28)
+        .map((item) => [item.id, item.minuteOfDay]),
     ).toEqual([
       ['bonsai-20260928-0', 420],
       ['bonsai-20260928-1', DEFAULT_BONSAI_EVENING_MINUTE],

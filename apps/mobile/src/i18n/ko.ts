@@ -96,6 +96,8 @@ export const ko = {
   },
   action: {
     watered: '물 줬어요',
+    /** 분재 카드의 단추. 물을 줄지는 흙을 보고 정한다 (6.1) */
+    checkSoil: '흙 확인',
     postpone: '내일로',
     done: '완료',
   },
@@ -115,6 +117,8 @@ export const ko = {
       wet: '다음부터 조금 더 천천히 알려 드려요',
     },
     leafDroop: '잎이 처졌어요',
+    /** 흙이 젖었거나 적당한데 처졌다: 목마름이 아니라 뿌리를 볼 신호 (5.4) */
+    droopWarning: '흙이 아직 젖었는데 잎이 처지면 뿌리가 상했을 수 있어요. 화분에서 꺼내 뿌리가 무르지 않았는지 봐 주세요.',
     hydroTitle: (nickname: string) => `${nickname}의 물을 갈았어요`,
     /** 분재는 물 주기 전에 흙을 확인한다 (SPEC 6.1) */
     bonsaiTitle: (nickname: string) => `${nickname} 흙은 어땠나요`,
@@ -283,6 +287,7 @@ export const ko = {
     bonsai: '분재',
     bonsaiEvening: '더운 날 저녁 확인',
     bonsaiWinter: '겨울 확인 시각',
+    bonsaiHint: '더운 날에는 아침 알림에 더해 한 번 더 확인해요. 오후에 물을 주신다면 시각을 당겨 주세요. 겨울에는 화분 속 물이 얼지 않게 해가 오른 뒤에 알려요.',
     weather: '날씨',
     region: '지역',
     regionNone: '고르지 않음',
@@ -386,7 +391,10 @@ export const ko = {
       indoorWinter: '난방을 하면 공기가 메말라요. 온풍기나 라디에이터 옆은 피해 주세요.',
       windowHeat: '한낮 유리 너머 볕이 뜨거워요. 잎이 닿으면 얇은 커튼을 쳐 주세요.',
       outdoorMonsoon: '비가 들이치면 실내로 들여 주세요. 받침에 고인 물도 바로 버려 주세요.',
+      /** 분재가 있는 바깥 자리. 분재는 비를 맞아도 되고 실내로 들이면 오히려 약해진다 (6.3) */
+      outdoorMonsoonBonsai: '분재는 비를 맞아도 괜찮아요. 화분을 살짝 기울여 물이 고이지 않게만 해 주세요.',
       outdoorHeat: '바람과 볕에 흙이 빨리 말라요. 저녁에 한 번 더 만져 보세요.',
+      outdoorHeatBonsai: '얕은 분재 화분은 한나절이면 말라요. 아침과 오후에 흙을 보고, 더운 날은 잎에도 물을 뿌려 주세요.',
       balconyWinter: '12월에서 2월 사이 새벽에는 5도 아래로 내려갈 수 있어요.',
       terraceSpring: '봄바람이 세면 화분이 넘어질 수 있어요.',
       terraceAutumn: '서리가 내리기 전에 실내로 들일 식물을 정해 두세요.',
@@ -423,7 +431,17 @@ export const ko = {
     deleteBody: '물주기 기록과 사진도 함께 지워져요. 되돌릴 수 없어요.',
     deleteConfirm: '삭제',
     notFound: '식물을 찾을 수 없어요',
-    /** 분재 작업 캘린더 (6.2) */
+    /** 분재 작업 캘린더 (6.2). 키는 bonsai-tasks.ts 의 taskCode */
+    taskLabel: {
+      pinch_candles: '순따기',
+      pull_old_needles: '묵은 잎 뽑기',
+      wiring: '철사걸이',
+      repot: '분갈이',
+      pinch_tips: '순집기',
+      defoliate: '잎자르기',
+      prune: '가지치기',
+      prune_after_bloom: '꽃 후 전정',
+    },
     tasks: '이번 달 할 일',
     taskDone: '했어요',
     taskUndo: '안 했어요로',
@@ -598,6 +616,7 @@ export const ko = {
     tropical: '열대 관엽',
     temperate: '온대 관엽·실내수목',
     herb: '허브·초화·채소',
+    orchid: '난초·공중식물',
     bonsai_conifer: '침엽 분재',
     bonsai_deciduous: '잡목·화목 분재',
   },
@@ -607,6 +626,7 @@ export const ko = {
     temperate: '벤자민, 올리브, 아이비',
     succulent: '에케베리아, 산세베리아, 선인장',
     herb: '바질, 로즈마리, 제라늄, 상추',
+    orchid: '호접란, 춘란, 풍란, 틸란드시아',
   },
   /** 키는 PotSize */
   potSize: {
@@ -653,6 +673,8 @@ export const ko = {
     inDays: (days: number) => (days === 0 ? '오늘' : `${days}일 뒤`),
     overdue: (days: number) => `${days}일 지남`,
     every: (days: number) => (days === 1 ? '매일 물을 줘요' : `${days}일마다 물을 줘요`),
+    /** 분재는 날을 정해 주지 않고 흙을 확인한다 (6.1) */
+    everyCheck: (days: number) => (days === 1 ? '매일 흙을 확인해요' : `${days}일마다 흙을 확인해요`),
     hydroEvery: (days: number) => `${days}일마다 물을 갈아 줘요`,
   },
   plantRegister: {

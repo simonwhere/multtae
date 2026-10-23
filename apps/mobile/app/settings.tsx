@@ -231,6 +231,9 @@ export default function SettingsScreen() {
                 onPress={() => openTime('bonsai_winter_time')}
               />
             </Section>
+            <AppText variant="caption" style={styles.note}>
+              {t.bonsaiHint}
+            </AppText>
           </>
         ) : null}
 

@@ -250,11 +250,13 @@ export default function TodayScreen() {
     if (row.kind === 'allClear') return <AppText style={styles.allClear}>{ko.today.allClear}</AppText>;
 
     const item = row.item;
+    // 분재는 물을 줄지 흙을 보고 정하므로 단추도 "흙 확인"이다 (SPEC 6.1)
+    const actionLabel = item.plant.isBonsai ? ko.action.checkSoil : ko.action.watered;
     if (row.kind === 'overdue') {
       // 밀린 식물은 카드를 눌러도 물 줬어요 시트로 간다. "내일로"는 없다 (SPEC 3.2)
       return (
         <PlantCard {...item} onPress={() => openWatered(item)}>
-          <Button label={ko.action.watered} onPress={() => openWatered(item)} />
+          <Button label={actionLabel} onPress={() => openWatered(item)} />
         </PlantCard>
       );
     }
@@ -263,11 +265,12 @@ export default function TodayScreen() {
       return (
         <SwipeRow
           onWatered={() => openWatered(item)}
+          wateredLabel={actionLabel}
           onPostpone={postponable ? () => void postpone(item) : undefined}>
           <PlantCard {...item} highlighted>
             <View style={styles.actions}>
               <Button
-                label={ko.action.watered}
+                label={actionLabel}
                 onPress={() => openWatered(item)}
                 style={styles.fill}
               />

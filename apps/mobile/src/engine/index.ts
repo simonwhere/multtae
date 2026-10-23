@@ -116,7 +116,8 @@ export function halfIntervalDays(result: IntervalResult): number {
 
 /**
  * 물 줄 때 입력한 흙 상태로 학습 보정 U 를 갱신한다 (5.4).
- * 건너뛴 입력은 적당했음과 같고, 잎 처짐은 흙 상태와 별개로 한 번 더 곱한다.
+ * 건너뛴 입력은 적당했음과 같다. 잎 처짐은 흙이 바싹 말랐을 때만 목마름의 신호라 한 번 더 곱하고,
+ * 흙이 젖었거나 적당한데 처진 것은 과습이나 뿌리 상함일 수 있어 주기를 줄이지 않는다.
  */
 export function applyFeedback(
   learnFactor: number,
@@ -126,9 +127,14 @@ export function applyFeedback(
 ): number {
   const { learning } = coefficients;
   const soilMultiplier = soilState === 'skipped' ? 1 : learning.soilState[soilState];
-  const droopMultiplier = leafDroop ? learning.leafDroop : 1;
+  const droopMultiplier = leafDroop && soilState === 'dry' ? learning.leafDroop : 1;
 
   return clamp(learnFactor * soilMultiplier * droopMultiplier, learning.min, learning.max);
+}
+
+/** 흙이 젖었거나 적당한데 잎이 처졌다: 물 부족이 아니라 뿌리를 봐야 할 신호다 (5.4) */
+export function isDroopWarning(soilState: LoggedSoilState, leafDroop: boolean): boolean {
+  return leafDroop && (soilState === 'wet' || soilState === 'ok');
 }
 
 /**

@@ -31,6 +31,12 @@ describe('formatInterval: 계산식 대신 결과만 말한다', () => {
     expect(interval({ ...monstera, learnFactor: 1.15 })).toBe('8일마다 물을 줘요');
   });
 
+  it('분재는 날을 정해 주지 않고 흙을 확인한다 (SPEC 6.1)', () => {
+    const result = computeInterval(monstera, brightWindow, 'autumn', C);
+    expect(formatInterval(result, { bonsai: true })).toBe('7일마다 흙을 확인해요');
+    expect(formatInterval({ ...result, days: 1 }, { bonsai: true })).toBe('매일 흙을 확인해요');
+  });
+
   it('직접 정한 주기도 같은 말로', () => {
     expect(interval({ ...monstera, manualInterval: 10 })).toBe('10일마다 물을 줘요');
   });

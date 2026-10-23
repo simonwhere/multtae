@@ -18,6 +18,14 @@ describe('seasonMemo: 공간 상세의 계절 메모 (SPEC.md 3.3)', () => {
     expect(seasonMemo('balcony_ext', 'monsoon')).toContain('비가 들이치면');
   });
 
+  it('분재가 있는 바깥 자리는 장마와 폭염에 분재 기준으로 말한다. 분재는 실내로 들이지 않는다 (SPEC 6.3)', () => {
+    expect(seasonMemo('terrace', 'monsoon', { bonsai: true })).toContain('분재는 비를 맞아도');
+    expect(seasonMemo('balcony_ext', 'heat', { bonsai: true })).toContain('아침과 오후');
+    // 분재와 상관없는 계절은 그대로
+    expect(seasonMemo('terrace', 'winter', { bonsai: true })).toBe(seasonMemo('terrace', 'winter'));
+    expect(seasonMemo('indoor_window', 'monsoon', { bonsai: true })).toBe(seasonMemo('indoor_window', 'monsoon'));
+  });
+
   it('할 말이 없는 계절은 비워 둔다', () => {
     expect(seasonMemo('indoor_window', 'spring')).toBeNull();
     expect(seasonMemo('indoor_far', 'heat')).toBeNull();

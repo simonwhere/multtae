@@ -238,8 +238,8 @@ function morningMinute(day: CalendarDate, input: PlanInput, bonsai: boolean, min
   const outdoorInMorning = input.plants.some((plant) => {
     if (!plant.openAir || plant.bonsai !== bonsai) return false;
     const late = diffDays(plant.waterDate, day);
-    // 그날 알림에 들어가는 식물만 본다: 물 줄 날이거나, 분재가 아니면서 밀림 알림이 가는 날
-    return late === 0 || (!bonsai && isOverdueReminder(late));
+    // 그날 알림에 들어가는 식물만 본다: 물 줄 날이거나, 밀림 알림이 가는 날(분재는 밀린 동안 날마다)
+    return late === 0 || (bonsai ? late > 0 : isOverdueReminder(late));
   });
   return outdoorInMorning ? Math.min(minute, HEAT_MORNING_MINUTE) : minute;
 }
@@ -332,7 +332,10 @@ function byWhen(a: PlannedNotification, b: PlannedNotification): number {
   return diffDays(b.date, a.date) || a.minuteOfDay - b.minuteOfDay;
 }
 
-/** 분재 흙 확인 알림 (SPEC 6.1). 물주기 알림과 별개라 같은 아침에 둘 다 올 수 있다 (12.2 하루 상한) */
+/**
+ * 분재 흙 확인 알림 (SPEC 6.1). 물주기 알림과 별개라 같은 아침에 둘 다 올 수 있다 (12.2 하루 상한).
+ * 분재는 하루만 놓쳐도 마르므로, 밀린 동안에는 사흘에 한 번이 아니라 날마다 확인을 청한다 (10-1).
+ */
 function planBonsai(input: PlanInput): PlannedNotification[] {
   const bonsai = input.plants.filter((plant) => plant.bonsai);
   if (bonsai.length === 0) return [];
@@ -342,7 +345,7 @@ function planBonsai(input: PlanInput): PlannedNotification[] {
 
   for (let offset = 0; offset < SCHEDULE_DAYS; offset += 1) {
     const day = addDays(today, offset);
-    const due = bonsai.filter((plant) => diffDays(plant.waterDate, day) === 0);
+    const due = bonsai.filter((plant) => diffDays(plant.waterDate, day) >= 0);
     if (due.length === 0) continue;
 
     for (const [minute, slot] of bonsaiMinutes(seasonOn(day, input), input.settings)) {

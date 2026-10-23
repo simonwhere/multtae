@@ -32,7 +32,19 @@ const MEMO: Record<SpaceType, Partial<Record<Season, keyof typeof ko.spaceDetail
   },
 };
 
-export function seasonMemo(spaceType: SpaceType, season: Season): string | null {
+/** 분재가 있는 바깥 자리는 조언이 다르다: 비를 맞아도 되고 실내로 들이면 안 된다 (6.3) */
+const BONSAI_MEMO: Partial<Record<keyof typeof ko.spaceDetail.memo, keyof typeof ko.spaceDetail.memo>> = {
+  outdoorMonsoon: 'outdoorMonsoonBonsai',
+  outdoorHeat: 'outdoorHeatBonsai',
+};
+
+export function seasonMemo(
+  spaceType: SpaceType,
+  season: Season,
+  options: { bonsai?: boolean } = {},
+): string | null {
   const key = MEMO[spaceType][season];
-  return key ? ko.spaceDetail.memo[key] : null;
+  if (!key) return null;
+  const chosen = options.bonsai ? (BONSAI_MEMO[key] ?? key) : key;
+  return ko.spaceDetail.memo[chosen];
 }
